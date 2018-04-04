@@ -25,6 +25,7 @@ namespace SQLiteServerConsole
       {
         connection.Open();
 
+        Console.CursorVisible = true;
         Console.WriteLine("Press Exit to ... exit (duh)");
         while (true)
         {
@@ -61,14 +62,25 @@ namespace SQLiteServerConsole
           {
             while (reader.Read())
             {
-              Console.WriteLine($"\t{reader[0]}");
+              for (var i = 0; i < reader.FieldCount; ++i )
+              {
+                Console.Write($"\t{reader[i]}");
+              }
+              Console.WriteLine("");
             }
+            var r = Console.ForegroundColor;
+            Console.ForegroundColor = ConsoleColor.Green;
+            Console.WriteLine("The command(s) completed successfully");
+            Console.ForegroundColor = r;
           }
         }
       }
       catch (SQLiteServerException e)
       {
+        var r = Console.ForegroundColor;
+        Console.ForegroundColor = ConsoleColor.Red;
         Console.WriteLine( e.Message );
+        Console.ForegroundColor = r;
       }
     }
   }
