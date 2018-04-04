@@ -59,8 +59,26 @@ catch (SQLiteServerException e)
 connection.Close();
 ```
 
+# Performance
+I have no idea, but the process that owns the SQLite connection is definitely faster.
+
+But I cannot say for certain how much slower it is, your millage may vary ... but I would be curious to run some proper tests.
+
 # Todo
 - A couple of common SQLite commands are missing.
+  - IsDBNull( idx )
+  - HasRows
+  - FieldCount
+  - Less important
+    - GetBoolean( idx )
+    - GetByte( idx )
+    - GetChar( idx )
+    - GetDateTime( idx )
+    - GetDecimal( idx )
+    - GetDouble( idx )
+    - GetFloat( idx )
+    - GetName( idx )
+    - GetTableName( idx )
 - Namepipe might be faster, need to investigate more.
-- Some code cleanup
 - Create Nuget package
+- Some code cleanup
