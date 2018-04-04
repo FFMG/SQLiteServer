@@ -1,6 +1,13 @@
 language: csharp
 solution: src/SQLiteServer.sln
 
+before_install:
+  - sudo apt-get install nunit-console
+before_script:
+  - nuget restore src/SQLiteServer.sln
+after_script:
+  - nunit-console src/bin/Debug/SQLiteServer.Test.dll
+  
 script:
   - msbuild /p:Configuration=Debug src/SQLiteServer.sln
 
