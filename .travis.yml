@@ -1,0 +1,8 @@
+language: csharp
+solution: src/SQLiteServer.sln
+
+script:
+  - msbuild /p:Configuration=Debug src/SQLiteServer.sln
+
+notifications:
+  - email: false
