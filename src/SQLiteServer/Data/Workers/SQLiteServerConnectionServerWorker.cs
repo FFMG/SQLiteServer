@@ -207,6 +207,32 @@ namespace SQLiteServer.Data.Workers
       }
     }
 
+    private void HandleExecuteReaderFieldCountRequest(Packet packet, Action<Packet> response)
+    {
+      //  get the guid
+      try
+      {
+        var guid = packet.Get<string>();
+        lock (_commandsLock)
+        {
+          var command = GetCommandWorker(guid);
+          if (command == null)
+          {
+            response(new Packet(SQLiteMessage.ExecuteReaderException, $"Invalid Command id sent to server for reader : {guid}."));
+            return;
+          }
+
+          // we know that the command exists
+          var reader = _commands[guid].Reader;
+          response(new Packet(SQLiteMessage.ExecuteReaderResponse, reader.FieldCount));
+        }
+      }
+      catch (Exception e)
+      {
+        response(new Packet(SQLiteMessage.ExecuteReaderException, e.Message));
+      }
+    }
+
     /// <summary>
     /// Handle a read request
     /// </summary>
@@ -374,6 +400,10 @@ namespace SQLiteServer.Data.Workers
 
         case SQLiteMessage.ExecuteReaderGetOrdinalRequest:
           HandleExecuteReaderNameRequest(packet, response);
+          break;
+
+        case SQLiteMessage.ExecuteReaderFieldCountRequest:
+          HandleExecuteReaderFieldCountRequest(packet, response);
           break;
 
         case SQLiteMessage.ExecuteReaderReadRequest:

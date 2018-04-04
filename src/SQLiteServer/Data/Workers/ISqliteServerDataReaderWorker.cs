@@ -33,6 +33,11 @@ namespace SQLiteServer.Data.Workers
     object this[string name] { get; }
 
     /// <summary>
+    /// Get the number of retrieved fields.
+    /// </summary>
+    int FieldCount { get; }
+
+    /// <summary>
     /// Execute a 'read' operation
     /// </summary>
     /// <returns></returns>

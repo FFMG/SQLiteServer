@@ -37,6 +37,12 @@ namespace SQLiteServer.Data.Workers
     private readonly Dictionary<int, Type> _fieldTypes = new Dictionary<int, Type>();
 
     /// <summary>
+    /// Get the number of fields.
+    /// If the value is null, we will ask the server, otherwise it is cached.
+    /// </summary>
+    private int? _fieldCount;
+
+    /// <summary>
     /// The SQLite Connection
     /// </summary>
     private readonly ConnectionsController _controller;
@@ -90,27 +96,25 @@ namespace SQLiteServer.Data.Workers
       }
     }
 
+    /// <inheritdoc />
     public bool Read()
     {
-      var response = _controller.SendAndWait(SQLiteMessage.ExecuteReaderReadRequest, Encoding.ASCII.GetBytes(_commandGuid), _queryTimeouts);
-      if (null == response)
-      {
-        throw new TimeoutException("There was a timeout error executing the read request from the reader.");
-      }
-
-      switch (response.Type)
-      {
-        case SQLiteMessage.ExecuteReaderResponse:
-          return response.Get<int>() != 0;
-
-        case SQLiteMessage.ExecuteReaderException:
-          var error = response.Get<string>();
-          throw new SQLiteServerException(error);
-
-        default:
-          throw new InvalidOperationException($"Unknown response {response.Type} from the server.");
-      }
+      return GetGuiOnlyValue<int>(SQLiteMessage.ExecuteReaderReadRequest) != 0;
     }
+
+    /// <inheritdoc />
+    public int FieldCount
+    {
+      get
+      {
+        if (_fieldCount != null)
+        {
+          return (int) _fieldCount;
+        }
+        _fieldCount = GetGuiOnlyValue<int>(SQLiteMessage.ExecuteReaderFieldCountRequest);
+        return (int)_fieldCount;
+      }
+    } 
 
     /// <inheritdoc />
     public object this[int ordinal] => GetValue(ordinal);
@@ -134,6 +138,33 @@ namespace SQLiteServer.Data.Workers
 
       // return it.
       return value;
+    }
+
+    /// <summary>
+    /// Get the result of a requres.t
+    /// </summary>
+    /// <param name="requestType"></param>
+    /// <returns></returns>
+    private T GetGuiOnlyValue<T>(SQLiteMessage requestType)
+    {
+      var response = _controller.SendAndWait(requestType, Encoding.ASCII.GetBytes(_commandGuid), _queryTimeouts);
+      if (null == response)
+      {
+        throw new TimeoutException("There was a timeout error executing the read request from the reader.");
+      }
+
+      switch (response.Type)
+      {
+        case SQLiteMessage.ExecuteReaderResponse:
+          return response.Get<T>();
+
+        case SQLiteMessage.ExecuteReaderException:
+          var error = response.Get<string>();
+          throw new SQLiteServerException(error);
+
+        default:
+          throw new InvalidOperationException($"Unknown response {response.Type} from the server.");
+      }
     }
 
     /// <summary>

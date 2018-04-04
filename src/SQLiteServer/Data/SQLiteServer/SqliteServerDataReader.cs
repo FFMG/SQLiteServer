@@ -104,6 +104,18 @@ namespace SQLiteServer.Data.SQLiteServer
     }
 
     /// <summary>
+    /// Get the number of fields.
+    /// </summary>
+    public int FieldCount
+    {
+      get
+      {
+        ThrowIfAny();
+        return _worker.FieldCount;
+      }
+    }
+
+    /// <summary>
     /// Get a value at a given colum name.
     /// </summary>
     /// <param name="i"></param>
