@@ -1,7 +1,5 @@
 # MyOddWeb.com SQLiteServer [![Release](https://img.shields.io/badge/release-v0.1.0.0-brightgreen.png?style=flat)](https://github.com/FFMG/SQLiteServer/)
-
-# SQLiteServer
-A library to allow multiple applications to share a single SQLite database
+A library to allow multiple applications/processes to share a single SQLite database
 
 ## Why?
 A common issue with SQLite is that, by design, only one process can connect to the database, while this is a perfectly normal use case, (and by design), there are some cases where more than one applications might want to share some data, (one does all the insert while another does the queries.)
@@ -60,3 +58,9 @@ catch (SQLiteServerException e)
 }
 connection.Close();
 ```
+
+# Todo
+- A couple of common SQLite commands are missing.
+- Namepipe might be faster, need to investigate more.
+- Some code cleanup
+- Create Nuget package
