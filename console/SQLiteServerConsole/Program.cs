@@ -1,6 +1,7 @@
 ﻿using System;
 using System.IO;
 using System.Net;
+using SQLiteServer.Data.Exceptions;
 using SQLiteServer.Data.SQLiteServer;
 
 namespace SQLiteServerConsole
@@ -37,6 +38,8 @@ namespace SQLiteServerConsole
             Console.WriteLine("Ok, bye");
             break;
           }
+
+          TryExecute(s, connection);
         }
 
         connection.Close();
@@ -45,6 +48,27 @@ namespace SQLiteServerConsole
       {
         Console.WriteLine( $"Unable to open '{source}', please check your permissions.");
         Console.WriteLine( $"Error was : {e.Message}.");
+      }
+    }
+
+    private static void TryExecute(string s, SQLiteServerConnection connection)
+    {
+      try
+      {
+        using (var command = new SQLiteServerCommand(s, connection))
+        {
+          using (var reader = command.ExecuteReader())
+          {
+            while (reader.Read())
+            {
+              Console.WriteLine($"\t{reader[0]}");
+            }
+          }
+        }
+      }
+      catch (SQLiteServerException e)
+      {
+        Console.WriteLine( e.Message );
       }
     }
   }
