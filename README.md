@@ -75,7 +75,7 @@ But I cannot say for certain how much slower it is, your millage may vary ... bu
     - GetChar( idx )
     - GetDateTime( idx )
     - GetDecimal( idx )
-    - GetDouble( idx )
+    - <s>GetDouble( idx )</s> 0.1.1.0
     - GetFloat( idx )
     - GetName( idx )
     - GetTableName( idx )
