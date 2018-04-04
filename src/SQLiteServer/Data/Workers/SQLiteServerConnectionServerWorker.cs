@@ -135,6 +135,10 @@ namespace SQLiteServer.Data.Workers
               response(new Packet(SQLiteMessage.ExecuteReaderResponse, reader.GetInt64(index)));
               break;
 
+            case SQLiteMessage.ExecuteReaderGetDoubleRequest:
+              response(new Packet(SQLiteMessage.ExecuteReaderResponse, reader.GetDouble(index)));
+              break;
+              
             case SQLiteMessage.ExecuteReaderGetStringRequest:
               response(new Packet(SQLiteMessage.ExecuteReaderResponse, reader.GetString(index)));
               break;
@@ -362,6 +366,7 @@ namespace SQLiteServer.Data.Workers
         case SQLiteMessage.ExecuteReaderGetInt16Request:
         case SQLiteMessage.ExecuteReaderGetInt32Request:
         case SQLiteMessage.ExecuteReaderGetInt64Request:
+        case SQLiteMessage.ExecuteReaderGetDoubleRequest:
         case SQLiteMessage.ExecuteReaderGetStringRequest:
         case SQLiteMessage.ExecuteReaderGetFieldTypeRequest:
           HandleExecuteReaderIndexRequest(packet, response );

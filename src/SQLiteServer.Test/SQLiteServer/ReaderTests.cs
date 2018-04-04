@@ -106,6 +106,87 @@ namespace SQLiteServer.Test.SQLiteServer
     }
 
     [Test]
+    public void ClientGetDoubleValue()
+    {
+      var server = CreateConnection();
+      server.Open();
+      const string sqlMaster = "create table tb_config (name varchar(20), value REAL)";
+      using (var command = new SQLiteServerCommand(sqlMaster, server))
+      {
+        command.ExecuteNonQuery();
+      }
+
+      var client = CreateConnection();
+      client.Open();
+      const string sqlInsert1 = "insert into tb_config(name, value) VALUES ('a', 3.14)";
+      using (var command = new SQLiteServerCommand(sqlInsert1, client))
+      {
+        command.ExecuteNonQuery();
+      }
+      const string sqlInsert2 = "insert into tb_config(name, value) VALUES ('b', 1.1)";
+      using (var command = new SQLiteServerCommand(sqlInsert2, client))
+      {
+        command.ExecuteNonQuery();
+      }
+
+      const string sqlSelect = "SELECT * FROM tb_config";
+      using (var command = new SQLiteServerCommand(sqlSelect, client))
+      {
+        using (var reader = command.ExecuteReader())
+        {
+          Assert.IsTrue(reader.Read());
+          Assert.AreEqual("a", reader.GetString(0));
+          Assert.AreEqual(3.14, reader.GetDouble(1));
+
+          Assert.IsTrue(reader.Read());
+          Assert.AreEqual("b", reader.GetString(0));
+          Assert.AreEqual(1.1, reader.GetDouble(1));
+        }
+      }
+      client.Close();
+      server.Close();
+    }
+
+    [Test]
+    public void ServerGetDoubleValue()
+    {
+      var server = CreateConnection();
+      server.Open();
+      const string sqlMaster = "create table tb_config (name varchar(20), value REAL)";
+      using (var command = new SQLiteServerCommand(sqlMaster, server))
+      {
+        command.ExecuteNonQuery();
+      }
+
+      const string sqlInsert1 = "insert into tb_config(name, value) VALUES ('a', 3.14)";
+      using (var command = new SQLiteServerCommand(sqlInsert1, server))
+      {
+        command.ExecuteNonQuery();
+      }
+      const string sqlInsert2 = "insert into tb_config(name, value) VALUES ('b', 1.1)";
+      using (var command = new SQLiteServerCommand(sqlInsert2, server))
+      {
+        command.ExecuteNonQuery();
+      }
+
+      const string sqlSelect = "SELECT * FROM tb_config";
+      using (var command = new SQLiteServerCommand(sqlSelect, server))
+      {
+        using (var reader = command.ExecuteReader())
+        {
+          Assert.IsTrue(reader.Read());
+          Assert.AreEqual("a", reader.GetString(0));
+          Assert.AreEqual(3.14, reader.GetDouble(1));
+
+          Assert.IsTrue(reader.Read());
+          Assert.AreEqual("b", reader.GetString(0));
+          Assert.AreEqual(1.1, reader.GetDouble(1));
+        }
+      }
+      server.Close();
+    }
+
+    [Test]
     public void ServerGetShortValue()
     {
       var server = CreateConnection();

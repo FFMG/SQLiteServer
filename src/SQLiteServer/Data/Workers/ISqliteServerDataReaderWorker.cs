@@ -76,8 +76,15 @@ namespace SQLiteServer.Data.Workers
     /// Retrieves the column as a long
     /// </summary>
     /// <param name="i">The index of the column.</param>
-    /// <returns>string</returns>
+    /// <returns>long</returns>
     long GetInt64(int i);
+
+    /// <summary>
+    /// Retrieves the column as a double
+    /// </summary>
+    /// <param name="i">The index of the column.</param>
+    /// <returns>double</returns>
+    double GetDouble(int i );
 
     /// <summary>
     /// Get the field type for a given colum

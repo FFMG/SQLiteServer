@@ -227,6 +227,12 @@ namespace SQLiteServer.Data.Workers
     }
 
     /// <inheritdoc />
+    public double GetDouble(int i)
+    {
+      return GetIndexedValue<double>(SQLiteMessage.ExecuteReaderGetDoubleRequest, i);
+    }
+
+    /// <inheritdoc />
     public string GetString(int i)
     {
       return GetIndexedValue<string>(SQLiteMessage.ExecuteReaderGetStringRequest, i);
@@ -272,6 +278,11 @@ namespace SQLiteServer.Data.Workers
         return GetInt64(i);
       }
 
+      if (type == typeof(double))
+      {
+        return GetDouble(i);
+      }
+      
       if (type == typeof(string))
       {
         return GetString(i);

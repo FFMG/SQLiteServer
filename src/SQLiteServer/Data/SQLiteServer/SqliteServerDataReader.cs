@@ -201,6 +201,24 @@ namespace SQLiteServer.Data.SQLiteServer
     }
 
     /// <summary>
+    /// Retrieves the column as double
+    /// </summary>
+    /// <param name="i">The index of the column.</param>
+    /// <returns>double</returns>
+    public double GetDouble(int i)
+    {
+      ThrowIfAny();
+      try
+      {
+        return _worker.GetDouble(i);
+      }
+      catch (Exception e)
+      {
+        throw new SQLiteServerException(e.Message);
+      }
+    }
+
+    /// <summary>
     /// Get the field type for a given colum
     /// </summary>
     /// <param name="i">The index of the column.</param>
