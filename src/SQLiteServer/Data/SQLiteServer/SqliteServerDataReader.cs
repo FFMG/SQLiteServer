@@ -267,6 +267,24 @@ namespace SQLiteServer.Data.SQLiteServer
     }
 
     /// <summary>
+    /// Get the column name.
+    /// </summary>
+    /// <param name="i">The index of the column.</param>
+    /// <returns>string the column name</returns>
+    public string GetName(int i)
+    {
+      ThrowIfAny();
+      try
+      {
+        return _worker.GetName(i);
+      }
+      catch (Exception e)
+      {
+        throw new SQLiteServerException(e.Message);
+      }
+    }
+    
+    /// <summary>
     /// Gets a value that indicates whether the column contains non-existent or missing values.
     /// </summary>
     /// <param name="i"></param>

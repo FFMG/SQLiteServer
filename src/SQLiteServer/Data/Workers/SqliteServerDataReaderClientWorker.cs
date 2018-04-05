@@ -14,6 +14,7 @@
 //    along with SQLiteServer.  If not, see<https://www.gnu.org/licenses/gpl-3.0.en.html>.
 using System;
 using System.Collections.Generic;
+using System.Runtime.InteropServices.WindowsRuntime;
 using System.Text;
 using SQLiteServer.Data.Connections;
 using SQLiteServer.Data.Data;
@@ -30,6 +31,11 @@ namespace SQLiteServer.Data.Workers
     /// Save the ordinal values.
     /// </summary>
     private readonly Dictionary<string, int> _ordinals = new Dictionary<string, int>();
+
+    /// <summary>
+    /// Save the column name.
+    /// </summary>
+    private readonly Dictionary<int, string> _columnName = new Dictionary<int, string>();
 
     /// <summary>
     /// Save the field types.
@@ -328,6 +334,23 @@ namespace SQLiteServer.Data.Workers
     public bool IsDBNull(int i)
     {
       return GetIndexedValue<bool>(SQLiteMessage.ExecuteReaderGetIsDBNullRequest, i);
+    }
+
+    /// <inheritdoc />
+    public string GetName(int i)
+    {
+      if (_columnName.ContainsKey(i))
+      {
+        return _columnName[i];
+      }
+      // get the name
+      var name = GetIndexedValue<string>(SQLiteMessage.ExecuteReaderGetNameRequest, i);
+
+      // set the value
+      _columnName[i] = name;
+
+      // return it.
+      return name;
     }
   }
 }

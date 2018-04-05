@@ -106,6 +106,13 @@ namespace SQLiteServer.Data.Workers
     object GetValue(int i);
 
     /// <summary>
+    /// Get the column name.
+    /// </summary>
+    /// <param name="i">The index of the column.</param>
+    /// <returns>string the column name</returns>
+    string GetName(int i);
+
+    /// <summary>
     /// Gets a value that indicates whether the column contains non-existent or missing values.
     /// </summary>
     /// <param name="i"></param>

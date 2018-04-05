@@ -747,5 +747,147 @@ namespace SQLiteServer.Test.SQLiteServer
       client.Close();
       server.Close();
     }
+
+    [Test]
+    public void ServerGetNameWithoutReadCalled()
+    {
+      var server = CreateConnection();
+      server.Open();
+      const string sqlMaster = "create table tb_config (name varchar(20), value INTEGER)";
+      using (var command = new SQLiteServerCommand(sqlMaster, server))
+      {
+        command.ExecuteNonQuery();
+      }
+
+      const string sqlSelect = "SELECT * FROM tb_config";
+      using (var command = new SQLiteServerCommand(sqlSelect, server))
+      {
+        using (var reader = command.ExecuteReader())
+        {
+          Assert.AreEqual( "name", reader.GetName(0));
+          Assert.AreEqual("value", reader.GetName(1));
+        }
+      }
+      server.Close();
+    }
+
+    [Test]
+    public void ServerGetNameWithReadCalled()
+    {
+      var server = CreateConnection();
+      server.Open();
+      const string sqlMaster = "create table tb_config (name varchar(20), value INTEGER)";
+      using (var command = new SQLiteServerCommand(sqlMaster, server))
+      {
+        command.ExecuteNonQuery();
+      }
+
+      const string sqlInsert1 = "insert into tb_config(name, value) VALUES ('a', NULL )";
+      using (var command = new SQLiteServerCommand(sqlInsert1, server))
+      {
+        command.ExecuteNonQuery();
+      }
+      const string sqlInsert2 = "insert into tb_config(name, value) VALUES ('b', '20')";
+      using (var command = new SQLiteServerCommand(sqlInsert2, server))
+      {
+        command.ExecuteNonQuery();
+      }
+
+      const string sqlSelect = "SELECT * FROM tb_config";
+      using (var command = new SQLiteServerCommand(sqlSelect, server))
+      {
+        using (var reader = command.ExecuteReader())
+        {
+          Assert.IsTrue(reader.Read());
+          Assert.AreEqual("name", reader.GetName(0));
+          Assert.AreEqual("value", reader.GetName(1));
+
+
+          Assert.IsTrue(reader.Read());
+          Assert.AreEqual("name", reader.GetName(0));
+          Assert.AreEqual("value", reader.GetName(1));
+
+          Assert.IsFalse(reader.Read());
+        }
+      }
+      server.Close();
+    }
+
+    [Test]
+    public void ClientGetNameWithoutReadCalled()
+    {
+      var server = CreateConnection();
+      server.Open();
+
+      var client = CreateConnection();
+      client.Open();
+
+      const string sqlMaster = "create table tb_config (name varchar(20), value INTEGER)";
+      using (var command = new SQLiteServerCommand(sqlMaster, client))
+      {
+        command.ExecuteNonQuery();
+      }
+
+      const string sqlSelect = "SELECT * FROM tb_config";
+      using (var command = new SQLiteServerCommand(sqlSelect, client))
+      {
+        using (var reader = command.ExecuteReader())
+        {
+          Assert.AreEqual("name", reader.GetName(0));
+          Assert.AreEqual("value", reader.GetName(1));
+        }
+      }
+
+      client.Close();
+      server.Close();
+    }
+
+    [Test]
+    public void ClientGetNameWithReadCalled()
+    {
+      var server = CreateConnection();
+      server.Open();
+
+      var client = CreateConnection();
+      client.Open();
+
+      const string sqlMaster = "create table tb_config (name varchar(20), value INTEGER)";
+      using (var command = new SQLiteServerCommand(sqlMaster, client))
+      {
+        command.ExecuteNonQuery();
+      }
+
+      const string sqlInsert1 = "insert into tb_config(name, value) VALUES ('a', NULL )";
+      using (var command = new SQLiteServerCommand(sqlInsert1, client))
+      {
+        command.ExecuteNonQuery();
+      }
+      const string sqlInsert2 = "insert into tb_config(name, value) VALUES ('b', '20')";
+      using (var command = new SQLiteServerCommand(sqlInsert2, client))
+      {
+        command.ExecuteNonQuery();
+      }
+
+      const string sqlSelect = "SELECT * FROM tb_config";
+      using (var command = new SQLiteServerCommand(sqlSelect, client))
+      {
+        using (var reader = command.ExecuteReader())
+        {
+          Assert.IsTrue(reader.Read());
+          Assert.AreEqual("name", reader.GetName(0));
+          Assert.AreEqual("value", reader.GetName(1));
+
+
+          Assert.IsTrue(reader.Read());
+          Assert.AreEqual("name", reader.GetName(0));
+          Assert.AreEqual("value", reader.GetName(1));
+
+          Assert.IsFalse(reader.Read());
+        }
+      }
+
+      client.Close();
+      server.Close();
+    }
   }
 }

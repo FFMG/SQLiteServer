@@ -153,5 +153,12 @@ namespace SQLiteServer.Data.Workers
       ThrowIfNoReader();
       return _reader.IsDBNull(i);
     }
+
+    /// <inheritdoc />
+    public string GetName(int i)
+    {
+      ThrowIfNoReader();
+      return _reader.GetName(i);
+    }
   }
 }
