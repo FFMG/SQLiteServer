@@ -154,16 +154,9 @@ namespace SQLiteServer.Data.SQLiteServer
         // we are connecting
         State = ConnectionState.Connecting;
 
-        // wait for a connection.
-        Task.Run(async () =>
-          await _connectionBuilder.ConnectAsync()
-        ).Wait();
-
-        Task.Run(async () =>
-          _worker = await _connectionBuilder.OpenAsync(ConnectionString)
-        ).Wait();
-
-        _worker.Open();
+        // re-open, we will change no state
+        // and we will not check anything,
+        OpenNoStateCheck();
 
         // we are now open
         State = ConnectionState.Open;
@@ -171,9 +164,7 @@ namespace SQLiteServer.Data.SQLiteServer
       catch
       {
         // close whatever might have  been open
-        _connectionBuilder?.Disconnect();
-        _worker?.Close();
-        State = ConnectionState.Broken;
+        OpenError();
         throw;
       }
     }
@@ -183,6 +174,11 @@ namespace SQLiteServer.Data.SQLiteServer
     /// </summary>
     public void Close()
     {
+      // it might sound silly
+      // but if we are connecting, we need to wait a little.
+      // so we don't disconnect ... while connecting.
+      WaitIfConnecting();
+
       // are we open?
       ThrowIfNotOpen();
 
@@ -206,8 +202,86 @@ namespace SQLiteServer.Data.SQLiteServer
       throw new NotSupportedException();
     }
     #endregion
-    
+
     #region Internal functions
+    /// <summary>
+    /// Reopen the connection.
+    /// </summary>
+    internal void ReOpen()
+    {
+      try
+      {
+        // we are connecting
+        State = ConnectionState.Connecting;
+
+        // close everything
+        _connectionBuilder.Disconnect();
+        _worker.Close();
+
+        // re-open, we will change no state
+        // and we will not check anything,
+        OpenNoStateCheck();
+
+        // we re-opened.
+        State = ConnectionState.Open;
+      }
+      catch
+      {
+        // close whatever might have  been open
+        OpenError();
+        throw;
+      }
+    }
+
+    private void OpenError()
+    {
+      _connectionBuilder?.Disconnect();
+      _worker?.Close();
+      _worker = null;
+      State = ConnectionState.Broken;
+    }
+
+    private void OpenNoStateCheck()
+    {
+      // try and re-connect.
+      Task.Run(async () =>
+        await _connectionBuilder.ConnectAsync(this)
+      ).Wait();
+
+      Task.Run(async () =>
+        _worker = await _connectionBuilder.OpenAsync(ConnectionString)
+      ).Wait();
+
+      _worker.Open();
+    }
+
+    /// <summary>
+    /// Do no do anything if we are waiting to reconnect.
+    /// </summary>
+    internal void WaitIfConnecting()
+    {
+      // wait for 30 seconds.
+      if (State != ConnectionState.Connecting)
+      {
+        return;
+      }
+
+      const int timeout = 30000;
+      Task.Run(async () => {
+        var start = DateTime.Now;
+        while (State == ConnectionState.Connecting)
+        {
+          await Task.Delay(100);
+          var elapsed = (DateTime.Now - start).TotalMilliseconds;
+          if (elapsed >= timeout)
+          {
+            // we timed out.
+            break;
+          }
+        }
+      }).Wait();
+    }
+
     /// <summary>
     /// Create a SQL server command.
     /// </summary>
@@ -215,6 +289,7 @@ namespace SQLiteServer.Data.SQLiteServer
     /// <returns></returns>
     internal ISQLiteServerCommandWorker CreateCommand(string commandText)
     {
+      WaitIfConnecting();
       ThrowIfAny();
       return _worker.CreateCommand(commandText);
     }

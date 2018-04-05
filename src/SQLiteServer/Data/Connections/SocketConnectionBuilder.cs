@@ -25,6 +25,11 @@ namespace SQLiteServer.Data.Connections
   {
     #region Private variables
     /// <summary>
+    /// The parent connection.
+    /// </summary>
+    private SQLiteServerConnection _connection;
+
+    /// <summary>
     /// The connection controller.
     /// </summary>
     private ConnectionsController _connectionController;
@@ -64,10 +69,13 @@ namespace SQLiteServer.Data.Connections
     }
 
     /// <inheritdoc />
-    public async Task<bool> ConnectAsync()
+    public async Task<bool> ConnectAsync(SQLiteServerConnection connection)
     {
       // sanity check
       ThrowIfDisposed();
+
+      // save the connection
+      _connection = connection;
 
       // sanity check
       if (_connectionController?.Connected ?? false)
@@ -90,7 +98,6 @@ namespace SQLiteServer.Data.Connections
       {
         throw new SQLiteServerException("Timmed out waiting for update.");
       }
-
       return true;
     }
     
@@ -100,8 +107,18 @@ namespace SQLiteServer.Data.Connections
       // sanity check
       ThrowIfDisposed();
 
+      if (_connectionController != null && _connectionController.Client)
+      {
+        _connectionController.OnServerDisconnect -= OnServerDisconnect;
+      }
+
       _connectionController?.DisConnect();
       _connectionController = null;
+    }
+
+    private void OnServerDisconnect()
+    {
+      _connection?.ReOpen();
     }
 
     /// <inheritdoc />
@@ -112,12 +129,17 @@ namespace SQLiteServer.Data.Connections
 
       // we are now connected, (otherwise we would have thrown).
       // so we can now create the required worker.
+      ISQLiteServerConnectionWorker worker;
       if (_connectionController.Server)
       {
-        return Task.FromResult<ISQLiteServerConnectionWorker>( new SQLiteServerConnectionServerWorker(connectionString, _connectionController)) ;
+        worker = new SQLiteServerConnectionServerWorker(connectionString, _connectionController);
+        return Task.FromResult(worker) ;
       }
 
-      return Task.FromResult<ISQLiteServerConnectionWorker>( new SQLiteServerConnectionClientWorker(_connectionController));
+      _connectionController.OnServerDisconnect += OnServerDisconnect;
+      worker = new SQLiteServerConnectionClientWorker(_connectionController);
+
+      return Task.FromResult(worker);
     }
 
     /// <summary>

@@ -12,8 +12,6 @@
 //
 //    You should have received a copy of the GNU General Public License
 //    along with SQLiteServer.  If not, see<https://www.gnu.org/licenses/gpl-3.0.en.html>.
-using System.IO;
-using System.Net;
 using NUnit.Framework;
 using SQLiteServer.Data.Exceptions;
 using SQLiteServer.Data.SQLiteServer;
@@ -21,39 +19,8 @@ using SQLiteServer.Data.SQLiteServer;
 namespace SQLiteServer.Test.SQLiteServer
 {
   [TestFixture]
-  internal class ReaderTests
+  internal class ReaderTests : Common
   {
-    private static readonly IPAddress Address = IPAddress.Parse("127.0.0.1");
-    private const int Port = 1100;
-    private const int Backlog = 500;
-    private const int HeartBeatTimeOut = 500;
-
-    private string _source;
-
-    [SetUp]
-    public void SetUp()
-    {
-      _source = Path.GetTempFileName();
-    }
-
-    [TearDown]
-    public void TearDown()
-    {
-      try
-      {
-        File.Delete(_source);
-      }
-      catch
-      {
-        // ignored
-      }
-    }
-
-    protected SQLiteServerConnection CreateConnection()
-    {
-      return new SQLiteServerConnection($"Data Source={_source};Version=3;", Address, Port, Backlog, HeartBeatTimeOut);
-    }
-
     [Test]
     public void ClientGetLongValue()
     {
@@ -809,11 +776,13 @@ namespace SQLiteServer.Test.SQLiteServer
             });
         }
       }
-      server.Close();
+
       client.Close();
+      server.Close();
     }
 
     [Test]
+    // ReSharper disable once InconsistentNaming
     public void ServerIsDBNull()
     {
       var server = CreateConnection();
@@ -853,6 +822,7 @@ namespace SQLiteServer.Test.SQLiteServer
     }
 
     [Test]
+    // ReSharper disable once InconsistentNaming
     public void ClientIsDBNull()
     {
       var server = CreateConnection();
@@ -996,6 +966,7 @@ namespace SQLiteServer.Test.SQLiteServer
           });
         }
       }
+      client.Close();
       server.Close();
     }
 
@@ -1025,6 +996,8 @@ namespace SQLiteServer.Test.SQLiteServer
           });
         }
       }
+
+      client.Close();
       server.Close();
     }
 
@@ -1613,6 +1586,51 @@ namespace SQLiteServer.Test.SQLiteServer
 
       client.Close();
       server.Close();
+    }
+
+    [Test]
+    public void ClientBecomesServerWhenTheMasterCloses()
+    {
+      // open a server and client.
+      var server = CreateConnection(); 
+      server.Open();
+      var client = CreateConnection();
+      client.Open();
+
+      const string sqlMaster = "create table tb_config (name varchar(20), value INTEGER)";
+      using (var command = new SQLiteServerCommand(sqlMaster, server)){ command.ExecuteNonQuery(); }
+
+      const string sqlInsert = "insert into tb_config(name, value) VALUES ('a', '10')";
+      using (var command = new SQLiteServerCommand(sqlInsert, client)){ command.ExecuteNonQuery(); }
+
+      // do a select from client to server
+      const string sqlSelect = "SELECT * FROM tb_config";
+      using (var command = new SQLiteServerCommand(sqlSelect, client))
+      {
+        using (var reader = command.ExecuteReader())
+        {
+          while (reader.Read())
+          {
+            Assert.AreEqual("a", reader.GetString(0));
+            Assert.AreEqual(10, reader.GetInt64(1));
+          }
+        }
+      }
+      server.Close();
+
+      // and run the request again.
+      using (var command = new SQLiteServerCommand(sqlSelect, client))
+      {
+        using (var reader = command.ExecuteReader())
+        {
+          while (reader.Read())
+          {
+            Assert.AreEqual("a", reader.GetString(0));
+            Assert.AreEqual(10, reader.GetInt64(1));
+          }
+        }
+      }
+      client.Close();
     }
   }
 }

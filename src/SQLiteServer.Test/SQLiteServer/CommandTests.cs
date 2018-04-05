@@ -12,49 +12,15 @@
 //
 //    You should have received a copy of the GNU General Public License
 //    along with SQLiteServer.  If not, see<https://www.gnu.org/licenses/gpl-3.0.en.html>.
-
 using System;
-using System.IO;
-using System.Net;
 using NUnit.Framework;
 using SQLiteServer.Data.SQLiteServer;
 
 namespace SQLiteServer.Test.SQLiteServer
 {
   [TestFixture]
-  internal class CommandTests
+  internal class CommandTests : Common
   {
-    private static readonly IPAddress Address = IPAddress.Parse("127.0.0.1");
-    private const int Port = 1100;
-    private const int Backlog = 500;
-    private const int HeartBeatTimeOut = 500;
-
-    private string _source;
-
-    [SetUp]
-    public void SetUp()
-    {
-      _source = Path.GetTempFileName();
-    }
-
-    [TearDown]
-    public void TearDown()
-    {
-      try
-      {
-        File.Delete(_source);
-      }
-      catch
-      {
-        // ignored
-      }
-    }
-
-    protected SQLiteServerConnection CreateConnection()
-    {
-      return new SQLiteServerConnection($"Data Source={_source};Version=3;", Address, Port, Backlog, HeartBeatTimeOut);
-    }
-
     [Test]
     public void DbConnectionIsNull()
     {

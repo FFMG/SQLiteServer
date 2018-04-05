@@ -14,6 +14,7 @@
 //    along with SQLiteServer.  If not, see<https://www.gnu.org/licenses/gpl-3.0.en.html>.
 using System;
 using System.Threading.Tasks;
+using SQLiteServer.Data.SQLiteServer;
 using SQLiteServer.Data.Workers;
 
 namespace SQLiteServer.Data.Connections
@@ -23,8 +24,9 @@ namespace SQLiteServer.Data.Connections
     /// <summary>
     /// Start the connection
     /// </summary>
+    /// <param name="connection"></param>
     /// <returns></returns>
-    Task<bool> ConnectAsync();
+    Task<bool> ConnectAsync( SQLiteServerConnection connection );
 
     /// <summary>
     /// Open the database, (assumes that we are connected already).

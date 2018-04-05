@@ -20,39 +20,8 @@ using SQLiteServer.Data.SQLiteServer;
 namespace SQLiteServer.Test.SQLiteServer
 {
   [TestFixture]
-  internal class TypeTests
+  internal class TypeTests : Common
   {
-    private static readonly IPAddress Address = IPAddress.Parse("127.0.0.1");
-    private const int Port = 1100;
-    private const int Backlog = 500;
-    private const int HeartBeatTimeOut = 500;
-
-    private string _source;
-
-    [SetUp]
-    public void SetUp()
-    {
-      _source = Path.GetTempFileName();
-    }
-
-    [TearDown]
-    public void TearDown()
-    {
-      try
-      {
-        File.Delete(_source);
-      }
-      catch
-      {
-        // ignored
-      }
-    }
-
-    protected SQLiteServerConnection CreateConnection()
-    {
-      return new SQLiteServerConnection($"Data Source={_source};Version=3;", Address, Port, Backlog, HeartBeatTimeOut);
-    }
-
     [Test]
     public void ServerGetFieldTypes()
     {

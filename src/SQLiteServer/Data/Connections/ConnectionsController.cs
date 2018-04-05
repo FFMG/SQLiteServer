@@ -334,8 +334,16 @@ namespace SQLiteServer.Data.Connections
     /// </summary>
     private void DisConnectClient()
     {
-      _socket.Shutdown(SocketShutdown.Both);
-      _socket.Close();
+      try
+      {
+        _socket?.Shutdown(SocketShutdown.Both);
+        _socket?.Close();
+      }
+      catch
+      {
+        // ignore
+        // the sockets might be closed alread.
+      }
     }
 
     /// <summary>

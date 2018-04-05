@@ -26,16 +26,25 @@ namespace SQLiteServer.Data.SQLiteServer
     /// </summary>
     private bool _disposed;
 
+    /// <summary>
+    /// The database worker 
+    /// </summary>
     private readonly ISqliteServerDataReaderWorker _worker;
+
+    /// <summary>
+    /// The connection
+    /// </summary>
+    private readonly SQLiteServerConnection _connection;
     #endregion
 
-    internal SqliteServerDataReader(ISqliteServerDataReaderWorker worker )
+    internal SqliteServerDataReader(ISqliteServerDataReaderWorker worker, SQLiteServerConnection connection)
     {
       if (null == worker)
       {
         throw new ArgumentNullException( nameof(worker), "The worker cannot be null");
       }
       _worker = worker;
+      _connection = connection;
     }
 
     /// <summary>
@@ -51,6 +60,14 @@ namespace SQLiteServer.Data.SQLiteServer
       {
         throw new ArgumentNullException(nameof(_worker), "There was an issue creating the worker.");
       }
+    }
+
+    /// <summary>
+    /// Do no do anything if we are waiting to reconnect.
+    /// </summary>
+    private void WaitIfConnecting()
+    {
+      _connection?.WaitIfConnecting();
     }
 
     /// <summary>
@@ -89,6 +106,7 @@ namespace SQLiteServer.Data.SQLiteServer
     /// </summary>
     public void ExecuteReader()
     {
+      WaitIfConnecting();
       ThrowIfAny();
       _worker.ExecuteReader();
     }
@@ -99,6 +117,7 @@ namespace SQLiteServer.Data.SQLiteServer
     /// <returns>True if we have data to read, false otherwise.</returns>
     public bool Read()
     {
+      WaitIfConnecting();
       ThrowIfAny();
       return _worker.Read();
     }
@@ -110,6 +129,7 @@ namespace SQLiteServer.Data.SQLiteServer
     {
       get
       {
+        WaitIfConnecting();
         ThrowIfAny();
         return _worker.FieldCount;
       }
@@ -122,6 +142,7 @@ namespace SQLiteServer.Data.SQLiteServer
     {
       get
       {
+        WaitIfConnecting();
         ThrowIfAny();
         return _worker.HasRows;
       }
@@ -148,6 +169,7 @@ namespace SQLiteServer.Data.SQLiteServer
     /// <returns>int the index</returns>
     public int GetOrdinal(string name)
     {
+      WaitIfConnecting();
       ThrowIfAny();
       return _worker.GetOrdinal(name);
     }
@@ -159,6 +181,7 @@ namespace SQLiteServer.Data.SQLiteServer
     /// <returns>string</returns>
     public string GetString(int i)
     {
+      WaitIfConnecting();
       ThrowIfAny();
       try
       {
@@ -177,6 +200,7 @@ namespace SQLiteServer.Data.SQLiteServer
     /// <returns>short</returns>
     public short GetInt16(int i)
     {
+      WaitIfConnecting();
       ThrowIfAny();
       try
       {
@@ -195,6 +219,7 @@ namespace SQLiteServer.Data.SQLiteServer
     /// <returns>int</returns>
     public int GetInt32(int i)
     {
+      WaitIfConnecting();
       ThrowIfAny();
       try
       {
@@ -213,6 +238,7 @@ namespace SQLiteServer.Data.SQLiteServer
     /// <returns>long</returns>
     public long GetInt64(int i)
     {
+      WaitIfConnecting();
       ThrowIfAny();
       try
       {
@@ -231,6 +257,7 @@ namespace SQLiteServer.Data.SQLiteServer
     /// <returns>double</returns>
     public double GetDouble(int i)
     {
+      WaitIfConnecting();
       ThrowIfAny();
       try
       {
@@ -249,6 +276,7 @@ namespace SQLiteServer.Data.SQLiteServer
     /// <returns></returns>
     public Type GetFieldType(int i)
     {
+      WaitIfConnecting();
       ThrowIfAny();
       try
       {
@@ -267,6 +295,7 @@ namespace SQLiteServer.Data.SQLiteServer
     /// <returns></returns>
     public object GetValue(int i)
     {
+      WaitIfConnecting();
       ThrowIfAny();
       try
       {
@@ -285,6 +314,7 @@ namespace SQLiteServer.Data.SQLiteServer
     /// <returns>string the column name</returns>
     public string GetName(int i)
     {
+      WaitIfConnecting();
       ThrowIfAny();
       try
       {
@@ -304,6 +334,7 @@ namespace SQLiteServer.Data.SQLiteServer
     // ReSharper disable once InconsistentNaming
     public bool IsDBNull(int i)
     {
+      WaitIfConnecting();
       ThrowIfAny();
       try
       {
@@ -322,6 +353,7 @@ namespace SQLiteServer.Data.SQLiteServer
     /// <returns>string the table name</returns>
     public string GetTableName(int i)
     {
+      WaitIfConnecting();
       ThrowIfAny();
       try
       {

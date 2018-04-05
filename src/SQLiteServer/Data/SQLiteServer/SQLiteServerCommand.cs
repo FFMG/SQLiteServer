@@ -94,6 +94,14 @@ namespace SQLiteServer.Data.SQLiteServer
     }
 
     /// <summary>
+    /// Do no do anything if we are waiting to reconnect.
+    /// </summary>
+    private void WaitIfConnecting()
+    {
+      _connection?.WaitIfConnecting();
+    }
+
+    /// <summary>
     /// Throws an exception if anything is wrong.
     /// </summary>
     private void ThrowIfAny()
@@ -155,6 +163,7 @@ namespace SQLiteServer.Data.SQLiteServer
     /// <returns>The number of rows added/deleted/whatever depending on the query.</returns>
     public int ExecuteNonQuery()
     {
+      WaitIfConnecting();
       ThrowIfAnyAndCreateWorker();
       return _worker.ExecuteNonQuery();
     }
@@ -165,12 +174,13 @@ namespace SQLiteServer.Data.SQLiteServer
     /// <returns></returns>
     public SqliteServerDataReader ExecuteReader()
     {
+      WaitIfConnecting();
       ThrowIfAnyAndCreateWorker();
 
       try
       {
         // create the readeer
-        var reader = new SqliteServerDataReader(_worker.CreateReaderWorker());
+        var reader = new SqliteServerDataReader(_worker.CreateReaderWorker(), _connection);
 
         // execute the command
         reader.ExecuteReader();
