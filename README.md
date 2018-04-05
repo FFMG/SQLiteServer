@@ -89,5 +89,4 @@ But I cannot say for certain how much slower it is, your millage may vary ... bu
 * `SqliteServerDataReader` should implement 
   * `IDataReader`
   * `IDisposable`
-  * `IDisposable`
-  * <s>`IDataRecord`</s> 0.1.0.0
+  * `IDataRecord`
