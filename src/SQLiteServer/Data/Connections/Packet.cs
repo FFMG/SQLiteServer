@@ -255,7 +255,18 @@ namespace SQLiteServer.Data.Connections
     {
       try
       {
-        return BitConverter.ToInt16( Payload, 0 );
+        switch (Payload.Length)
+        {
+          case 8:
+            return (short)BitConverter.ToInt64(Payload, 0);
+          case 4:
+            return (short)BitConverter.ToInt32(Payload, 0);
+          case 1:
+            return Payload[0];
+
+          default:
+            return BitConverter.ToInt16(Payload, 0);
+        }
       }
       catch (Exception)
       {
@@ -271,7 +282,18 @@ namespace SQLiteServer.Data.Connections
     {
       try
       {
-        return BitConverter.ToInt32(Payload, 0);
+        switch (Payload.Length)
+        {
+          case 8:
+            return (int)BitConverter.ToInt64(Payload, 0);
+          case 2:
+            return BitConverter.ToInt16(Payload, 0);
+          case 1:
+            return Payload[0];
+
+          default:
+            return BitConverter.ToInt32(Payload, 0);
+        }
       }
       catch (Exception)
       {
@@ -287,7 +309,18 @@ namespace SQLiteServer.Data.Connections
     {
       try
       {
-        return BitConverter.ToInt64(Payload, 0);
+        switch (Payload.Length)
+        {
+          case 4:
+            return BitConverter.ToInt32(Payload, 0);
+          case 2:
+            return BitConverter.ToInt16(Payload, 0);
+          case 1:
+            return Payload[0];
+
+          default:
+            return BitConverter.ToInt64(Payload, 0);
+        }
       }
       catch (Exception)
       {
