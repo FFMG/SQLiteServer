@@ -772,6 +772,114 @@ namespace SQLiteServer.Test.SQLiteServer
     }
 
     [Test]
+    public void ServerGetNameForNonExistentColumn()
+    {
+      var server = CreateConnection();
+      server.Open();
+      const string sqlMaster = "create table tb_config (name varchar(20), value INTEGER)";
+      using (var command = new SQLiteServerCommand(sqlMaster, server))
+      {
+        command.ExecuteNonQuery();
+      }
+
+      const string sqlSelect = "SELECT * FROM tb_config";
+      using (var command = new SQLiteServerCommand(sqlSelect, server))
+      {
+        using (var reader = command.ExecuteReader())
+        {
+         Assert.Throws<SQLiteServerException>(() =>
+         {
+           reader.GetName(12);
+         });
+        }
+      }
+      server.Close();
+    }
+
+    [Test]
+    public void ServerGetNameForNonExistentColumnNegative()
+    {
+      var server = CreateConnection();
+      server.Open();
+      const string sqlMaster = "create table tb_config (name varchar(20), value INTEGER)";
+      using (var command = new SQLiteServerCommand(sqlMaster, server))
+      {
+        command.ExecuteNonQuery();
+      }
+
+      const string sqlSelect = "SELECT * FROM tb_config";
+      using (var command = new SQLiteServerCommand(sqlSelect, server))
+      {
+        using (var reader = command.ExecuteReader())
+        {
+          Assert.Throws<SQLiteServerException>(() =>
+          {
+            reader.GetName(-1);
+          });
+        }
+      }
+      server.Close();
+    }
+
+    [Test]
+    public void ClientGetNameForNonExistentColumn()
+    {
+      var server = CreateConnection();
+      server.Open();
+
+      var client = CreateConnection();
+      client.Open();
+
+      const string sqlMaster = "create table tb_config (name varchar(20), value INTEGER)";
+      using (var command = new SQLiteServerCommand(sqlMaster, client))
+      {
+        command.ExecuteNonQuery();
+      }
+
+      const string sqlSelect = "SELECT * FROM tb_config";
+      using (var command = new SQLiteServerCommand(sqlSelect, client))
+      {
+        using (var reader = command.ExecuteReader())
+        {
+          Assert.Throws<SQLiteServerException>(() =>
+          {
+            reader.GetName(12);
+          });
+        }
+      }
+      server.Close();
+    }
+
+    [Test]
+    public void ClientGetNameForNonExistentColumnNegative()
+    {
+      var server = CreateConnection();
+      server.Open();
+
+      var client = CreateConnection();
+      client.Open();
+
+      const string sqlMaster = "create table tb_config (name varchar(20), value INTEGER)";
+      using (var command = new SQLiteServerCommand(sqlMaster, client))
+      {
+        command.ExecuteNonQuery();
+      }
+
+      const string sqlSelect = "SELECT * FROM tb_config";
+      using (var command = new SQLiteServerCommand(sqlSelect, client))
+      {
+        using (var reader = command.ExecuteReader())
+        {
+          Assert.Throws<SQLiteServerException>(() =>
+          {
+            reader.GetName(-1);
+          });
+        }
+      }
+      server.Close();
+    }
+
+    [Test]
     public void ServerGetNameWithReadCalled()
     {
       var server = CreateConnection();
