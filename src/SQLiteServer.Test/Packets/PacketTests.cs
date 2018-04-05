@@ -340,5 +340,103 @@ namespace SQLiteServer.Test.Packets
       // but try and read it as a long, (8 bytes)
       Assert.That(u.Get<int>() == 12);
     }
+
+    [Test]
+    public void OriginalyStringToInt()
+    {
+      //  save it as an int, (4 bytes)
+      var p = new Packet(SQLiteMessage.ExecuteReaderGetInt16Request, "123");
+      var u = new Packet(p.Packed);
+
+      // but try and read it as a long, (8 bytes)
+      Assert.That(u.Get<int>() == 123);
+    }
+
+    [Test]
+    public void OriginalyTwoByteStringToInt()
+    {
+      //  save it as an int, (4 bytes)
+      var p = new Packet(SQLiteMessage.ExecuteReaderGetInt16Request, "12");
+      var u = new Packet(p.Packed);
+
+      // because this is 2 bytes, the "12" is actually converted to 12849
+      // it is up to the caller to know what packet type they are using.
+      Assert.AreEqual(u.Get<int>(), 12849 );
+      Assert.AreEqual(u.Get<string>(), "12");
+    }
+
+    [Test]
+    public void OriginalyShortToDouble()
+    {
+      //  save it as an int, (4 bytes)
+      var p = new Packet(SQLiteMessage.ExecuteReaderGetInt16Request, (int)12);
+      var u = new Packet(p.Packed);
+
+      Assert.AreEqual(u.Get<double>(), 12);
+    }
+
+    [Test]
+    [Ignore("This test is deliberately ignored, we cannot test 8 bytes long with 8 bytes double...")]
+    public void OriginalyLongToDouble()
+    {
+      //  save it as an int, (4 bytes)
+      var p = new Packet(SQLiteMessage.ExecuteReaderGetInt16Request, (long)12);
+      var u = new Packet(p.Packed);
+
+      Assert.AreEqual(u.Get<double>(), 12);
+    }
+
+    [Test]
+    public void OriginalyByteToDouble()
+    {
+      //  save it as an int, (4 bytes)
+      var p = new Packet(SQLiteMessage.ExecuteReaderGetInt16Request, new byte[] { 12 });
+      var u = new Packet(p.Packed);
+
+      Assert.AreEqual(u.Get<double>(), 12);
+    }
+
+    [Test]
+    public void OriginalyShortToBool()
+    {
+      //  save it as an int, (4 bytes)
+      var p = new Packet(SQLiteMessage.ExecuteReaderGetInt16Request, (short)12);
+      var u = new Packet(p.Packed);
+
+      Assert.AreEqual(u.Get<bool>(), true);
+
+      var p2 = new Packet(SQLiteMessage.ExecuteReaderGetInt16Request, (short)0);
+      var u2 = new Packet(p2.Packed);
+
+      Assert.AreEqual(u2.Get<bool>(), false);
+    }
+
+    [Test]
+    public void OriginalyLongToBool()
+    {
+      var p = new Packet(SQLiteMessage.ExecuteReaderGetInt16Request, (long)12);
+      var u = new Packet(p.Packed);
+
+      Assert.AreEqual(u.Get<bool>(), true);
+
+      var p2 = new Packet(SQLiteMessage.ExecuteReaderGetInt16Request, (long) 0);
+      var u2 = new Packet(p2.Packed);
+
+      Assert.AreEqual(u2.Get<bool>(), false);
+    }
+
+    [Test]
+    public void OriginalyByteToBool()
+    {
+      var p = new Packet(SQLiteMessage.ExecuteReaderGetInt16Request, new byte[] { 12 });
+      var u = new Packet(p.Packed);
+
+      Assert.AreEqual(u.Get<bool>(), true);
+
+      var p2 = new Packet(SQLiteMessage.ExecuteReaderGetInt16Request, new byte[] { 0 });
+      var u2 = new Packet(p2.Packed);
+
+      Assert.AreEqual(u2.Get<bool>(), false);
+    }
   }
 }

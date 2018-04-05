@@ -196,6 +196,12 @@ namespace SQLiteServer.Data.Connections
     public T Get<T>(bool mustThrow = false )
     {
       // string
+      if (typeof(T) == typeof(bool))
+      {
+        return (T)Convert.ChangeType(GetLong(mustThrow) != 0, typeof(T));
+      }
+
+      // string
       if (typeof(T) == typeof(string))
       {
         return (T)Convert.ChangeType( GetString(mustThrow), typeof(T));
@@ -239,7 +245,20 @@ namespace SQLiteServer.Data.Connections
     {
       try
       {
-        return BitConverter.ToDouble(Payload, 0);
+        switch (Payload.Length)
+        {
+          case 8:
+            return BitConverter.ToDouble(Payload, 0);
+          case 4:
+            return BitConverter.ToInt32(Payload, 0);
+          case 2:
+            return BitConverter.ToInt16(Payload, 0);
+          case 1:
+            return Payload[0];
+
+          default:
+            return Convert.ToDouble(GetString(mustThrow));
+        }
       }
       catch (Exception)
       {
@@ -286,13 +305,15 @@ namespace SQLiteServer.Data.Connections
         {
           case 8:
             return (int)BitConverter.ToInt64(Payload, 0);
+          case 4:
+            return BitConverter.ToInt32(Payload, 0);
           case 2:
             return BitConverter.ToInt16(Payload, 0);
           case 1:
             return Payload[0];
 
           default:
-            return BitConverter.ToInt32(Payload, 0);
+            return Convert.ToInt32( GetString(mustThrow) );
         }
       }
       catch (Exception)
