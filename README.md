@@ -65,21 +65,29 @@ I have no idea, but the process that owns the SQLite connection is definitely fa
 But I cannot say for certain how much slower it is, your millage may vary ... but I would be curious to run some proper tests.
 
 # Todo
-- A couple of common SQLite commands are missing.
- - <s>IsDBNull( idx )</s> 0.1.1.0
- - HasRows
- - <s>FieldCount</s> 0.1.1.0
- - <s>GetName( idx )</s> 0.1.1.0
- - GetTableName( idx )
-- Less important
- - GetBoolean( idx )
- - GetByte( idx )
- - GetChar( idx )
- - GetDateTime( idx )
- - GetDecimal( idx )
- - <s>GetDouble( idx )</s> 0.1.1.0
- - GetFloat( idx )
-- Namepipe might be faster, need to investigate more.
-- Create Nuget package
-- Some code cleanup
-- Performance testing/report.
+## A couple of common SQLite commands are missing.
+* <s>IsDBNull( idx )</s> 0.1.1.0
+* HasRows
+* <s>FieldCount</s> 0.1.1.0
+* <s>GetName( idx )</s> 0.1.1.0
+* GetTableName( idx )
+
+## A little less important, (but still need to be added)
+* GetBoolean( idx )
+* GetByte( idx )
+* GetChar( idx )
+* GetDateTime( idx )
+* GetDecimal( idx )
+* <s>GetDouble( idx )</s> 0.1.1.0
+* GetFloat( idx )
+
+## Other
+* Namepipe might be faster, need to investigate more.
+* Create Nuget package
+* Some code cleanup
+* Performance testing/report.
+* `SqliteServerDataReader` should implement 
+  * `IDataReader`
+  * `IDisposable`
+  * `IDisposable`
+  * <s>`IDataRecord`</s> 0.1.0.0
