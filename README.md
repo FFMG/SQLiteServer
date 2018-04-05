@@ -86,7 +86,6 @@ But I cannot say for certain how much slower it is, your millage may vary ... bu
 * Create Nuget package
 * Some code cleanup
 * Performance testing/report.
-* `SqliteServerDataReader` should implement 
-  * `IDataReader`
-  * `IDisposable`
-  * `IDataRecord`
+* `SQLiteServerConnection` should implement `DbConnection`
+* `SQLiteServerCommand` should implement `DbCommand`
+* `SqliteServerDataReader` should implement `DbDataReader`

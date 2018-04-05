@@ -25,7 +25,7 @@ namespace SQLiteServer.Data.SQLiteServer
     /// <summary>
     /// The command worker.
     /// </summary>
-    private readonly ISQLiteServerCommandWorker _worker;
+    private ISQLiteServerCommandWorker _worker;
 
     /// <summary>
     /// Have we disposed of everything?
@@ -35,7 +35,12 @@ namespace SQLiteServer.Data.SQLiteServer
     /// <summary>
     /// The command we want to run
     /// </summary>
-    private readonly string _commandText;
+    public string CommandText { get; set; }
+
+    /// <summary>
+    /// Get set the command time out.
+    /// </summary>
+    public int CommandTimeout { get; set; }
 
     /// <summary>
     /// The SQLite server connection.
@@ -43,16 +48,24 @@ namespace SQLiteServer.Data.SQLiteServer
     private readonly SQLiteServerConnection _connection;
     #endregion
 
+    public SQLiteServerCommand() : this( null, null )
+    {
+    }
+
+    public SQLiteServerCommand(SQLiteServerConnection connection) : this(null, connection)
+    {
+    }
+
     public SQLiteServerCommand(string commandText, SQLiteServerConnection connection)
     {
       _connection = connection;
-      _commandText = commandText;
-      _worker = connection.CreateCommand(commandText );
+      CommandText = commandText;
     }
 
     /// <summary>
     /// Throws an exception if we are trying to execute something 
     /// After this has been disposed.
+    /// Or if the connection/commandtext is not ready.
     /// </summary>
     private void ThrowIfDisposed()
     {
@@ -63,12 +76,58 @@ namespace SQLiteServer.Data.SQLiteServer
     }
 
     /// <summary>
+    /// Throws an exception if we are trying to execute something 
+    /// After this has been disposed.
+    /// Or if the connection/commandtext is not ready.
+    /// If the worker as not been created ... we will do so now.
+    /// </summary>
+    private void ThrowIfAnyAndCreateWorker()
+    {
+      // Throw if any ...
+      ThrowIfAny();
+
+      // or create the worker if neeeded.
+      if (null == _worker)
+      {
+        _worker = _connection.CreateCommand(CommandText);
+      }
+    }
+
+    /// <summary>
     /// Throws an exception if anything is wrong.
     /// </summary>
     private void ThrowIfAny()
     {
       // disposed?
       ThrowIfDisposed();
+
+      // valid transaction?
+      ThrowIfBadConnection();
+
+      // valid transaction?
+      ThrowIfBadCommand();
+    }
+
+    /// <summary>
+    /// Throw if the command is invalid.
+    /// </summary>
+    private void ThrowIfBadCommand()
+    {
+      if (string.IsNullOrWhiteSpace(CommandText))
+      {
+        throw new InvalidOperationException("CommandText must be specified");
+      }
+    }
+    
+    /// <summary>
+    /// Throw if the database is not ready.
+    /// </summary>
+    private void ThrowIfBadConnection()
+    {
+      if (null == _connection)
+      {
+        throw new InvalidOperationException("The DBConnection must be non null.");
+      }
     }
 
     public void Dispose()
@@ -81,7 +140,7 @@ namespace SQLiteServer.Data.SQLiteServer
 
       try
       {
-        _worker.Dispose();
+        _worker?.Dispose();
       }
       finally
       {
@@ -96,7 +155,7 @@ namespace SQLiteServer.Data.SQLiteServer
     /// <returns>The number of rows added/deleted/whatever depending on the query.</returns>
     public int ExecuteNonQuery()
     {
-      ThrowIfAny();
+      ThrowIfAnyAndCreateWorker();
       return _worker.ExecuteNonQuery();
     }
 
@@ -106,7 +165,8 @@ namespace SQLiteServer.Data.SQLiteServer
     /// <returns></returns>
     public SqliteServerDataReader ExecuteReader()
     {
-      ThrowIfAny();
+      ThrowIfAnyAndCreateWorker();
+
       try
       {
         // create the readeer
