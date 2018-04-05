@@ -69,7 +69,7 @@ But I cannot say for certain how much slower it is, your millage may vary ... bu
  - <s>IsDBNull( idx )</s> 0.1.1.0
  - HasRows
  - <s>FieldCount</s> 0.1.1.0
-  - GetName( idx )
+ - <s>GetName( idx )</s> 0.1.1.0
  - GetTableName( idx )
 - Less important
  - GetBoolean( idx )
