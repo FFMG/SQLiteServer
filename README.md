@@ -70,7 +70,7 @@ But I cannot say for certain how much slower it is, your millage may vary ... bu
 * HasRows
 * <s>FieldCount</s> 0.1.1.0
 * <s>GetName( idx )</s> 0.1.1.0
-* GetTableName( idx )
+* <s>GetTableName( idx )</s> 0.1.1.0
 
 ## A little less important, (but still need to be added)
 * GetBoolean( idx )

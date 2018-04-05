@@ -1047,5 +1047,356 @@ namespace SQLiteServer.Test.SQLiteServer
       client.Close();
       server.Close();
     }
+
+    [Test]
+    public void ClientGetTableNameWithReadCalled()
+    {
+      var server = CreateConnection();
+      server.Open();
+
+      var client = CreateConnection();
+      client.Open();
+
+      const string sqlMaster = "create table tb_config (name varchar(20), value INTEGER)";
+      using (var command = new SQLiteServerCommand(sqlMaster, client))
+      {
+        command.ExecuteNonQuery();
+      }
+
+      const string sqlInsert1 = "insert into tb_config(name, value) VALUES ('a', NULL )";
+      using (var command = new SQLiteServerCommand(sqlInsert1, client))
+      {
+        command.ExecuteNonQuery();
+      }
+      const string sqlInsert2 = "insert into tb_config(name, value) VALUES ('b', '20')";
+      using (var command = new SQLiteServerCommand(sqlInsert2, client))
+      {
+        command.ExecuteNonQuery();
+      }
+
+      const string sqlSelect = "SELECT * FROM tb_config";
+      using (var command = new SQLiteServerCommand(sqlSelect, client))
+      {
+        using (var reader = command.ExecuteReader())
+        {
+          Assert.IsTrue(reader.Read());
+          Assert.AreEqual("name", reader.GetName(0));
+          Assert.AreEqual("tb_config", reader.GetTableName(0));
+          Assert.AreEqual("tb_config", reader.GetTableName(1));
+
+          Assert.IsTrue(reader.Read());
+          Assert.AreEqual("name", reader.GetName(0));
+          Assert.AreEqual("value", reader.GetName(1));
+          Assert.AreEqual("tb_config", reader.GetTableName(0));
+          Assert.AreEqual("tb_config", reader.GetTableName(1));
+
+          Assert.IsFalse(reader.Read());
+        }
+      }
+
+      client.Close();
+      server.Close();
+    }
+
+    [Test]
+    public void ClientGetTableNameWithReadNotCalled()
+    {
+      var server = CreateConnection();
+      server.Open();
+
+      var client = CreateConnection();
+      client.Open();
+
+      const string sqlMaster = "create table tb_config (name varchar(20), value INTEGER)";
+      using (var command = new SQLiteServerCommand(sqlMaster, client))
+      {
+        command.ExecuteNonQuery();
+      }
+
+      const string sqlSelect = "SELECT * FROM tb_config";
+      using (var command = new SQLiteServerCommand(sqlSelect, client))
+      {
+        using (var reader = command.ExecuteReader())
+        {
+          Assert.AreEqual("name", reader.GetName(0));
+          Assert.AreEqual("tb_config", reader.GetTableName(0));
+          Assert.AreEqual("tb_config", reader.GetTableName(1));
+        }
+      }
+
+      client.Close();
+      server.Close();
+    }
+
+    [Test]
+    public void ServerGetTableNameMultipleTables()
+    {
+      var server = CreateConnection();
+      server.Open();
+
+      var sql = "create table tb_A (name varchar(20), value INTEGER)";
+      using (var command = new SQLiteServerCommand(sql, server)) { command.ExecuteNonQuery(); }
+
+      sql = "create table tb_B (name varchar(20), value INTEGER)";
+      using (var command = new SQLiteServerCommand(sql, server)) { command.ExecuteNonQuery(); }
+
+      const string sqlSelect = "SELECT * FROM tb_A, tb_B where tb_A.name = tb_B.name;";
+      using (var command = new SQLiteServerCommand(sqlSelect, server))
+      {
+        using (var reader = command.ExecuteReader())
+        {
+          Assert.AreEqual("tb_A", reader.GetTableName(0));  // A.Name
+          Assert.AreEqual("tb_A", reader.GetTableName(1));  // A.Value
+
+          Assert.AreEqual("tb_B", reader.GetTableName(2));  // B.Name
+          Assert.AreEqual("tb_B", reader.GetTableName(3));  // B.Value
+        }
+      }
+      server.Close();
+    }
+
+    [Test]
+    public void ServerGetTableNameMultipleTablesWithAlias()
+    {
+      var server = CreateConnection();
+      server.Open();
+
+      var sql = "create table tb_A (name varchar(20), value INTEGER)";
+      using (var command = new SQLiteServerCommand(sql, server)) { command.ExecuteNonQuery(); }
+
+      sql = "create table tb_B (name varchar(20), value INTEGER)";
+      using (var command = new SQLiteServerCommand(sql, server)) { command.ExecuteNonQuery(); }
+
+      const string sqlSelect = "SELECT * FROM tb_A A, tb_B B where A.name = B.name;";
+      using (var command = new SQLiteServerCommand(sqlSelect, server))
+      {
+        using (var reader = command.ExecuteReader())
+        {
+          Assert.AreEqual("tb_A", reader.GetTableName(0));  // A.Name
+          Assert.AreEqual("tb_A", reader.GetTableName(1));  // A.Value
+
+          Assert.AreEqual("tb_B", reader.GetTableName(2));  // B.Name
+          Assert.AreEqual("tb_B", reader.GetTableName(3));  // B.Value
+        }
+      }
+      server.Close();
+    }
+
+    [Test]
+    public void ClientGetTableNameMultipleTables()
+    {
+      var server = CreateConnection();
+      server.Open();
+
+      var client = CreateConnection();
+      client.Open();
+
+      var sql = "create table tb_A (name varchar(20), value INTEGER)";
+      using (var command = new SQLiteServerCommand(sql, client)){command.ExecuteNonQuery();}
+
+      sql = "create table tb_B (name varchar(20), value INTEGER)";
+      using (var command = new SQLiteServerCommand(sql, client)) { command.ExecuteNonQuery(); }
+
+      const string sqlSelect = "SELECT * FROM tb_A, tb_B where tb_A.name = tb_B.name;";
+      using (var command = new SQLiteServerCommand(sqlSelect, client))
+      {
+        using (var reader = command.ExecuteReader())
+        {
+          Assert.AreEqual("tb_A", reader.GetTableName(0));  // A.Name
+          Assert.AreEqual("tb_A", reader.GetTableName(1));  // A.Value
+
+          Assert.AreEqual("tb_B", reader.GetTableName(2));  // B.Name
+          Assert.AreEqual("tb_B", reader.GetTableName(3));  // B.Value
+        }
+      }
+      client.Close();
+      server.Close();
+    }
+
+    [Test]
+    public void ClientGetTableNameMultipleTablesAndAlias()
+    {
+      var server = CreateConnection();
+      server.Open();
+
+      var client = CreateConnection();
+      client.Open();
+
+      var sql = "create table tb_A (name varchar(20), value INTEGER)";
+      using (var command = new SQLiteServerCommand(sql, client)) { command.ExecuteNonQuery(); }
+
+      sql = "create table tb_B (name varchar(20), value INTEGER)";
+      using (var command = new SQLiteServerCommand(sql, client)) { command.ExecuteNonQuery(); }
+
+      const string sqlSelect = "SELECT A.Name, B.Name FROM tb_A A, tb_B B where A.name = B.name;";
+      using (var command = new SQLiteServerCommand(sqlSelect, client))
+      {
+        using (var reader = command.ExecuteReader())
+        {
+          Assert.AreEqual("tb_A", reader.GetTableName(0));  // A.Name
+          Assert.AreEqual("tb_B", reader.GetTableName(1));  // B.Name
+        }
+      }
+      client.Close();
+      server.Close();
+    }
+
+    [Test]
+    public void ServerGetTableNameWithReadCalled()
+    {
+      var server = CreateConnection();
+      server.Open();
+
+      const string sqlMaster = "create table tb_config (name varchar(20), value INTEGER)";
+      using (var command = new SQLiteServerCommand(sqlMaster, server))
+      {
+        command.ExecuteNonQuery();
+      }
+
+      const string sqlInsert1 = "insert into tb_config(name, value) VALUES ('a', NULL )";
+      using (var command = new SQLiteServerCommand(sqlInsert1, server))
+      {
+        command.ExecuteNonQuery();
+      }
+      const string sqlInsert2 = "insert into tb_config(name, value) VALUES ('b', '20')";
+      using (var command = new SQLiteServerCommand(sqlInsert2, server))
+      {
+        command.ExecuteNonQuery();
+      }
+
+      const string sqlSelect = "SELECT * FROM tb_config";
+      using (var command = new SQLiteServerCommand(sqlSelect, server))
+      {
+        using (var reader = command.ExecuteReader())
+        {
+          Assert.IsTrue(reader.Read());
+          Assert.AreEqual("name", reader.GetName(0));
+          Assert.AreEqual("tb_config", reader.GetTableName(0));
+          Assert.AreEqual("tb_config", reader.GetTableName(1));
+
+          Assert.IsTrue(reader.Read());
+          Assert.AreEqual("name", reader.GetName(0));
+          Assert.AreEqual("value", reader.GetName(1));
+          Assert.AreEqual("tb_config", reader.GetTableName(0));
+          Assert.AreEqual("tb_config", reader.GetTableName(1));
+
+          Assert.IsFalse(reader.Read());
+        }
+      }
+      server.Close();
+    }
+
+    [Test]
+    public void ServerGetTableNameWithReadNotCalled()
+    {
+      var server = CreateConnection();
+      server.Open();
+
+      const string sqlMaster = "create table tb_config (name varchar(20), value INTEGER)";
+      using (var command = new SQLiteServerCommand(sqlMaster, server))
+      {
+        command.ExecuteNonQuery();
+      }
+
+      const string sqlInsert1 = "insert into tb_config(name, value) VALUES ('a', NULL )";
+      using (var command = new SQLiteServerCommand(sqlInsert1, server))
+      {
+        command.ExecuteNonQuery();
+      }
+      const string sqlInsert2 = "insert into tb_config(name, value) VALUES ('b', '20')";
+      using (var command = new SQLiteServerCommand(sqlInsert2, server))
+      {
+        command.ExecuteNonQuery();
+      }
+
+      const string sqlSelect = "SELECT * FROM tb_config";
+      using (var command = new SQLiteServerCommand(sqlSelect, server))
+      {
+        using (var reader = command.ExecuteReader())
+        {
+          Assert.AreEqual("name", reader.GetName(0));
+          Assert.AreEqual("tb_config", reader.GetTableName(0));
+          Assert.AreEqual("tb_config", reader.GetTableName(1));
+        }
+      }
+      server.Close();
+    }
+
+    [Test]
+    public void ServerGetTableNameInvalidColumnNumber()
+    {
+      var server = CreateConnection();
+      server.Open();
+
+      const string sqlMaster = "create table tb_config (name varchar(20), value INTEGER)";
+      using (var command = new SQLiteServerCommand(sqlMaster, server))
+      {
+        command.ExecuteNonQuery();
+      }
+
+      const string sqlInsert1 = "insert into tb_config(name, value) VALUES ('a', NULL )";
+      using (var command = new SQLiteServerCommand(sqlInsert1, server))
+      {
+        command.ExecuteNonQuery();
+      }
+      const string sqlInsert2 = "insert into tb_config(name, value) VALUES ('b', '20')";
+      using (var command = new SQLiteServerCommand(sqlInsert2, server))
+      {
+        command.ExecuteNonQuery();
+      }
+
+      const string sqlSelect = "SELECT * FROM tb_config";
+      using (var command = new SQLiteServerCommand(sqlSelect, server))
+      {
+        using (var reader = command.ExecuteReader())
+        {
+          Assert.AreEqual("name", reader.GetName(0));
+          Assert.AreEqual("tb_config", reader.GetTableName(0));
+          Assert.AreEqual(string.Empty, reader.GetTableName(12));
+        }
+      }
+      server.Close();
+    }
+
+    [Test]
+    public void ClientGetTableNameInvalidColumnNumber()
+    {
+      var server = CreateConnection();
+      server.Open();
+
+      var client = CreateConnection();
+      client.Open();
+
+      const string sqlMaster = "create table tb_config (name varchar(20), value INTEGER)";
+      using (var command = new SQLiteServerCommand(sqlMaster, client))
+      {
+        command.ExecuteNonQuery();
+      }
+
+      const string sqlInsert1 = "insert into tb_config(name, value) VALUES ('a', NULL )";
+      using (var command = new SQLiteServerCommand(sqlInsert1, client))
+      {
+        command.ExecuteNonQuery();
+      }
+      const string sqlInsert2 = "insert into tb_config(name, value) VALUES ('b', '20')";
+      using (var command = new SQLiteServerCommand(sqlInsert2, client))
+      {
+        command.ExecuteNonQuery();
+      }
+
+      const string sqlSelect = "SELECT * FROM tb_config";
+      using (var command = new SQLiteServerCommand(sqlSelect, client))
+      {
+        using (var reader = command.ExecuteReader())
+        {
+          Assert.AreEqual("name", reader.GetName(0));
+          Assert.AreEqual("tb_config", reader.GetTableName(0));
+          Assert.AreEqual(string.Empty, reader.GetTableName(12));
+        }
+      }
+
+      client.Close();
+      server.Close();
+    }
   }
 }

@@ -113,6 +113,13 @@ namespace SQLiteServer.Data.Workers
     string GetName(int i);
 
     /// <summary>
+    /// Get the table name for a selected column.
+    /// </summary>
+    /// <param name="i"></param>
+    /// <returns>string the table name</returns>
+    string GetTableName(int i);
+
+    /// <summary>
     /// Gets a value that indicates whether the column contains non-existent or missing values.
     /// </summary>
     /// <param name="i"></param>

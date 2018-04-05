@@ -302,5 +302,23 @@ namespace SQLiteServer.Data.SQLiteServer
         throw new SQLiteServerException(e.Message);
       }
     }
+
+    /// <summary>
+    /// Get the table name for a selected column.
+    /// </summary>
+    /// <param name="i"></param>
+    /// <returns>string the table name</returns>
+    public string GetTableName(int i)
+    {
+      ThrowIfAny();
+      try
+      {
+        return _worker.GetTableName(i);
+      }
+      catch (Exception e)
+      {
+        throw new SQLiteServerException(e.Message);
+      }
+    }
   }
 }

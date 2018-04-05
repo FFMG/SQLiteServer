@@ -14,7 +14,6 @@
 //    along with SQLiteServer.  If not, see<https://www.gnu.org/licenses/gpl-3.0.en.html>.
 using System;
 using System.Collections.Generic;
-using System.Runtime.InteropServices.WindowsRuntime;
 using System.Text;
 using SQLiteServer.Data.Connections;
 using SQLiteServer.Data.Data;
@@ -37,6 +36,11 @@ namespace SQLiteServer.Data.Workers
     /// </summary>
     private readonly Dictionary<int, string> _columnName = new Dictionary<int, string>();
 
+    /// <summary>
+    /// Save the table name for that column.
+    /// </summary>
+    private readonly Dictionary<int, string> _columnTableName = new Dictionary<int, string>();
+    
     /// <summary>
     /// Save the field types.
     /// </summary>
@@ -348,6 +352,26 @@ namespace SQLiteServer.Data.Workers
 
       // set the value
       _columnName[i] = name;
+
+      // return it.
+      return name;
+    }
+
+    /// <inheritdoc />
+    public string GetTableName(int i)
+    {
+      if (_columnTableName.ContainsKey(i))
+      {
+        return _columnTableName[i];
+      }
+      // get the name
+      var name = GetIndexedValue<string>(SQLiteMessage.ExecuteReaderGetTableNameRequest, i);
+
+      // the name cannot be null
+      name = name ?? string.Empty;
+
+      // set the value
+      _columnTableName[i] = name;
 
       // return it.
       return name;
