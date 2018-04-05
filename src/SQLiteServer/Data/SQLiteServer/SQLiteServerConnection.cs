@@ -13,6 +13,7 @@
 //    You should have received a copy of the GNU General Public License
 //    along with SQLiteServer.  If not, see<https://www.gnu.org/licenses/gpl-3.0.en.html>.
 using System;
+using System.Data;
 using System.Net;
 using System.Threading.Tasks;
 using SQLiteServer.Data.Connections;
@@ -23,7 +24,7 @@ namespace SQLiteServer.Data.SQLiteServer
   // ReSharper disable once InconsistentNaming
   public sealed class SQLiteServerConnection : ICloneable, IDisposable
   {
-    #region Private Variables
+    #region Private 
     /// <summary>
     /// The connection builder
     /// </summary>
@@ -35,14 +36,26 @@ namespace SQLiteServer.Data.SQLiteServer
     private ISQLiteServerConnectionWorker _worker;
 
     /// <summary>
-    /// The connection string as given to us.
-    /// </summary>
-    private readonly string _givenConnectionString;
-
-    /// <summary>
     /// Have we disposed of everything?
     /// </summary>
     private bool _disposed;
+    #endregion
+
+    #region Public
+    /// <summary>
+    /// The given connection string
+    /// </summary>
+    public string ConnectionString { get; set; }
+
+    public string Database { get { throw new NotSupportedException(); } }
+
+    /// <summary>
+    /// Get the current property
+    /// </summary>
+    // ReSharper disable once ConvertToAutoProperty
+    public ConnectionState State { get; private set; }
+
+    public string ServerVersion { get { throw new NotSupportedException(); } }
     #endregion
 
     public SQLiteServerConnection(string connectionString, IPAddress address, int port, int backlog, int heartBeatTimeOutInMs) :
@@ -53,7 +66,8 @@ namespace SQLiteServer.Data.SQLiteServer
     internal SQLiteServerConnection(string connectionString, IConnectionBuilder connectionBuilder)
     {
       _connectionBuilder = connectionBuilder;
-      _givenConnectionString = connectionString;
+      ConnectionString = connectionString;
+      State = ConnectionState.Closed;
     }
 
     #region Validations
@@ -75,6 +89,11 @@ namespace SQLiteServer.Data.SQLiteServer
     /// </summary>
     private void ThrowIfNotOpen()
     {
+      if (State != ConnectionState.Open)
+      {
+        throw new InvalidOperationException("Source database is not open.");
+      }
+      
       if (null == _worker)
       {
         throw new InvalidOperationException( "The worker is not ready, has the datbase been open?");
@@ -109,6 +128,7 @@ namespace SQLiteServer.Data.SQLiteServer
 
       try
       {
+        State = ConnectionState.Closed;
         _connectionBuilder.Dispose();
       }
       finally
@@ -124,16 +144,38 @@ namespace SQLiteServer.Data.SQLiteServer
     /// </summary>
     public void Open()
     {
-      // wait for a connection.
-      Task.Run(async () =>
-        await _connectionBuilder.ConnectAsync()
-      ).Wait();
+      if (State != ConnectionState.Closed)
+      {
+        throw new InvalidOperationException($"Cannot Open the database is not closed : {State}");
+      }
 
-      Task.Run(async () =>
-        _worker = await _connectionBuilder.OpenAsync( _givenConnectionString )
-      ).Wait();
+      try
+      {
+        // we are connecting
+        State = ConnectionState.Connecting;
 
-      _worker.Open();
+        // wait for a connection.
+        Task.Run(async () =>
+          await _connectionBuilder.ConnectAsync()
+        ).Wait();
+
+        Task.Run(async () =>
+          _worker = await _connectionBuilder.OpenAsync(ConnectionString)
+        ).Wait();
+
+        _worker.Open();
+
+        // we are now open
+        State = ConnectionState.Open;
+      }
+      catch
+      {
+        // close whatever might have  been open
+        _connectionBuilder?.Disconnect();
+        _worker?.Close();
+        State = ConnectionState.Broken;
+        throw;
+      }
     }
 
     /// <summary>
@@ -144,11 +186,24 @@ namespace SQLiteServer.Data.SQLiteServer
       // are we open?
       ThrowIfNotOpen();
 
-      // close the worker.
-      _worker?.Close();
+      try
+      {
 
-      // disconnect everything
-      _connectionBuilder.Disconnect();
+        // close the worker.
+        _worker?.Close();
+
+        // disconnect everything
+        _connectionBuilder.Disconnect();
+      }
+      finally
+      {
+        State = ConnectionState.Closed;
+      }
+    }
+
+    public void ChangeDatabase(string databaseName)
+    {
+      throw new NotSupportedException();
     }
     #endregion
     

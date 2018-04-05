@@ -102,7 +102,7 @@ namespace SQLiteServer.Data.Workers
       //  is the database ready?
       if (_connection.State != ConnectionState.Open )
       {
-        throw new InvalidOperationException("The connection is not ready, has the datbase been open?");
+        throw new InvalidOperationException( $"The connection is not ready, has the datbase been open ({_connection.State})?");
       }
     }
 
