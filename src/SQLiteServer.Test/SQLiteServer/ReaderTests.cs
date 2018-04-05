@@ -575,6 +575,56 @@ namespace SQLiteServer.Test.SQLiteServer
     }
 
     [Test]
+    public void ServerGetOrdinalNonExistentValues()
+    {
+      var server = CreateConnection();
+      server.Open();
+      const string sqlMaster = "create table tb_config (name varchar(20), value INTEGER)";
+      using (var command = new SQLiteServerCommand(sqlMaster, server))
+      {
+        command.ExecuteNonQuery();
+      }
+
+      const string sqlSelect = "SELECT name, value FROM tb_config";
+      using (var command = new SQLiteServerCommand(sqlSelect, server))
+      {
+        using (var reader = command.ExecuteReader())
+        {
+          Assert.AreEqual( -1,  reader.GetOrdinal("blah") );
+        }
+      }
+      server.Close();
+    }
+
+    [Test]
+    public void ClientGetOrdinalNonExistentValues()
+    {
+      var server = CreateConnection();
+      server.Open();
+
+      var client = CreateConnection();
+      client.Open();
+
+      const string sqlMaster = "create table tb_config (name varchar(20), value INTEGER)";
+      using (var command = new SQLiteServerCommand(sqlMaster, client))
+      {
+        command.ExecuteNonQuery();
+      }
+
+      const string sqlSelect = "SELECT name, value FROM tb_config";
+      using (var command = new SQLiteServerCommand(sqlSelect, client))
+      {
+        using (var reader = command.ExecuteReader())
+        {
+          Assert.AreEqual(-1, reader.GetOrdinal("blah"));
+        }
+      }
+
+      client.Close();
+      server.Close();
+    }
+
+    [Test]
     public void ClientGetOrdinal()
     {
       var server = CreateConnection();
