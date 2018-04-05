@@ -86,6 +86,16 @@ namespace SQLiteServer.Data.Workers
     }
 
     /// <inheritdoc />
+    public bool HasRows
+    {
+      get
+      {
+        ThrowIfNoReader();
+        return _reader.HasRows;
+      }
+    }
+
+    /// <inheritdoc />
     public object this[int i] => GetValue(i);
 
     /// <inheritdoc />

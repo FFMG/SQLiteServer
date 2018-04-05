@@ -53,6 +53,12 @@ namespace SQLiteServer.Data.Workers
     private int? _fieldCount;
 
     /// <summary>
+    /// Check if we have any rows.
+    /// If the value is null, we will ask the server, otherwise it is cached.
+    /// </summary>
+    private bool? _hasRows;
+
+    /// <summary>
     /// The SQLite Connection
     /// </summary>
     private readonly ConnectionsController _controller;
@@ -124,7 +130,21 @@ namespace SQLiteServer.Data.Workers
         _fieldCount = GetGuiOnlyValue<int>(SQLiteMessage.ExecuteReaderFieldCountRequest);
         return (int)_fieldCount;
       }
-    } 
+    }
+
+    /// <inheritdoc />
+    public bool HasRows
+    {
+      get
+      {
+        if (_hasRows != null)
+        {
+          return (bool)_hasRows;
+        }
+        _hasRows = GetGuiOnlyValue<bool>(SQLiteMessage.ExecuteReaderHasRowsRequest);
+        return (bool)_hasRows;
+      }
+    }
 
     /// <inheritdoc />
     public object this[int ordinal] => GetValue(ordinal);

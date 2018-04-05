@@ -66,20 +66,20 @@ But I cannot say for certain how much slower it is, your millage may vary ... bu
 
 # Todo
 ## A couple of common SQLite commands are missing.
-* <s>IsDBNull( idx )</s> 0.1.1.0
-* HasRows
-* <s>FieldCount</s> 0.1.1.0
-* <s>GetName( idx )</s> 0.1.1.0
-* <s>GetTableName( idx )</s> 0.1.1.0
+* <s>`IsDBNull( idx )`</s> 0.1.1.0
+* <s>`HasRows`</s> 0.1.1.0
+* <s>`FieldCount`</s> 0.1.1.0
+* <s>`GetName( idx )`</s> 0.1.1.0
+* <s>`GetTableName( idx )`</s> 0.1.1.0
 
 ## A little less important, (but still need to be added)
-* GetBoolean( idx )
-* GetByte( idx )
-* GetChar( idx )
-* GetDateTime( idx )
-* GetDecimal( idx )
-* <s>GetDouble( idx )</s> 0.1.1.0
-* GetFloat( idx )
+* `GetBoolean( idx )`
+* `GetByte( idx )`
+* `GetChar( idx )`
+* `GetDateTime( idx )`
+* `GetDecimal( idx )`
+* <s>`GetDouble( idx )`</s> 0.1.1.0
+* `GetFloat( idx )`
 
 ## Other
 * Namepipe might be faster, need to investigate more.

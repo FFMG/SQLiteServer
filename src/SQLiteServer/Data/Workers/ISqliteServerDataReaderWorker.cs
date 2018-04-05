@@ -38,6 +38,11 @@ namespace SQLiteServer.Data.Workers
     int FieldCount { get; }
 
     /// <summary>
+    /// Check if we have any rows of data.
+    /// </summary>
+    bool HasRows { get; }
+
+    /// <summary>
     /// Execute a 'read' operation
     /// </summary>
     /// <returns></returns>

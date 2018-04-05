@@ -116,6 +116,18 @@ namespace SQLiteServer.Data.SQLiteServer
     }
 
     /// <summary>
+    /// Check if we have any rows of data
+    /// </summary>
+    public bool HasRows
+    {
+      get
+      {
+        ThrowIfAny();
+        return _worker.HasRows;
+      }
+    }
+
+    /// <summary>
     /// Get a value at a given colum name.
     /// </summary>
     /// <param name="i"></param>
