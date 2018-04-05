@@ -66,19 +66,20 @@ But I cannot say for certain how much slower it is, your millage may vary ... bu
 
 # Todo
 - A couple of common SQLite commands are missing.
-  - <s>IsDBNull( idx )</s> 0.1.1.0
-  - HasRows
-  - <s>FieldCount</s> 0.1.1.0
-  - Less important
-    - GetBoolean( idx )
-    - GetByte( idx )
-    - GetChar( idx )
-    - GetDateTime( idx )
-    - GetDecimal( idx )
-    - <s>GetDouble( idx )</s> 0.1.1.0
-    - GetFloat( idx )
-    - GetName( idx )
-    - GetTableName( idx )
+ - <s>IsDBNull( idx )</s> 0.1.1.0
+ - HasRows
+ - <s>FieldCount</s> 0.1.1.0
+  - GetName( idx )
+ - GetTableName( idx )
+- Less important
+ - GetBoolean( idx )
+ - GetByte( idx )
+ - GetChar( idx )
+ - GetDateTime( idx )
+ - GetDecimal( idx )
+ - <s>GetDouble( idx )</s> 0.1.1.0
+ - GetFloat( idx )
 - Namepipe might be faster, need to investigate more.
 - Create Nuget package
 - Some code cleanup
+- Performance testing/report.
