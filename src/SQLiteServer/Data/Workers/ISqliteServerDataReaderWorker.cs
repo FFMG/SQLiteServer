@@ -104,5 +104,13 @@ namespace SQLiteServer.Data.Workers
     /// <param name="i">The index of the column.</param>
     /// <returns></returns>
     object GetValue(int i);
+
+    /// <summary>
+    /// Gets a value that indicates whether the column contains non-existent or missing values.
+    /// </summary>
+    /// <param name="i"></param>
+    /// <returns></returns>
+    // ReSharper disable once InconsistentNaming
+    bool IsDBNull(int i);
   }
 }

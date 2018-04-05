@@ -66,7 +66,7 @@ But I cannot say for certain how much slower it is, your millage may vary ... bu
 
 # Todo
 - A couple of common SQLite commands are missing.
-  - IsDBNull( idx )
+  - <s>IsDBNull( idx )</s> 0.1.1.0
   - HasRows
   - <s>FieldCount</s> 0.1.1.0
   - Less important

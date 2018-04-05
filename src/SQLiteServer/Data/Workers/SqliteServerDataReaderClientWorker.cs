@@ -323,5 +323,11 @@ namespace SQLiteServer.Data.Workers
       // we need byte[], short as well as double
       throw new NotImplementedException();
     }
+
+    /// <inheritdoc />
+    public bool IsDBNull(int i)
+    {
+      return GetIndexedValue<bool>(SQLiteMessage.ExecuteReaderGetIsDBNullRequest, i);
+    }
   }
 }

@@ -41,6 +41,7 @@ namespace SQLiteServer.Data.Enums
     ExecuteReaderGetInt64Request,
     ExecuteReaderGetDoubleRequest,
     ExecuteReaderGetFieldTypeRequest,
+    ExecuteReaderGetIsDBNullRequest,
     ExecuteReaderResponse,
     ExecuteReaderException,
   }

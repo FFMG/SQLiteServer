@@ -663,5 +663,89 @@ namespace SQLiteServer.Test.SQLiteServer
       server.Close();
       client.Close();
     }
+
+    [Test]
+    public void ServerIsDBNull()
+    {
+      var server = CreateConnection();
+      server.Open();
+      const string sqlMaster = "create table tb_config (name varchar(20), value INTEGER)";
+      using (var command = new SQLiteServerCommand(sqlMaster, server))
+      {
+        command.ExecuteNonQuery();
+      }
+
+      const string sqlInsert1 = "insert into tb_config(name, value) VALUES ('a', NULL )";
+      using (var command = new SQLiteServerCommand(sqlInsert1, server))
+      {
+        command.ExecuteNonQuery();
+      }
+      const string sqlInsert2 = "insert into tb_config(name, value) VALUES ('b', '20')";
+      using (var command = new SQLiteServerCommand(sqlInsert2, server))
+      {
+        command.ExecuteNonQuery();
+      }
+
+      const string sqlSelect = "SELECT * FROM tb_config";
+      using (var command = new SQLiteServerCommand(sqlSelect, server))
+      {
+        using (var reader = command.ExecuteReader())
+        {
+          Assert.IsTrue(reader.Read());
+          Assert.IsTrue(reader.IsDBNull(1));
+
+          Assert.IsTrue(reader.Read());
+          Assert.IsFalse(reader.IsDBNull(1));
+
+          Assert.IsFalse(reader.Read());
+        }
+      }
+      server.Close();
+    }
+
+    [Test]
+    public void ClientIsDBNull()
+    {
+      var server = CreateConnection();
+      server.Open();
+
+      var client = CreateConnection();
+      client.Open();
+
+      const string sqlMaster = "create table tb_config (name varchar(20), value INTEGER)";
+      using (var command = new SQLiteServerCommand(sqlMaster, client))
+      {
+        command.ExecuteNonQuery();
+      }
+
+      const string sqlInsert1 = "insert into tb_config(name, value) VALUES ('a', NULL )";
+      using (var command = new SQLiteServerCommand(sqlInsert1, client))
+      {
+        command.ExecuteNonQuery();
+      }
+      const string sqlInsert2 = "insert into tb_config(name, value) VALUES ('b', '20')";
+      using (var command = new SQLiteServerCommand(sqlInsert2, client))
+      {
+        command.ExecuteNonQuery();
+      }
+
+      const string sqlSelect = "SELECT * FROM tb_config";
+      using (var command = new SQLiteServerCommand(sqlSelect, client))
+      {
+        using (var reader = command.ExecuteReader())
+        {
+          Assert.IsTrue(reader.Read());
+          Assert.IsTrue(reader.IsDBNull(1));
+
+          Assert.IsTrue(reader.Read());
+          Assert.IsFalse(reader.IsDBNull(1));
+
+          Assert.IsFalse(reader.Read());
+        }
+      }
+
+      client.Close();
+      server.Close();
+    }
   }
 }

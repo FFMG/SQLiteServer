@@ -265,5 +265,24 @@ namespace SQLiteServer.Data.SQLiteServer
         throw new SQLiteServerException(e.Message);
       }
     }
+
+    /// <summary>
+    /// Gets a value that indicates whether the column contains non-existent or missing values.
+    /// </summary>
+    /// <param name="i"></param>
+    /// <returns></returns>
+    // ReSharper disable once InconsistentNaming
+    public bool IsDBNull(int i)
+    {
+      ThrowIfAny();
+      try
+      {
+        return _worker.IsDBNull(i);
+      }
+      catch (Exception e)
+      {
+        throw new SQLiteServerException(e.Message);
+      }
+    }
   }
 }

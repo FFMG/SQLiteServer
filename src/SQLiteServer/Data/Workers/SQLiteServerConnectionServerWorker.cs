@@ -143,6 +143,10 @@ namespace SQLiteServer.Data.Workers
               response(new Packet(SQLiteMessage.ExecuteReaderResponse, reader.GetString(index)));
               break;
 
+            case SQLiteMessage.ExecuteReaderGetIsDBNullRequest:
+              response(new Packet(SQLiteMessage.ExecuteReaderResponse, reader.IsDBNull(index) ? 1 : 0 ));
+              break;
+
             case SQLiteMessage.ExecuteReaderGetFieldTypeRequest:
               var iType = Field.TypeToFieldType(reader.GetFieldType(index));
               response(new Packet(SQLiteMessage.ExecuteReaderResponse, (int)iType));
@@ -395,6 +399,7 @@ namespace SQLiteServer.Data.Workers
         case SQLiteMessage.ExecuteReaderGetDoubleRequest:
         case SQLiteMessage.ExecuteReaderGetStringRequest:
         case SQLiteMessage.ExecuteReaderGetFieldTypeRequest:
+        case SQLiteMessage.ExecuteReaderGetIsDBNullRequest:
           HandleExecuteReaderIndexRequest(packet, response );
           break;
 
