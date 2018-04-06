@@ -32,12 +32,12 @@
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
- <PropertyGroup> 
+  <PropertyGroup>
     <ContentSQLiteInteropFiles>true</ContentSQLiteInteropFiles>
     <CopySQLiteInteropFiles>false</CopySQLiteInteropFiles>
     <CleanSQLiteInteropFiles>false</CleanSQLiteInteropFiles>
     <CollectSQLiteInteropFiles>false</CollectSQLiteInteropFiles>
- </PropertyGroup>  
+  </PropertyGroup>
   <ItemGroup>
     <Reference Include="EntityFramework, Version=6.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089, processorArchitecture=MSIL">
       <HintPath>..\packages\EntityFramework.6.2.0\lib\net45\EntityFramework.dll</HintPath>
@@ -77,6 +77,7 @@
     <Compile Include="Data\Exceptions\SQLiteServerException.cs" />
     <Compile Include="Data\SQLiteServer\SqliteServerDataReader.cs" />
     <Compile Include="Data\Enums\SQLiteMessage.cs" />
+    <Compile Include="Data\SQLiteServer\SQLiteServerTransaction.cs" />
     <Compile Include="Data\Workers\ISQLiteServerCommandWorker.cs" />
     <Compile Include="Data\Workers\ISQLiteServerConnectionWorker.cs" />
     <Compile Include="Data\SQLiteServer\SQLiteServerCommand.cs" />
