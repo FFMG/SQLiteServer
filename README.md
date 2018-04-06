@@ -99,9 +99,9 @@ I am using the `\performance\SQLiteServerPerformance.sln` application to run com
 * `SQLiteServerCommand` should implement `DbCommand`
 * `SqliteServerDataReader` should implement `DbDataReader`
 
-## Acknowledgments
+## Acknowledgement
 
 * [sqlite.org](http://sqlite.org/index.html "sqlite.org") (duh!)
-* [System.Data.SQLite](https://github.com/Faithlife/System.Data.SQLite "System.Data.SQLite")
+* [System.Data.SQLite](https://system.data.sqlite.org/index.html/doc/trunk/www/downloads.wiki")
 
 If I forgot someone, please let me know and I will gladly add them here :)
