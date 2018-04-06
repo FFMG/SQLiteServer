@@ -271,7 +271,7 @@ namespace SQLiteServer.Data.SQLiteServer
         var start = DateTime.Now;
         while (State == ConnectionState.Connecting)
         {
-          await Task.Delay(100);
+          await Task.Yield();
           var elapsed = (DateTime.Now - start).TotalMilliseconds;
           if (elapsed >= timeout)
           {
