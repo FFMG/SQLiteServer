@@ -60,11 +60,20 @@ connection.Close();
 ```
 
 # Performance
-I have no idea, but the process that owns the SQLite connection is definitely faster.
+The initial tests showed that server was as fast as the default libraries, (but of course slower than the C++ library itself)
 
-But I cannot say for certain how much slower it is, your millage may vary ... but I would be curious to run some proper tests.
+The clients on the other hand is much slower than the server.
+
+![Imgur](https://i.imgur.com/v6TI6sR.png)
+
+Please see the performance app to run your own tests, `\performance\SQLiteServerPerformance.sln`.
 
 # Todo
+## Performance 
+While 'similar' performance will never be achieved, I am aiming for a degradation of no more than 10%.
+
+I am using the `\performance\SQLiteServerPerformance.sln` application to run comparaison tests.
+
 ## A couple of common SQLite commands are missing.
 * <s>`IsDBNull( idx )`</s> 0.1.1.0
 * <s>`HasRows`</s> 0.1.1.0
@@ -89,3 +98,10 @@ But I cannot say for certain how much slower it is, your millage may vary ... bu
 * `SQLiteServerConnection` should implement `DbConnection`
 * `SQLiteServerCommand` should implement `DbCommand`
 * `SqliteServerDataReader` should implement `DbDataReader`
+
+## Acknowledgments
+
+* [sqlite.org](http://sqlite.org/index.html "sqlite.org") (duh!)
+* [System.Data.SQLite](https://github.com/Faithlife/System.Data.SQLite "System.Data.SQLite")
+
+If I forgot someone, please let me know and I will gladly add them here :)
