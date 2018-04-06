@@ -21,6 +21,13 @@ namespace SQLiteServer.Data.Connections
   internal class ResponsePacketHandler
   {
     /// <summary>
+    /// We will wait a tiny amount of time to give other threads a chance
+    /// Before we check if we go a resoponse from the server.
+    /// If this number is too big we might delay the response by 'n-1'
+    /// </summary>
+    private readonly int _waitForResponseSleepTime;
+
+    /// <summary>
     /// The connection controller that will send/receive messages.
     /// </summary>
     private readonly ConnectionsController _connection;
@@ -35,15 +42,23 @@ namespace SQLiteServer.Data.Connections
     /// </summary>
     private string _guid;
 
-    public ResponsePacketHandler(ConnectionsController connection )
+    public ResponsePacketHandler(ConnectionsController connection, int waitForResponseSleepTime )
     {
       if (null == connection)
       {
         throw new ArgumentNullException(nameof(connection));
       }
       _connection = connection;
+      _waitForResponseSleepTime = waitForResponseSleepTime;
     }
     
+    /// <summary>
+    /// Send a request to the server and wait for a response.
+    /// </summary>
+    /// <param name="type"></param>
+    /// <param name="data"></param>
+    /// <param name="timeout">The max number of ms we will be waitng.</param>
+    /// <returns>The response packet</returns>
     public Packet SendAndWait(SQLiteMessage type, byte[] data, int timeout )
     {
       // listen for new messages.
@@ -63,17 +78,27 @@ namespace SQLiteServer.Data.Connections
         _connection.Send(SQLiteMessage.SendAndWaitRequest, packet.Packed );
 
         Task.Run(async () => {
-          var start = DateTime.Now;
+          var watch = System.Diagnostics.Stopwatch.StartNew();
           while (_response == null )
           {
-            await Task.Delay(100);
-            var elapsed = (DateTime.Now - start).TotalMilliseconds;
-            if (elapsed >= timeout)
+            // delay a little to give other thread a chance.
+            if (_waitForResponseSleepTime > 0)
+            {
+              await Task.Delay(_waitForResponseSleepTime).ConfigureAwait(false);
+            }
+            else
+            {
+              await Task.Yield();
+            }
+
+            // check for delay
+            if (watch.ElapsedMilliseconds >= timeout)
             {
               // we timed out.
               break;
             }
           }
+          watch.Stop();
         }).Wait();
 
       }

@@ -147,6 +147,13 @@ namespace SQLiteServer.Data.Connections
 
     #region Configuration
     /// <summary>
+    /// We will wait a tiny amount of time to give other threads a chance
+    /// Before we check if we go a resoponse from the server.
+    /// If this number is too big we might delay the response by 'n-1'
+    /// </summary>
+    private const int WaitForResponseSleepTime = 0;
+
+    /// <summary>
     /// The IP address we want to connect to.
     /// </summary>
     private IPAddress Address { get; }
@@ -551,7 +558,7 @@ namespace SQLiteServer.Data.Connections
     public Packet SendAndWait(SQLiteMessage type, byte[] data, int timeout )
     {
       // create the packer
-      var packer = new ResponsePacketHandler( this );
+      var packer = new ResponsePacketHandler( this, WaitForResponseSleepTime);
 
       // send and wait for the response.
       return packer.SendAndWait( type, data, timeout );
