@@ -152,7 +152,7 @@ namespace SQLiteServer.Data.SQLiteServer
         {
           // before closing
           RollbackOpenTransactions();
-          _transaction.Dispose();
+          _transaction?.Dispose();
 
           // we are now closed
           _connectionState = ConnectionState.Closed;
