@@ -18,6 +18,12 @@ namespace SQLiteServerPerformance
     private SQLiteServerConnection _connectionClient;
     private readonly bool _useClient;
 
+    public SQLiteServerTest( bool useClient)
+    {
+      _useClient = useClient;
+      _source = ":memory:";
+    }
+
     public SQLiteServerTest(string path, string ext, bool useClient )
     {
       _useClient = useClient;
@@ -55,7 +61,15 @@ namespace SQLiteServerPerformance
       Console.ForegroundColor = ConsoleColor.Green;
       Console.Write($"{((double)elapsedMs / 1000):N4}");
       Console.ForegroundColor = c;
-      Console.WriteLine($"s. [SQLite {(_useClient? "Client via Server":"Server")}]");
+
+      if (_source == ":memory:")
+      {
+        Console.WriteLine($"s. [SQLite {(_useClient ? "Client via Server memory" : "Server Memory")}]");
+      }
+      else
+      {
+        Console.WriteLine($"s. [SQLite {(_useClient ? "Client via Server" : "Server")}]");
+      }
     }
 
     private void OpenDb()

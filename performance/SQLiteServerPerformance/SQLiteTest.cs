@@ -11,6 +11,11 @@ namespace SQLiteServerPerformance
     private readonly string _source;
     private SQLiteConnection _connection;
 
+    public SQLiteTest()
+    {
+      _source = ":memory:";
+    }
+
     public SQLiteTest(string path, string ext)
     {
       _source = Path.Combine(path, $"{Guid.NewGuid().ToString()}.sqlite.{ext}");
@@ -47,7 +52,7 @@ namespace SQLiteServerPerformance
       Console.ForegroundColor = ConsoleColor.Green;
       Console.Write($"{((double)elapsedMs/1000):N4}");
       Console.ForegroundColor = c;
-      Console.WriteLine("s. [SQLite]");
+      Console.WriteLine( $"s. {(_source== ":memory:"?"[SQLite Memory]":"[SQLite]")}");
     }
 
     private void OpenDb()

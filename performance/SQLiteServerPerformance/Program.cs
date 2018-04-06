@@ -17,6 +17,25 @@ namespace SQLiteServerPerformance
 
       for (var i = 0; i < numberOfTests; ++i)
       {
+        Console.WriteLine($"Test Number {i + 1}:");
+        Console.WriteLine("=================");
+        // sqlite
+        var sqlite = new SQLiteTest();
+        sqlite.Run(numberOfRows);
+
+        // sqlite server
+        var sqliteServer = new SQLiteServerTest(false);
+        sqliteServer.Run(numberOfRows);
+
+        var sqliteClient = new SQLiteServerTest(true);
+        sqliteClient.Run(numberOfRows);
+
+        Console.WriteLine("");
+      }
+
+
+      for (var i = 0; i < numberOfTests; ++i)
+      {
         Console.WriteLine( $"Test Number {i+1}:");
         Console.WriteLine(  "=================");
         // sqlite
