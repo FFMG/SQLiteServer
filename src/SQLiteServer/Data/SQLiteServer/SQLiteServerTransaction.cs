@@ -13,9 +13,10 @@
 //    You should have received a copy of the GNU General Public License
 //    along with SQLiteServer.  If not, see<https://www.gnu.org/licenses/gpl-3.0.en.html>.
 using System;
+using System.Collections.Generic;
 using System.Data;
 using System.Data.Common;
-using System.Runtime.InteropServices.WindowsRuntime;
+using System.Linq;
 
 namespace SQLiteServer.Data.SQLiteServer
 {
@@ -24,9 +25,9 @@ namespace SQLiteServer.Data.SQLiteServer
   {
     #region Private
     /// <summary>
-    /// The isolation level
+    /// The isolation levels
     /// </summary>
-    private readonly IsolationLevel _isolationLevel;
+    private readonly Stack<IsolationLevel> _isolationLevels = new Stack<IsolationLevel>();
 
     /// <summary>
     /// Have we disposed of everything?
@@ -38,35 +39,18 @@ namespace SQLiteServer.Data.SQLiteServer
     /// </summary>
     private readonly SQLiteServerConnection _connection;
 
-    private bool InTransaction { get; set; }
+    // we are in transaction if we have one or more level.
+    private bool InTransaction => _isolationLevels.Count > 0;
+
     #endregion
 
-    internal SQLiteServerTransaction(SQLiteServerConnection connection, IsolationLevel  isolationLevel)
+    internal SQLiteServerTransaction(SQLiteServerConnection connection )
     {
       if (null == connection)
       {
         throw new ArgumentNullException(nameof(connection));
       }
       _connection = connection;
-
-      _isolationLevel = isolationLevel;
-      switch (isolationLevel)
-      {
-        case IsolationLevel.Unspecified:
-          _isolationLevel = IsolationLevel.Serializable;
-          break;
-
-        case IsolationLevel.Serializable:
-        case IsolationLevel.ReadCommitted:
-          _isolationLevel = isolationLevel;
-          break;
-
-        default:
-          throw new ArgumentOutOfRangeException(nameof(isolationLevel), "IsolationLevel not supported.");
-      }
-
-      // begin the transaction
-      Begin();
     }
 
     protected override void Dispose(bool disposing)
@@ -81,15 +65,19 @@ namespace SQLiteServer.Data.SQLiteServer
       {
         if (disposing)
         {
-          if (InTransaction)
+          // rollbacl all the transactions.
+          while (InTransaction)
           {
             Rollback();
           }
+
+          // all done.
+          _disposed = true;
         }
       }
       finally
       {
-        _disposed = true;
+        // tell the parent to do the same.
         base.Dispose(disposing);
       }
     }
@@ -111,26 +99,56 @@ namespace SQLiteServer.Data.SQLiteServer
     /// <summary>
     /// Begin the transaction.
     /// </summary>
-    internal void Begin()
+    internal void Begin(IsolationLevel isolationLevel)
     {
       ThrowIfDisposed();
-      if (InTransaction)
+
+      AddAndValidateIsolationLevel(isolationLevel);
+      try
       {
-        throw new InvalidOperationException("Cannot begin, already in transaction.");
+        using (var cmd = new SQLiteServerCommand(_connection))
+        {
+          //  depending on the connection level...
+          cmd.CommandText = IsolationLevel == IsolationLevel.Serializable ? "BEGIN IMMEDIATE" : "BEGIN";
+
+          // execute that query
+          cmd.ExecuteNonQuery();
+        }
       }
-      using (var cmd = new SQLiteServerCommand(_connection))
+      catch
       {
-        if (IsolationLevel == IsolationLevel.Serializable)
-        {
-          cmd.CommandText = "BEGIN IMMEDIATE";
-        }
-        else
-        {
-          cmd.CommandText = "BEGIN";
-        }
-        cmd.ExecuteNonQuery();
-        InTransaction = true;
+        // we are not in doing that level anymore
+        _isolationLevels.Pop();
+        throw;
       }
+    }
+
+    /// <summary>
+    /// Add an isolation level to our stack
+    /// Throw if not valid.
+    /// </summary>
+    /// <param name="isolationLevel"></param>
+    /// <returns></returns>
+    private void AddAndValidateIsolationLevel(IsolationLevel isolationLevel)
+    {
+      IsolationLevel level;
+      switch (isolationLevel)
+      {
+        case IsolationLevel.Unspecified:
+          level = IsolationLevel.Serializable;
+          break;
+
+        case IsolationLevel.Serializable:
+        case IsolationLevel.ReadCommitted:
+          level = isolationLevel;
+          break;
+
+        default:
+          throw new ArgumentOutOfRangeException(nameof(isolationLevel), "IsolationLevel not supported.");
+      }
+
+      // add it to the list.
+      _isolationLevels.Push(level);
     }
 
     /// <inheritdoc />
@@ -146,7 +164,9 @@ namespace SQLiteServer.Data.SQLiteServer
       {
         cmd.CommandText = "COMMIT";
         cmd.ExecuteNonQuery();
-        InTransaction = false;
+
+        // remove the last one in the list
+        _isolationLevels.Pop();
       }
     }
 
@@ -162,7 +182,9 @@ namespace SQLiteServer.Data.SQLiteServer
       {
         cmd.CommandText = "ROLLBACK";
         cmd.ExecuteNonQuery();
-        InTransaction = false;
+
+        // remove the last one in the list
+        _isolationLevels.Pop();
       }
     }
 
@@ -172,7 +194,7 @@ namespace SQLiteServer.Data.SQLiteServer
       get
       {
         ThrowIfDisposed();
-        throw new NotSupportedException();
+        return _connection;
       }
     }
 
@@ -182,7 +204,7 @@ namespace SQLiteServer.Data.SQLiteServer
       get
       {
         ThrowIfDisposed();
-        return _isolationLevel;
+        return _isolationLevels.FirstOrDefault();
       }
     }
   }

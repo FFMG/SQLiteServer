@@ -14,6 +14,9 @@
 //    along with SQLiteServer.  If not, see<https://www.gnu.org/licenses/gpl-3.0.en.html>.
 using System;
 using System.Data;
+using System.Data.Common;
+using System.Data.SqlClient;
+using System.Data.SQLite;
 using System.Net;
 using System.Threading.Tasks;
 using SQLiteServer.Data.Connections;
@@ -22,9 +25,19 @@ using SQLiteServer.Data.Workers;
 namespace SQLiteServer.Data.SQLiteServer
 {
   // ReSharper disable once InconsistentNaming
-  public sealed class SQLiteServerConnection : ICloneable, IDisposable
+  public sealed class SQLiteServerConnection : DbConnection
   {
     #region Private 
+    /// <summary>
+    /// Our current connection state
+    /// </summary>
+    private ConnectionState _connectionState;
+
+    /// <summary>
+    /// The current transaction, if we have one.
+    /// </summary>
+    private SQLiteServerTransaction _transaction;
+
     /// <summary>
     /// The connection builder
     /// </summary>
@@ -42,20 +55,28 @@ namespace SQLiteServer.Data.SQLiteServer
     #endregion
 
     #region Public
-    /// <summary>
-    /// The given connection string
-    /// </summary>
-    public string ConnectionString { get; set; }
+    /// <inheritdoc />
+    public override string ConnectionString { get; set; }
 
-    public string Database { get { throw new NotSupportedException(); } }
+    /// <inheritdoc />
+    public override string Database { get { throw new NotSupportedException(); } }
 
-    /// <summary>
-    /// Get the current property
-    /// </summary>
+    /// <inheritdoc />
+    public override string DataSource
+    {
+      get
+      {
+        var builder = new SQLiteConnectionStringBuilder(ConnectionString);
+        return builder.DataSource;
+      }
+    }
+
+    /// <inheritdoc />
     // ReSharper disable once ConvertToAutoProperty
-    public ConnectionState State { get; private set; }
+    public override ConnectionState State => _connectionState;
 
-    public string ServerVersion { get { throw new NotSupportedException(); } }
+    /// <inheritdoc />
+    public override string ServerVersion { get { throw new NotSupportedException(); } }
     #endregion
 
     public SQLiteServerConnection(string connectionString, IPAddress address, int port, int backlog, int heartBeatTimeOutInMs) :
@@ -67,7 +88,7 @@ namespace SQLiteServer.Data.SQLiteServer
     {
       _connectionBuilder = connectionBuilder;
       ConnectionString = connectionString;
-      State = ConnectionState.Closed;
+      _connectionState = ConnectionState.Closed;
     }
 
     #region Validations
@@ -118,7 +139,7 @@ namespace SQLiteServer.Data.SQLiteServer
       throw new NotImplementedException();
     }
 
-    public void Dispose()
+    protected override void Dispose(bool disposing)
     {
       //  done already?
       if (_disposed)
@@ -128,21 +149,28 @@ namespace SQLiteServer.Data.SQLiteServer
 
       try
       {
-        State = ConnectionState.Closed;
-        _connectionBuilder.Dispose();
+        if (disposing)
+        {
+          // before closing
+          _transaction.Dispose();
+
+          // we are now closed
+          _connectionState = ConnectionState.Closed;
+          _connectionBuilder.Dispose();
+
+          // all done.
+          _disposed = true;
+        }
       }
       finally
       {
-        // all done.
-        _disposed = true;
+        // tell the parent to do the same.
+        base.Dispose(disposing);
       }
     }
 
     #region Database Operations
-    /// <summary>
-    /// Open the database using the connection string.
-    /// </summary>
-    public void Open()
+    public override void Open()
     {
       if (State != ConnectionState.Closed)
       {
@@ -152,14 +180,14 @@ namespace SQLiteServer.Data.SQLiteServer
       try
       {
         // we are connecting
-        State = ConnectionState.Connecting;
+        _connectionState = ConnectionState.Connecting;
 
         // re-open, we will change no state
         // and we will not check anything,
         OpenNoStateCheck();
 
         // we are now open
-        State = ConnectionState.Open;
+        _connectionState = ConnectionState.Open;
       }
       catch
       {
@@ -169,10 +197,8 @@ namespace SQLiteServer.Data.SQLiteServer
       }
     }
 
-    /// <summary>
-    /// Close the database and the related commands.
-    /// </summary>
-    public void Close()
+    /// <inheritdoc />
+    public override void Close()
     {
       // it might sound silly
       // but if we are connecting, we need to wait a little.
@@ -193,13 +219,35 @@ namespace SQLiteServer.Data.SQLiteServer
       }
       finally
       {
-        State = ConnectionState.Closed;
+        _connectionState = ConnectionState.Closed;
       }
     }
 
-    public void ChangeDatabase(string databaseName)
+    /// <inheritdoc />
+    public override void ChangeDatabase(string databaseName)
     {
       throw new NotSupportedException();
+    }
+
+    /// <inheritdoc />
+    protected override DbCommand CreateDbCommand()
+    {
+      throw new NotImplementedException();
+    }
+
+    /// <inheritdoc />
+    protected override DbTransaction BeginDbTransaction(IsolationLevel isolationLevel)
+    {
+      if (null == _transaction)
+      {
+        _transaction = new SQLiteServerTransaction( this );
+      }
+
+      // and begin the transaction
+      _transaction.Begin( isolationLevel );
+
+      // return the transaction level.
+      return _transaction;
     }
     #endregion
 
@@ -212,7 +260,7 @@ namespace SQLiteServer.Data.SQLiteServer
       try
       {
         // we are connecting
-        State = ConnectionState.Connecting;
+        _connectionState = ConnectionState.Connecting;
 
         // close everything
         _connectionBuilder.Disconnect();
@@ -223,7 +271,7 @@ namespace SQLiteServer.Data.SQLiteServer
         OpenNoStateCheck();
 
         // we re-opened.
-        State = ConnectionState.Open;
+        _connectionState = ConnectionState.Open;
       }
       catch
       {
@@ -238,7 +286,7 @@ namespace SQLiteServer.Data.SQLiteServer
       _connectionBuilder?.Disconnect();
       _worker?.Close();
       _worker = null;
-      State = ConnectionState.Broken;
+      _connectionState = ConnectionState.Broken;
     }
 
     private void OpenNoStateCheck()

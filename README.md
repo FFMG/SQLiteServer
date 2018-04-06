@@ -95,9 +95,11 @@ I am using the `\performance\SQLiteServerPerformance.sln` application to run com
 * Create Nuget package
 * Some code cleanup
 * Performance testing/report.
-* `SQLiteServerConnection` should implement `DbConnection`
+* <s>`SQLiteServerConnection` should implement `DbConnection`</s> 0.1.1.1
 * `SQLiteServerCommand` should implement `DbCommand`
+  * Need to implement `DbCommand CreateDbCommand(){}` when this is done
 * `SqliteServerDataReader` should implement `DbDataReader`
+* <s>`SQLiteServerTransaction` should implement `DbTransaction`</s> 0.1.1.1
 
 ## Acknowledgement
 
