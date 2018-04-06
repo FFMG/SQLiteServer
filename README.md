@@ -66,9 +66,12 @@ Data files are either _similar_ speed or a tiny bit slower, (see the results bel
 `:memory:` datasource, is, of course, a lot slower.
 
 ![0.1.1.1](https://i.imgur.com/Ve6sI4P.png)
-[0.1.1.0](https://i.imgur.com/Ve6sI4P.png)
 
 Please see the performance app to run your own tests, `\performance\SQLiteServerPerformance.sln`.
+
+## Past results
+
+* [0.1.1.0](https://i.imgur.com/Ve6sI4P.png)
 
 # Todo
 ## Performance 
