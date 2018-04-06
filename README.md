@@ -62,15 +62,17 @@ connection.Close();
 # Performance
 The initial tests showed that server was as fast as the default libraries, (but of course slower than the C++ library itself)
 
-The clients on the other hand is much slower than the server.
+Data files are either _similar_ speed or a tiny bit slower, (see the results below)
+`:memory:` datasource, is, of course, a lot slower.
 
-![Imgur](https://i.imgur.com/v6TI6sR.png)
+![0.1.1.1](https://i.imgur.com/Ve6sI4P.png)
+[0.1.1.0](https://i.imgur.com/Ve6sI4P.png)
 
 Please see the performance app to run your own tests, `\performance\SQLiteServerPerformance.sln`.
 
 # Todo
 ## Performance 
-While 'similar' performance will never be achieved, I am aiming for a degradation of no more than 10%.
+While 'similar' performance will never be achieved, I am aiming for a degradation of no more than 5%.
 
 I am using the `\performance\SQLiteServerPerformance.sln` application to run comparaison tests.
 
