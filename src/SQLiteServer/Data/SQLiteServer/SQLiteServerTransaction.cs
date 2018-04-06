@@ -65,11 +65,8 @@ namespace SQLiteServer.Data.SQLiteServer
       {
         if (disposing)
         {
-          // rollbacl all the transactions.
-          while (InTransaction)
-          {
-            Rollback();
-          }
+          // rollback all the transactions.
+          RollbackOpenTransactions();
 
           // all done.
           _disposed = true;
@@ -95,6 +92,17 @@ namespace SQLiteServer.Data.SQLiteServer
       }
     }
     #endregion
+
+    /// <summary>
+    /// Rollback the open transactions, if we have any.
+    /// </summary>
+    internal void RollbackOpenTransactions()
+    {
+      while (InTransaction)
+      {
+        Rollback();
+      }
+    }
 
     /// <summary>
     /// Begin the transaction.

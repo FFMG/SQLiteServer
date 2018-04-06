@@ -15,7 +15,6 @@
 using System;
 using System.Data;
 using System.Data.Common;
-using System.Data.SqlClient;
 using System.Data.SQLite;
 using System.Net;
 using System.Threading.Tasks;
@@ -152,6 +151,7 @@ namespace SQLiteServer.Data.SQLiteServer
         if (disposing)
         {
           // before closing
+          RollbackOpenTransactions();
           _transaction.Dispose();
 
           // we are now closed
@@ -167,6 +167,14 @@ namespace SQLiteServer.Data.SQLiteServer
         // tell the parent to do the same.
         base.Dispose(disposing);
       }
+    }
+
+    /// <summary>
+    /// Rollback the current transactions, if we have any.
+    /// </summary>
+    private void RollbackOpenTransactions()
+    {
+      _transaction?.RollbackOpenTransactions();
     }
 
     #region Database Operations
@@ -210,6 +218,8 @@ namespace SQLiteServer.Data.SQLiteServer
 
       try
       {
+        // rollback open transaction
+        RollbackOpenTransactions();
 
         // close the worker.
         _worker?.Close();
