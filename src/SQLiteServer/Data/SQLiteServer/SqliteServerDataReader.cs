@@ -13,14 +13,21 @@
 //    You should have received a copy of the GNU General Public License
 //    along with SQLiteServer.  If not, see<https://www.gnu.org/licenses/gpl-3.0.en.html>.
 using System;
+using System.Collections;
+using System.Data.Common;
 using SQLiteServer.Data.Exceptions;
 using SQLiteServer.Data.Workers;
 
 namespace SQLiteServer.Data.SQLiteServer
 {
-  public sealed class SqliteServerDataReader : IDisposable
+  public sealed class SqliteServerDataReader : DbDataReader
   {
     #region Private Variables
+    /// <summary>
+    /// Close the reader.
+    /// </summary>
+    private bool _closed;
+     
     /// <summary>
     /// Have we disposed of everything?
     /// </summary>
@@ -29,7 +36,7 @@ namespace SQLiteServer.Data.SQLiteServer
     /// <summary>
     /// The database worker 
     /// </summary>
-    private readonly ISqliteServerDataReaderWorker _worker;
+    private ISqliteServerDataReaderWorker _worker;
 
     /// <summary>
     /// The connection
@@ -54,6 +61,9 @@ namespace SQLiteServer.Data.SQLiteServer
     {
       // disposed?
       ThrowIfDisposed();
+
+      // closed?
+      ThrowIfClosed();
 
       // make sure we have a valid reader.
       if (null == _worker)
@@ -82,8 +92,19 @@ namespace SQLiteServer.Data.SQLiteServer
       }
     }
 
+    /// <summary>
+    /// Throws an exception if we are trying to execute something 
+    /// After this has been disposed.
+    /// </summary>
+    private void ThrowIfClosed()
+    {
+      if (IsClosed)
+      {
+        throw new SQLiteServerException( "The reader has been closed.");
+      }
+    }
     /// <inheritdoc />
-    public void Dispose()
+    protected override void Dispose( bool disposing )
     {
       //  done already?
       if (_disposed)
@@ -93,12 +114,20 @@ namespace SQLiteServer.Data.SQLiteServer
 
       try
       {
+        Close();
       }
       finally
       {
         // all done.
         _disposed = true;
       }
+    }
+
+    /// <inheritdoc />
+    public override void Close()
+    {
+      _worker = null;
+      _closed = true;
     }
 
     /// <summary>
@@ -111,21 +140,28 @@ namespace SQLiteServer.Data.SQLiteServer
       _worker.ExecuteReader();
     }
 
-    /// <summary>
-    /// Move the read pointer forward
-    /// </summary>
-    /// <returns>True if we have data to read, false otherwise.</returns>
-    public bool Read()
+    public override bool NextResult()
+    {
+      throw new NotImplementedException();
+    }
+
+    /// <inheritdoc />
+    public override bool Read()
     {
       WaitIfConnecting();
       ThrowIfAny();
       return _worker.Read();
     }
 
-    /// <summary>
-    /// Get the number of fields.
-    /// </summary>
-    public int FieldCount
+    public override int Depth { get; }
+
+    /// <inheritdoc />
+    public override bool IsClosed=> _closed;
+
+    public override int RecordsAffected { get; }
+
+    /// <inheritdoc />
+    public override int FieldCount
     {
       get
       {
@@ -135,10 +171,8 @@ namespace SQLiteServer.Data.SQLiteServer
       }
     }
 
-    /// <summary>
-    /// Check if we have any rows of data
-    /// </summary>
-    public bool HasRows
+    /// <inheritdoc />
+    public override bool HasRows
     {
       get
       {
@@ -148,38 +182,75 @@ namespace SQLiteServer.Data.SQLiteServer
       }
     }
 
-    /// <summary>
-    /// Get a value at a given colum name.
-    /// </summary>
-    /// <param name="i"></param>
-    /// <returns></returns>
-    public object this[int i] => GetValue(i);
+    /// <inheritdoc />
+    public override object this[int i] => GetValue(i);
 
-    /// <summary>
-    /// Get a value at a given name
-    /// </summary>
-    /// <param name="name"></param>
-    /// <returns></returns>
-    public object this[string name] => GetValue(GetOrdinal(name));
+    /// <inheritdoc />
+    public override object this[string name] => GetValue(GetOrdinal(name));
 
-    /// <summary>
-    /// Retrieves the column index given its name.
-    /// </summary>
-    /// <param name="name">The mae of the column.</param>
-    /// <returns>int the index</returns>
-    public int GetOrdinal(string name)
+    /// <inheritdoc />
+    public override int GetValues(object[] values)
+    {
+      WaitIfConnecting();
+      ThrowIfAny();
+
+      // how many fields are we getting?
+      var get = FieldCount > values.Length ? values.Length : FieldCount;
+
+      // get them.
+      for (var n = 0; n < get; n++)
+      {
+        values[n] = GetValue(n);
+      }
+      return get;
+    }
+
+    /// <inheritdoc />
+    public override int GetOrdinal(string name)
     {
       WaitIfConnecting();
       ThrowIfAny();
       return _worker.GetOrdinal(name);
     }
 
-    /// <summary>
-    /// Retrieves the column as a string
-    /// </summary>
-    /// <param name="i">The index of the column.</param>
-    /// <returns>string</returns>
-    public string GetString(int i)
+    /// <inheritdoc />
+    public override bool GetBoolean(int i)
+    {
+      // https://www.sqlite.org/datatype3.html
+      return GetInt32(i) != 0;
+    }
+
+    /// <inheritdoc />
+    public override byte GetByte(int ordinal)
+    {
+      throw new NotImplementedException();
+    }
+
+    /// <inheritdoc />
+    public override long GetBytes(int ordinal, long dataOffset, byte[] buffer, int bufferOffset, int length)
+    {
+      throw new NotImplementedException();
+    }
+
+    public override char GetChar(int ordinal)
+    {
+      throw new NotImplementedException();
+    }
+
+    /// <inheritdoc />
+    public override long GetChars(int ordinal, long dataOffset, char[] buffer, int bufferOffset, int length)
+    {
+      throw new NotImplementedException();
+    }
+
+    /// <inheritdoc />
+    public override Guid GetGuid(int ordinal)
+    {
+      throw new NotImplementedException();
+    }
+
+    /// <inheritdoc />
+    public override string GetString(int i)
     {
       WaitIfConnecting();
       ThrowIfAny();
@@ -193,12 +264,14 @@ namespace SQLiteServer.Data.SQLiteServer
       }
     }
 
-    /// <summary>
-    /// Retrieves the column as a 16 bit integer
-    /// </summary>
-    /// <param name="i">The index of the column.</param>
-    /// <returns>short</returns>
-    public short GetInt16(int i)
+    /// <inheritdoc />
+    public override DateTime GetDateTime(int ordinal)
+    {
+      throw new NotImplementedException();
+    }
+
+    /// <inheritdoc />
+    public override short GetInt16(int i)
     {
       WaitIfConnecting();
       ThrowIfAny();
@@ -212,12 +285,8 @@ namespace SQLiteServer.Data.SQLiteServer
       }
     }
 
-    /// <summary>
-    /// Retrieves the column as a 32 bit integer
-    /// </summary>
-    /// <param name="i">The index of the column.</param>
-    /// <returns>int</returns>
-    public int GetInt32(int i)
+    /// <inheritdoc />
+    public override int GetInt32(int i)
     {
       WaitIfConnecting();
       ThrowIfAny();
@@ -231,12 +300,8 @@ namespace SQLiteServer.Data.SQLiteServer
       }
     }
 
-    /// <summary>
-    /// Retrieves the column as a 64 bit integer
-    /// </summary>
-    /// <param name="i">The index of the column.</param>
-    /// <returns>long</returns>
-    public long GetInt64(int i)
+    /// <inheritdoc />
+    public override long GetInt64(int i)
     {
       WaitIfConnecting();
       ThrowIfAny();
@@ -250,12 +315,20 @@ namespace SQLiteServer.Data.SQLiteServer
       }
     }
 
-    /// <summary>
-    /// Retrieves the column as double
-    /// </summary>
-    /// <param name="i">The index of the column.</param>
-    /// <returns>double</returns>
-    public double GetDouble(int i)
+    /// <inheritdoc />
+    public override float GetFloat(int i)
+    {
+      return Convert.ToSingle(GetDouble(i));
+    }
+
+    /// <inheritdoc />
+    public override decimal GetDecimal(int i)
+    {
+      return Convert.ToDecimal(GetDouble(i));
+    }
+
+    /// <inheritdoc />
+    public override double GetDouble(int i)
     {
       WaitIfConnecting();
       ThrowIfAny();
@@ -269,13 +342,26 @@ namespace SQLiteServer.Data.SQLiteServer
       }
     }
 
-    /// <summary>
-    /// Get the field type for a given colum
-    /// </summary>
-    /// <param name="i">The index of the column.</param>
-    /// <returns></returns>
-    public Type GetFieldType(int i)
+    public override IEnumerator GetEnumerator()
     {
+      throw new NotImplementedException();
+    }
+
+    /// <inheritdoc />
+    public override string GetDataTypeName(int i)
+    {
+      // @see https://www.tutorialspoint.com/sqlite/sqlite_data_types.htm
+      if (i < 0 || i > FieldCount)
+      {
+        throw new IndexOutOfRangeException("Trying to get a name type out of range.");
+      }
+      throw new NotImplementedException();
+    }
+
+    /// <inheritdoc />
+    public override Type GetFieldType(int i)
+    {
+      // @see https://www.tutorialspoint.com/sqlite/sqlite_data_types.htm
       WaitIfConnecting();
       ThrowIfAny();
       try
@@ -288,12 +374,8 @@ namespace SQLiteServer.Data.SQLiteServer
       }
     }
 
-    /// <summary>
-    /// Get a raw value from the database.
-    /// </summary>
-    /// <param name="i">The index of the column.</param>
-    /// <returns></returns>
-    public object GetValue(int i)
+    /// <inheritdoc />
+    public override object GetValue(int i)
     {
       WaitIfConnecting();
       ThrowIfAny();
@@ -307,12 +389,8 @@ namespace SQLiteServer.Data.SQLiteServer
       }
     }
 
-    /// <summary>
-    /// Get the column name.
-    /// </summary>
-    /// <param name="i">The index of the column.</param>
-    /// <returns>string the column name</returns>
-    public string GetName(int i)
+    /// <inheritdoc />
+    public override string GetName(int i)
     {
       WaitIfConnecting();
       ThrowIfAny();
@@ -325,14 +403,9 @@ namespace SQLiteServer.Data.SQLiteServer
         throw new SQLiteServerException(e.Message);
       }
     }
-    
-    /// <summary>
-    /// Gets a value that indicates whether the column contains non-existent or missing values.
-    /// </summary>
-    /// <param name="i"></param>
-    /// <returns></returns>
-    // ReSharper disable once InconsistentNaming
-    public bool IsDBNull(int i)
+
+    /// <inheritdoc />
+    public override bool IsDBNull(int i)
     {
       WaitIfConnecting();
       ThrowIfAny();

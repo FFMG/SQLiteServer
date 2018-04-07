@@ -13,6 +13,7 @@
 //    You should have received a copy of the GNU General Public License
 //    along with SQLiteServer.  If not, see<https://www.gnu.org/licenses/gpl-3.0.en.html>.
 
+using System;
 using System.Collections.Generic;
 using System.Data;
 using System.IO;
@@ -64,6 +65,37 @@ namespace SQLiteServer.Test.SQLiteServer
       var connection  = new SQLiteServerConnection($"Data Source={_source};Version=3;", Address, Port, Backlog, HeartBeatTimeOut);
       _connections.Add(connection);
       return connection;
+    }
+
+    protected T RandomNumber<T>()
+    {
+      var random = new Random();
+      if (typeof(T) == typeof(double))
+      {
+        return (T) Convert.ChangeType(random.NextDouble(), typeof(T));
+      }
+
+      if (typeof(T) == typeof(float))
+      {
+        var buffer = new byte[4];
+        random.NextBytes(buffer);
+        return (T)Convert.ChangeType(BitConverter.ToSingle(buffer, 0), typeof(T));
+      }
+
+      if (typeof(T) == typeof(long))
+      {
+        var buffer = new byte[8];
+        random.NextBytes(buffer);
+        return (T)Convert.ChangeType(BitConverter.ToInt64(buffer, 0), typeof(T));
+      }
+
+      if (typeof(T) == typeof(int) ||
+          typeof(T) == typeof(uint))
+      {
+        return (T)Convert.ChangeType(random.Next(), typeof(T));
+      }
+
+      throw new NotSupportedException();
     }
   }
 }

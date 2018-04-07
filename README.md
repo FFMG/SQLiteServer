@@ -91,9 +91,9 @@ I am using the `\performance\SQLiteServerPerformance.sln` application to run com
 * `GetByte( idx )`
 * `GetChar( idx )`
 * `GetDateTime( idx )`
-* `GetDecimal( idx )`
+* <s>`GetDecimal( idx )`</s> 0.1.1.2
 * <s>`GetDouble( idx )`</s> 0.1.1.0
-* `GetFloat( idx )`
+* <s>``GetFloat( idx )`</s> 0.1.1.2
 
 ## Other
 * Namepipe might be faster, need to investigate more.
