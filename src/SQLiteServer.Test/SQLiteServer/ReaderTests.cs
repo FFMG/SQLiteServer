@@ -564,12 +564,14 @@ namespace SQLiteServer.Test.SQLiteServer
 
       var client = CreateConnection();
       client.Open();
-      const string sqlInsert1 = "insert into tb_config(name, value) VALUES ('a', '10')";
+      var long1 = RandomNumber<long>();
+      var sqlInsert1 = $"insert into tb_config(name, value) VALUES ('a', {long1})";
       using (var command = new SQLiteServerCommand(sqlInsert1, client))
       {
         command.ExecuteNonQuery();
       }
-      const string sqlInsert2 = "insert into tb_config(name, value) VALUES ('b', '20')";
+      var long2 = RandomNumber<long>();
+      var sqlInsert2 = $"insert into tb_config(name, value) VALUES ('b', {long2})";
       using (var command = new SQLiteServerCommand(sqlInsert2, client))
       {
         command.ExecuteNonQuery();
@@ -582,11 +584,11 @@ namespace SQLiteServer.Test.SQLiteServer
         {
           Assert.IsTrue(reader.Read());
           Assert.AreEqual("a", reader["name"]);
-          Assert.AreEqual(10, reader["value"]);
+          Assert.AreEqual(long1, reader["value"]);
 
           Assert.IsTrue(reader.Read());
           Assert.AreEqual("b", reader["name"]);
-          Assert.AreEqual(20, reader["value"]);
+          Assert.AreEqual(long2, reader["value"]);
 
           Assert.IsFalse(reader.Read());
         }
@@ -635,6 +637,96 @@ namespace SQLiteServer.Test.SQLiteServer
           Assert.IsFalse(reader.Read());
         }
       }
+      server.Close();
+    }
+
+    [Test]
+    public void ServerGetIntValue()
+    {
+      var server = CreateConnection();
+      server.Open();
+      const string sqlMaster = "create table tb_config (name varchar(20), value INTEGER)";
+      using (var command = new SQLiteServerCommand(sqlMaster, server))
+      {
+        command.ExecuteNonQuery();
+      }
+
+      var int1 = RandomNumber<int>();
+      var sqlInsert1 = $"insert into tb_config(name, value) VALUES ('a', {int1})";
+      using (var command = new SQLiteServerCommand(sqlInsert1, server))
+      {
+        command.ExecuteNonQuery();
+      }
+      var int2 = RandomNumber<int>();
+      var sqlInsert2 = $"insert into tb_config(name, value) VALUES ('b', {int2})";
+      using (var command = new SQLiteServerCommand(sqlInsert2, server))
+      {
+        command.ExecuteNonQuery();
+      }
+
+      const string sqlSelect = "SELECT * FROM tb_config";
+      using (var command = new SQLiteServerCommand(sqlSelect, server))
+      {
+        using (var reader = command.ExecuteReader())
+        {
+          Assert.IsTrue(reader.Read());
+          Assert.AreEqual("a", reader.GetString(0));
+          Assert.AreEqual(int1, reader.GetInt32(1));
+
+          Assert.IsTrue(reader.Read());
+          Assert.AreEqual("b", reader.GetString(0));
+          Assert.AreEqual(int2, reader.GetInt32(1));
+
+          Assert.IsFalse(reader.Read());
+        }
+      }
+      server.Close();
+    }
+
+    [Test]
+    public void ClientGetIntValue()
+    {
+      var server = CreateConnection();
+      server.Open();
+      var client = CreateConnection();
+      client.Open();
+
+      const string sqlMaster = "create table tb_config (name varchar(20), value INTEGER)";
+      using (var command = new SQLiteServerCommand(sqlMaster, client))
+      {
+        command.ExecuteNonQuery();
+      }
+
+      var int1 = RandomNumber<int>();
+      var sqlInsert1 = $"insert into tb_config(name, value) VALUES ('a', {int1})";
+      using (var command = new SQLiteServerCommand(sqlInsert1, client))
+      {
+        command.ExecuteNonQuery();
+      }
+      var int2 = RandomNumber<int>();
+      var sqlInsert2 = $"insert into tb_config(name, value) VALUES ('b', {int2})";
+      using (var command = new SQLiteServerCommand(sqlInsert2, client))
+      {
+        command.ExecuteNonQuery();
+      }
+
+      const string sqlSelect = "SELECT * FROM tb_config";
+      using (var command = new SQLiteServerCommand(sqlSelect, client))
+      {
+        using (var reader = command.ExecuteReader())
+        {
+          Assert.IsTrue(reader.Read());
+          Assert.AreEqual("a", reader.GetString(0));
+          Assert.AreEqual(int1, reader.GetInt32(1));
+
+          Assert.IsTrue(reader.Read());
+          Assert.AreEqual("b", reader.GetString(0));
+          Assert.AreEqual(int2, reader.GetInt32(1));
+
+          Assert.IsFalse(reader.Read());
+        }
+      }
+      client.Close();
       server.Close();
     }
 
