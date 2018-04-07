@@ -12,6 +12,8 @@
 //
 //    You should have received a copy of the GNU General Public License
 //    along with SQLiteServer.  If not, see<https://www.gnu.org/licenses/gpl-3.0.en.html>.
+
+using System.Data;
 using NUnit.Framework;
 using SQLiteServer.Data.Exceptions;
 using SQLiteServer.Data.SQLiteServer;
@@ -1923,6 +1925,76 @@ namespace SQLiteServer.Test.SQLiteServer
         }
       }
       client.Close();
+    }
+
+    [Test]
+    public void ServerCommandBehaviorSingleRowOnly()
+    {
+      var server = CreateConnection();
+      server.Open();
+      const string sqlMaster = "create table tb_config (name varchar(20), value REAL)";
+      using (var command = new SQLiteServerCommand(sqlMaster, server))
+      {
+        command.ExecuteNonQuery();
+      }
+
+      // add multiple rows
+      const string sql = "insert into tb_config(name, value) VALUES ('a', 3.14)";
+      using (var command = new SQLiteServerCommand(sql, server)) { command.ExecuteNonQuery(); }
+      using (var command = new SQLiteServerCommand(sql, server)) { command.ExecuteNonQuery(); }
+      using (var command = new SQLiteServerCommand(sql, server)) { command.ExecuteNonQuery(); }
+
+      const string sqlSelect = "SELECT * FROM tb_config";
+      using (var command = new SQLiteServerCommand(sqlSelect, server))
+      {
+        using (var reader = command.ExecuteReader(CommandBehavior.Default | CommandBehavior.SingleRow))
+        {
+          // first read is valid
+          Assert.IsTrue(reader.Read());
+          Assert.AreEqual("a", reader.GetString(0));
+
+          // then no more rows can be read.
+          Assert.IsFalse(reader.Read());
+        }
+      }
+      server.Close();
+    }
+
+    [Test]
+    public void ClientCommandBehaviorSingleRowOnly()
+    {
+      var server = CreateConnection();
+      server.Open();
+      var client = CreateConnection();
+      client.Open();
+
+      const string sqlMaster = "create table tb_config (name varchar(20), value REAL)";
+      using (var command = new SQLiteServerCommand(sqlMaster, client))
+      {
+        command.ExecuteNonQuery();
+      }
+
+      // add multiple rows
+      const string sql = "insert into tb_config(name, value) VALUES ('a', 3.14)";
+      using (var command = new SQLiteServerCommand(sql, client)){ command.ExecuteNonQuery(); }
+      using (var command = new SQLiteServerCommand(sql, client)) { command.ExecuteNonQuery(); }
+      using (var command = new SQLiteServerCommand(sql, client)) { command.ExecuteNonQuery(); }
+
+      const string sqlSelect = "SELECT * FROM tb_config";
+      using (var command = new SQLiteServerCommand(sqlSelect, client))
+      {
+        using (var reader = command.ExecuteReader( CommandBehavior.Default | CommandBehavior.SingleRow ))
+        {
+          // first read is valid
+          Assert.IsTrue(reader.Read());
+          Assert.AreEqual("a", reader.GetString(0));
+
+          // then no more rows can be read.
+          Assert.IsFalse(reader.Read());
+        }
+      }
+      client.Close();
+      server.Close();
     }
   }
 }

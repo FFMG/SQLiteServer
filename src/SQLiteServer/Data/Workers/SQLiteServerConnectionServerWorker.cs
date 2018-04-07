@@ -15,6 +15,7 @@
 using SQLiteServer.Data.Connections;
 using System;
 using System.Collections.Generic;
+using System.Data;
 using System.Data.SQLite;
 using SQLiteServer.Data.Data;
 using SQLiteServer.Data.Enums;
@@ -313,7 +314,10 @@ namespace SQLiteServer.Data.Workers
       //  get the guid
       try
       {
-        var guid = packet.Get<string>();
+        // Get the index request.
+        var indexRequest = Fields.Fields.Unpack(packet.Payload).DeserializeObject<IndexRequest>();
+
+        var guid = indexRequest.Guid;
         lock (_commandsLock)
         {
           var command = GetCommandWorker(guid);
@@ -324,7 +328,8 @@ namespace SQLiteServer.Data.Workers
           }
 
           var reader = command.CreateReaderWorker();
-          reader.ExecuteReader();
+          reader.ExecuteReader( (CommandBehavior)indexRequest.Index );
+
           // we know that the command exists
           // so we can simply update the value.
           _commands[guid] = new CommandData

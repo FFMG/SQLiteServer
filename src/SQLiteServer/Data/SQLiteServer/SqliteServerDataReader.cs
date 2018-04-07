@@ -156,7 +156,7 @@ namespace SQLiteServer.Data.SQLiteServer
     {
       WaitIfConnecting();
       ThrowIfAny();
-      _worker.ExecuteReader();
+      _worker.ExecuteReader(_commandBehavior);
     }
 
     public override bool NextResult()
@@ -180,7 +180,7 @@ namespace SQLiteServer.Data.SQLiteServer
       // then there is nothing else for us to read
       if ((_commandBehavior & CommandBehavior.SingleRow) != 0)
       {
-        if (_rowsRead > 1)
+        if (_rowsRead >= 1)
         {
           return false;
         }

@@ -13,6 +13,7 @@
 //    You should have received a copy of the GNU General Public License
 //    along with SQLiteServer.  If not, see<https://www.gnu.org/licenses/gpl-3.0.en.html>.
 using System;
+using System.Data;
 using System.Data.SQLite;
 
 namespace SQLiteServer.Data.Workers
@@ -62,10 +63,10 @@ namespace SQLiteServer.Data.Workers
     #endregion
 
     /// <inheritdoc />
-    public void ExecuteReader()
+    public void ExecuteReader(CommandBehavior commandBehavior)
     {
       ThrowIfNoCommand();
-      _reader = _command.ExecuteReader();
+      _reader = _command.ExecuteReader(commandBehavior);
     }
     
     /// <inheritdoc />

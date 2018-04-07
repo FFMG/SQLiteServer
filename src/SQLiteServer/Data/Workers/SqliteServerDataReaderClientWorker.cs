@@ -14,6 +14,7 @@
 //    along with SQLiteServer.  If not, see<https://www.gnu.org/licenses/gpl-3.0.en.html>.
 using System;
 using System.Collections.Generic;
+using System.Data;
 using System.Text;
 using SQLiteServer.Data.Connections;
 using SQLiteServer.Data.Data;
@@ -85,9 +86,17 @@ namespace SQLiteServer.Data.Workers
       _queryTimeouts = queryTimeouts;
     }
 
-    public void ExecuteReader()
+    /// <inheritdoc />
+    public void ExecuteReader(CommandBehavior commandBehavior)
     {
-      var response = _controller.SendAndWait(SQLiteMessage.ExecuteReaderRequest, Encoding.ASCII.GetBytes(_commandGuid), _queryTimeouts);
+      var getValue = new IndexRequest()
+      {
+        Guid = _commandGuid,
+        Index = (int)commandBehavior
+      };
+      var fields = Fields.Fields.SerializeObject(getValue);
+
+      var response = _controller.SendAndWait(SQLiteMessage.ExecuteReaderRequest, fields.Pack(), _queryTimeouts);
       if (null == response)
       {
         throw new TimeoutException("There was a timeout error executing the reader.");

@@ -13,6 +13,7 @@
 //    You should have received a copy of the GNU General Public License
 //    along with SQLiteServer.  If not, see<https://www.gnu.org/licenses/gpl-3.0.en.html>.
 using System;
+using System.Data;
 
 namespace SQLiteServer.Data.Workers
 {
@@ -45,8 +46,9 @@ namespace SQLiteServer.Data.Workers
     /// <summary>
     /// Execute a 'read' operation
     /// </summary>
+    /// <param name="commandBehavior">The mae of the column.</param>
     /// <returns></returns>
-    void ExecuteReader();
+    void ExecuteReader(CommandBehavior commandBehavior);
 
     /// <summary>
     /// Prepare to read the next value.
@@ -57,7 +59,7 @@ namespace SQLiteServer.Data.Workers
     /// <summary>
     /// Retrieves the column index given its name.
     /// </summary>
-    /// <param name="name">The mae of the column.</param>
+    /// <param name="name">The name of the column.</param>
     /// <returns>int the index</returns>
     int GetOrdinal(string name);
 
