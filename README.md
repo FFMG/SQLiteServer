@@ -87,7 +87,7 @@ I am using the `\performance\SQLiteServerPerformance.sln` application to run com
 * <s>`GetTableName( idx )`</s> 0.1.1.0
 
 ## A little less important, (but still need to be added)
-* `GetBoolean( idx )`
+* <s>`GetBoolean( idx )`</s> 0.1.1.2
 * `GetByte( idx )`
 * `GetChar( idx )`
 * `GetDateTime( idx )`

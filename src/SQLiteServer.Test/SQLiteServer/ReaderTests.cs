@@ -731,6 +731,121 @@ namespace SQLiteServer.Test.SQLiteServer
     }
 
     [Test]
+    public void ClientGetBoolValue()
+    {
+      var server = CreateConnection();
+      server.Open();
+      var client = CreateConnection();
+      client.Open();
+
+      const string sqlMaster = "create table tb_config (name varchar(20), value INTEGER)";
+      using (var command = new SQLiteServerCommand(sqlMaster, client))
+      {
+        command.ExecuteNonQuery();
+      }
+
+      var int1 = RandomNumber<int>();
+      var sqlInsert1 = $"insert into tb_config(name, value) VALUES ('a', {int1})";
+      using (var command = new SQLiteServerCommand(sqlInsert1, client))
+      {
+        command.ExecuteNonQuery();
+      }
+
+      var sqlInsert2 = "insert into tb_config(name, value) VALUES ('b', 1)";
+      using (var command = new SQLiteServerCommand(sqlInsert2, client))
+      {
+        command.ExecuteNonQuery();
+      }
+      sqlInsert2 = "insert into tb_config(name, value) VALUES ('b', 0)";
+      using (var command = new SQLiteServerCommand(sqlInsert2, client))
+      {
+        command.ExecuteNonQuery();
+      }
+      const string sqlSelect = "SELECT * FROM tb_config";
+      using (var command = new SQLiteServerCommand(sqlSelect, client))
+      {
+        using (var reader = command.ExecuteReader())
+        {
+          Assert.IsTrue(reader.Read());
+          Assert.AreEqual("a", reader.GetString(0));
+          if (int1 == 0)
+          {
+            Assert.IsFalse(reader.GetBoolean(1));
+          }
+          else
+          {
+            Assert.IsTrue(reader.GetBoolean(1));
+          }
+          Assert.IsTrue(reader.Read());
+          Assert.IsTrue(reader.GetBoolean(1));
+
+          Assert.IsTrue(reader.Read());
+          Assert.IsFalse(reader.GetBoolean(1));
+
+          Assert.IsFalse(reader.Read());
+        }
+      }
+      client.Close();
+      server.Close();
+    }
+
+    [Test]
+    public void ServerGetBoolValue()
+    {
+      var server = CreateConnection();
+      server.Open();
+
+      const string sqlMaster = "create table tb_config (name varchar(20), value INTEGER)";
+      using (var command = new SQLiteServerCommand(sqlMaster, server))
+      {
+        command.ExecuteNonQuery();
+      }
+
+      var int1 = RandomNumber<int>();
+      var sqlInsert1 = $"insert into tb_config(name, value) VALUES ('a', {int1})";
+      using (var command = new SQLiteServerCommand(sqlInsert1, server))
+      {
+        command.ExecuteNonQuery();
+      }
+
+      var sqlInsert2 = "insert into tb_config(name, value) VALUES ('b', 1)";
+      using (var command = new SQLiteServerCommand(sqlInsert2, server))
+      {
+        command.ExecuteNonQuery();
+      }
+      sqlInsert2 = "insert into tb_config(name, value) VALUES ('b', 0)";
+      using (var command = new SQLiteServerCommand(sqlInsert2, server))
+      {
+        command.ExecuteNonQuery();
+      }
+      const string sqlSelect = "SELECT * FROM tb_config";
+      using (var command = new SQLiteServerCommand(sqlSelect, server))
+      {
+        using (var reader = command.ExecuteReader())
+        {
+          Assert.IsTrue(reader.Read());
+          Assert.AreEqual("a", reader.GetString(0));
+          if (int1 == 0)
+          {
+            Assert.IsFalse(reader.GetBoolean(1));
+          }
+          else
+          {
+            Assert.IsTrue(reader.GetBoolean(1));
+          }
+          Assert.IsTrue(reader.Read());
+          Assert.IsTrue(reader.GetBoolean(1));
+
+          Assert.IsTrue(reader.Read());
+          Assert.IsFalse(reader.GetBoolean(1));
+
+          Assert.IsFalse(reader.Read());
+        }
+      }
+      server.Close();
+    }
+
+    [Test]
     public void ServerGetValueByName()
     {
       var server = CreateConnection();
