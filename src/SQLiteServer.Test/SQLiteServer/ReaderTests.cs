@@ -752,15 +752,11 @@ namespace SQLiteServer.Test.SQLiteServer
       }
 
       var sqlInsert2 = "insert into tb_config(name, value) VALUES ('b', 1)";
-      using (var command = new SQLiteServerCommand(sqlInsert2, client))
-      {
-        command.ExecuteNonQuery();
-      }
-      sqlInsert2 = "insert into tb_config(name, value) VALUES ('b', 0)";
-      using (var command = new SQLiteServerCommand(sqlInsert2, client))
-      {
-        command.ExecuteNonQuery();
-      }
+      using (var command = new SQLiteServerCommand(sqlInsert2, client)){ command.ExecuteNonQuery(); }
+
+      sqlInsert2 = "insert into tb_config(name, value) VALUES ('c', 0)";
+      using (var command = new SQLiteServerCommand(sqlInsert2, client)){command.ExecuteNonQuery();}
+
       const string sqlSelect = "SELECT * FROM tb_config";
       using (var command = new SQLiteServerCommand(sqlSelect, client))
       {

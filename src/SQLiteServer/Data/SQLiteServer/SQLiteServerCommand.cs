@@ -13,6 +13,7 @@
 //    You should have received a copy of the GNU General Public License
 //    along with SQLiteServer.  If not, see<https://www.gnu.org/licenses/gpl-3.0.en.html>.
 using System;
+using System.Data;
 using SQLiteServer.Data.Exceptions;
 using SQLiteServer.Data.Workers;
 
@@ -174,13 +175,22 @@ namespace SQLiteServer.Data.SQLiteServer
     /// <returns></returns>
     public SqliteServerDataReader ExecuteReader()
     {
+      return ExecuteReader( CommandBehavior.Default );
+    }
+
+    /// <summary>
+    /// Execute a read operation and return a reader that will alow us to access the data.
+    /// </summary>
+    /// <returns></returns>
+    public SqliteServerDataReader ExecuteReader( CommandBehavior commandBehavior)
+    {
       WaitIfConnecting();
       ThrowIfAnyAndCreateWorker();
 
       try
       {
         // create the readeer
-        var reader = new SqliteServerDataReader(_worker.CreateReaderWorker(), _connection);
+        var reader = new SqliteServerDataReader(_worker.CreateReaderWorker(), _connection, commandBehavior);
 
         // execute the command
         reader.ExecuteReader();

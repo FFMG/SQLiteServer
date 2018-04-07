@@ -14,6 +14,7 @@
 //    along with SQLiteServer.  If not, see<https://www.gnu.org/licenses/gpl-3.0.en.html>.
 using System;
 using System.Collections;
+using System.Data;
 using System.Data.Common;
 using SQLiteServer.Data.Exceptions;
 using SQLiteServer.Data.Workers;
@@ -23,6 +24,16 @@ namespace SQLiteServer.Data.SQLiteServer
   public sealed class SqliteServerDataReader : DbDataReader
   {
     #region Private Variables
+    /// <summary>
+    /// The behavior of the datareader
+    /// </summary>
+    private readonly CommandBehavior _commandBehavior;
+
+    /// <summary>
+    /// The number of rows we have read.
+    /// </summary>
+    private int _rowsRead;
+
     /// <summary>
     /// Close the reader.
     /// </summary>
@@ -44,7 +55,9 @@ namespace SQLiteServer.Data.SQLiteServer
     private readonly SQLiteServerConnection _connection;
     #endregion
 
-    internal SqliteServerDataReader(ISqliteServerDataReaderWorker worker, SQLiteServerConnection connection)
+    internal SqliteServerDataReader(ISqliteServerDataReaderWorker worker, 
+                                    SQLiteServerConnection connection,
+                                    CommandBehavior commandBehavior)
     {
       if (null == worker)
       {
@@ -52,6 +65,7 @@ namespace SQLiteServer.Data.SQLiteServer
       }
       _worker = worker;
       _connection = connection;
+      _commandBehavior = commandBehavior;
     }
 
     /// <summary>
@@ -126,6 +140,11 @@ namespace SQLiteServer.Data.SQLiteServer
     /// <inheritdoc />
     public override void Close()
     {
+      // are we closing the connection?
+      if ((_commandBehavior & CommandBehavior.CloseConnection) != 0)
+      {
+        _connection?.Close();
+      }
       _worker = null;
       _closed = true;
     }
@@ -150,7 +169,31 @@ namespace SQLiteServer.Data.SQLiteServer
     {
       WaitIfConnecting();
       ThrowIfAny();
-      return _worker.Read();
+
+      // if we only want the schema ... then there is nothing to read
+      if ((_commandBehavior & CommandBehavior.SchemaOnly) != 0)
+      {
+        return false;
+      }
+
+      // if the caller only wants one row
+      // then there is nothing else for us to read
+      if ((_commandBehavior & CommandBehavior.SingleRow) != 0)
+      {
+        if (_rowsRead > 1)
+        {
+          return false;
+        }
+      }
+
+      if (!_worker.Read())
+      {
+        return false;
+      }
+
+      // we did read this row
+      ++_rowsRead;
+      return true;
     }
 
     public override int Depth { get; }
@@ -344,7 +387,7 @@ namespace SQLiteServer.Data.SQLiteServer
 
     public override IEnumerator GetEnumerator()
     {
-      throw new NotImplementedException();
+      return new DbEnumerator(this, ((_commandBehavior & CommandBehavior.CloseConnection) == CommandBehavior.CloseConnection));
     }
 
     /// <inheritdoc />
