@@ -606,12 +606,14 @@ namespace SQLiteServer.Test.SQLiteServer
         command.ExecuteNonQuery();
       }
 
-      const string sqlInsert1 = "insert into tb_config(name, value) VALUES ('a', '10')";
+      var long1 = RandomNumber<long>();
+      var sqlInsert1 = $"insert into tb_config(name, value) VALUES ('a', {long1})";
       using (var command = new SQLiteServerCommand(sqlInsert1, server))
       {
         command.ExecuteNonQuery();
       }
-      const string sqlInsert2 = "insert into tb_config(name, value) VALUES ('b', '20')";
+      var long2 = RandomNumber<long>();
+      var sqlInsert2 = $"insert into tb_config(name, value) VALUES ('b', {long2})";
       using (var command = new SQLiteServerCommand(sqlInsert2, server))
       {
         command.ExecuteNonQuery();
@@ -622,22 +624,15 @@ namespace SQLiteServer.Test.SQLiteServer
       {
         using (var reader = command.ExecuteReader())
         {
-          var i = 0;
-          while (reader.Read())
-          {
-            if (i == 0)
-            {
-              Assert.AreEqual("a", reader.GetString(0));
-              Assert.AreEqual(10, reader.GetInt64(1));
-            }
-            else
-            {
-              Assert.AreEqual("b", reader.GetString(0));
-              Assert.AreEqual(20, reader.GetInt64(1));
-            }
+          Assert.IsTrue(reader.Read());
+          Assert.AreEqual("a", reader.GetString(0));
+          Assert.AreEqual(long1, reader.GetInt64(1));
 
-            ++i;
-          }
+          Assert.IsTrue(reader.Read());
+          Assert.AreEqual("b", reader.GetString(0));
+          Assert.AreEqual(long2, reader.GetInt64(1));
+
+          Assert.IsFalse(reader.Read());
         }
       }
       server.Close();
