@@ -329,7 +329,19 @@ namespace SQLiteServer.Data.Workers
         return _dataTypeName[i];
       }
 
-      return null;
+      // get the value
+      var dataTypeName = GetIndexedValue<string>(SQLiteMessage.ExecuteReaderGetDataTypeNameRequest, i);
+
+      // the name cannot be null, it just means
+      // that it was created with no type
+      //   `CREATE TABLE t1( z)`
+      dataTypeName = dataTypeName ?? string.Empty;
+
+      // save it
+      _dataTypeName[i] = dataTypeName;
+
+      // return it.
+      return dataTypeName;
     }
 
     /// <inheritdoc />

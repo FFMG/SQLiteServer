@@ -253,7 +253,7 @@ namespace SQLiteServer.Test.SQLiteServer
     }
 
     [Test]
-    public void ServerGetFieldTypeWithNoGivenTye()
+    public void ServerGetFieldTypeWithNoGivenType()
     {
       var server = CreateConnection();
       server.Open();
@@ -378,5 +378,62 @@ namespace SQLiteServer.Test.SQLiteServer
       client.Close();
       server.Close();
     }
+
+    [Test]
+    public void ServerGetDataTypeNameWithNoGivenType()
+    {
+      var server = CreateConnection();
+      server.Open();
+      const string sqlMaster = "CREATE TABLE t1(u VARCHAR(128), w varchar(255), x SOMETYPE, y INTEGER, z)";
+      using (var command = new SQLiteServerCommand(sqlMaster, server))
+      {
+        command.ExecuteNonQuery();
+      }
+
+      const string sqlSelect = "SELECT * FROM t1";
+      using (var command = new SQLiteServerCommand(sqlSelect, server))
+      {
+        using (var reader = command.ExecuteReader())
+        {
+          Assert.AreEqual("VARCHAR(128)", reader.GetDataTypeName(0)); // uppercase 128...
+          Assert.AreEqual("varchar(255)", reader.GetDataTypeName(1)); // lowercase 255
+          Assert.AreEqual("SOMETYPE", reader.GetDataTypeName(2));
+          Assert.AreEqual("INTEGER", reader.GetDataTypeName(3));      // integer
+          Assert.AreEqual("", reader.GetDataTypeName(4));             // no type was given
+        }
+      }
+      server.Close();
+    }
+
+    [Test]
+    public void ClientGetDataTypeNameWithNoGivenType()
+    {
+      var server = CreateConnection();
+      server.Open();
+      var client = CreateConnection();
+      client.Open();
+
+      const string sqlMaster = "CREATE TABLE t1(u VARCHAR(128), w varchar(255), x SOMETYPE, y INTEGER, z)";
+      using (var command = new SQLiteServerCommand(sqlMaster, client))
+      {
+        command.ExecuteNonQuery();
+      }
+
+      const string sqlSelect = "SELECT * FROM t1";
+      using (var command = new SQLiteServerCommand(sqlSelect, client))
+      {
+        using (var reader = command.ExecuteReader())
+        {
+          Assert.AreEqual("VARCHAR(128)", reader.GetDataTypeName(0)); // uppercase 128...
+          Assert.AreEqual("varchar(255)", reader.GetDataTypeName(1)); // lowercase 255
+          Assert.AreEqual("SOMETYPE", reader.GetDataTypeName(2));
+          Assert.AreEqual("INTEGER", reader.GetDataTypeName(3));      // integer
+          Assert.AreEqual("", reader.GetDataTypeName(4));             // no type was given
+        }
+      }
+      client.Close();
+      server.Close();
+    }
+
   }
 }
