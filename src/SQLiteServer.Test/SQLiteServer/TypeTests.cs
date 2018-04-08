@@ -435,5 +435,83 @@ namespace SQLiteServer.Test.SQLiteServer
       server.Close();
     }
 
+    [Test]
+    public void ServerGetDataTypeNameWithNoGivenTyeAfterInsert()
+    {
+      var server = CreateConnection();
+      server.Open();
+      const string sqlMaster = "CREATE TABLE t1(w REAL, x SOMETYPE, y INTEGER, z)";
+      using (var command = new SQLiteServerCommand(sqlMaster, server))
+      {
+        command.ExecuteNonQuery();
+      }
+
+      var sql = "INSERT INTO t1 (w, x, y, z) VALUES(3.12, RANDOMBLOB(1), 1, 'z');";
+      using (var command = new SQLiteServerCommand(sql, server)) { command.ExecuteNonQuery(); }
+      sql = "INSERT INTO t1 (w, x, y, z) VALUES(12, RANDOMBLOB(1), 1, 12);";
+      using (var command = new SQLiteServerCommand(sql, server)) { command.ExecuteNonQuery(); }
+
+      const string sqlSelect = "SELECT * FROM t1";
+      using (var command = new SQLiteServerCommand(sqlSelect, server))
+      {
+        using (var reader = command.ExecuteReader())
+        {
+          Assert.IsTrue(reader.Read());
+          // we now now the types.
+          Assert.AreEqual("REAL", reader.GetDataTypeName(0)); // SOMETYPE = object
+          Assert.AreEqual("SOMETYPE", reader.GetDataTypeName(1)); // SOMETYPE = object
+          Assert.AreEqual("INTEGER", reader.GetDataTypeName(2));   // integer
+          Assert.AreEqual("", reader.GetDataTypeName(3)); // string
+
+          Assert.IsTrue(reader.Read());
+          Assert.AreEqual("REAL", reader.GetDataTypeName(0)); // SOMETYPE = object
+          Assert.AreEqual("SOMETYPE", reader.GetDataTypeName(1)); // SOMETYPE = object
+          Assert.AreEqual("INTEGER", reader.GetDataTypeName(2));   // integer
+          Assert.AreEqual("", reader.GetDataTypeName(3));   // int
+        }
+      }
+      server.Close();
+    }
+
+    [Test]
+    public void ClientGetDataTypeNameWithNoGivenTyeAfterInsert()
+    {
+      var server = CreateConnection();
+      server.Open();
+      var client = CreateConnection();
+      client.Open();
+      const string sqlMaster = "CREATE TABLE t1(w REAL, x SOMETYPE, y INTEGER, z)";
+      using (var command = new SQLiteServerCommand(sqlMaster, client))
+      {
+        command.ExecuteNonQuery();
+      }
+
+      var sql = "INSERT INTO t1 (w, x, y, z) VALUES(3.12, RANDOMBLOB(1), 1, 'z');";
+      using (var command = new SQLiteServerCommand(sql, client)) { command.ExecuteNonQuery(); }
+      sql = "INSERT INTO t1 (w, x, y, z) VALUES(12, RANDOMBLOB(1), 1, 12);";
+      using (var command = new SQLiteServerCommand(sql, client)) { command.ExecuteNonQuery(); }
+
+      const string sqlSelect = "SELECT * FROM t1";
+      using (var command = new SQLiteServerCommand(sqlSelect, client))
+      {
+        using (var reader = command.ExecuteReader())
+        {
+          Assert.IsTrue(reader.Read());
+          // we now now the types.
+          Assert.AreEqual("REAL", reader.GetDataTypeName(0)); // SOMETYPE = object
+          Assert.AreEqual("SOMETYPE", reader.GetDataTypeName(1)); // SOMETYPE = object
+          Assert.AreEqual("INTEGER", reader.GetDataTypeName(2));   // integer
+          Assert.AreEqual("", reader.GetDataTypeName(3)); // string
+
+          Assert.IsTrue(reader.Read());
+          Assert.AreEqual("REAL", reader.GetDataTypeName(0)); // SOMETYPE = object
+          Assert.AreEqual("SOMETYPE", reader.GetDataTypeName(1)); // SOMETYPE = object
+          Assert.AreEqual("INTEGER", reader.GetDataTypeName(2));   // integer
+          Assert.AreEqual("", reader.GetDataTypeName(3));   // int
+        }
+      }
+      client.Close();
+      server.Close();
+    }
   }
 }
