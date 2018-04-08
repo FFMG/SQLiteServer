@@ -99,7 +99,7 @@ I am using the `\performance\SQLiteServerPerformance.sln` application to run com
 * Namepipe might be faster, need to investigate more.
 * Create Nuget package
 * Some code cleanup
-* Performance testing/report.
+* <s>`Performance testing/report.`</s> 0.1.1.0
 * <s>`SQLiteServerConnection` should implement `DbConnection`</s> 0.1.1.1
 * `SQLiteServerCommand` should implement `DbCommand`
   * Need to implement `DbCommand CreateDbCommand(){}` when this is done
