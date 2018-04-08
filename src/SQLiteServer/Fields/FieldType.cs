@@ -21,6 +21,7 @@ namespace SQLiteServer.Fields
     Int64,
     String,
     Double,
-    Bytes
+    Bytes,
+    Object
   }
 }

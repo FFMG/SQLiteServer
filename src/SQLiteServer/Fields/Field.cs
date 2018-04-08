@@ -335,7 +335,12 @@ namespace SQLiteServer.Fields
       {
         return FieldType.Bytes;
       }
-      
+
+      if (type == typeof(object))
+      {
+        return FieldType.Object;
+      }
+
       // no idea what this is...
       throw new NotSupportedException( $"The given data type is not supported.");
     }
@@ -366,6 +371,9 @@ namespace SQLiteServer.Fields
 
         case FieldType.Bytes:
           return typeof(byte[]);
+
+        case FieldType.Object:
+          return typeof(object);
 
         default:
           // no idea what this is...

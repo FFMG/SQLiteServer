@@ -151,5 +151,56 @@ namespace SQLiteServer.Test.SQLiteServer
       client.Close();
       server.Close();
     }
+
+    [Test]
+    public void ServerGetAnyTypeType()
+    {
+      var server = CreateConnection();
+      server.Open();
+      const string sqlMaster = "CREATE TABLE t1(x SOMETYPE, y INTEGER, z)";
+      using (var command = new SQLiteServerCommand(sqlMaster, server))
+      {
+        command.ExecuteNonQuery();
+      }
+
+      const string sqlSelect = "SELECT * FROM t1";
+      using (var command = new SQLiteServerCommand(sqlSelect, server))
+      {
+        using (var reader = command.ExecuteReader())
+        {
+          Assert.AreEqual(typeof(object), reader.GetFieldType(0)); // SOMETYPE = object
+          Assert.AreEqual(typeof(long), reader.GetFieldType(1));   // integer
+        }
+      }
+      server.Close();
+    }
+
+    [Test]
+    public void ClientGetAnyTypeType()
+    {
+      var server = CreateConnection();
+      server.Open();
+      var client = CreateConnection();
+      client.Open();
+
+      const string sqlMaster = "CREATE TABLE t1(x SOMETYPE, y INTEGER, z)";
+      using (var command = new SQLiteServerCommand(sqlMaster, client))
+      {
+        command.ExecuteNonQuery();
+      }
+
+      const string sqlSelect = "SELECT * FROM t1";
+      using (var command = new SQLiteServerCommand(sqlSelect, client))
+      {
+        using (var reader = command.ExecuteReader())
+        {
+          Assert.AreEqual(typeof(object), reader.GetFieldType(0)); // SOMETYPE = object
+          Assert.AreEqual(typeof(long), reader.GetFieldType(1));   // integer
+        }
+      }
+
+      client.Close();
+      server.Close();
+    }
   }
 }
