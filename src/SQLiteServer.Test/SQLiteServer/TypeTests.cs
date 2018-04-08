@@ -202,5 +202,183 @@ namespace SQLiteServer.Test.SQLiteServer
       client.Close();
       server.Close();
     }
+
+    [Test]
+    public void ServerGetBlobTypeType()
+    {
+      var server = CreateConnection();
+      server.Open();
+      const string sqlMaster = "CREATE TABLE t1(x BLOB, y INTEGER, z)";
+      using (var command = new SQLiteServerCommand(sqlMaster, server))
+      {
+        command.ExecuteNonQuery();
+      }
+
+      const string sqlSelect = "SELECT * FROM t1";
+      using (var command = new SQLiteServerCommand(sqlSelect, server))
+      {
+        using (var reader = command.ExecuteReader())
+        {
+          Assert.AreEqual(typeof(byte[]), reader.GetFieldType(0)); // BLOB = byte[]
+          Assert.AreEqual(typeof(long), reader.GetFieldType(1));   // integer
+        }
+      }
+      server.Close();
+    }
+
+    [Test]
+    public void ClientGetBlobTypeType()
+    {
+      var server = CreateConnection();
+      server.Open();
+      var client = CreateConnection();
+      client.Open();
+
+      const string sqlMaster = "CREATE TABLE t1(x BLOB, y INTEGER, z)";
+      using (var command = new SQLiteServerCommand(sqlMaster, client))
+      {
+        command.ExecuteNonQuery();
+      }
+
+      const string sqlSelect = "SELECT * FROM t1";
+      using (var command = new SQLiteServerCommand(sqlSelect, client))
+      {
+        using (var reader = command.ExecuteReader())
+        {
+          Assert.AreEqual(typeof(byte[]), reader.GetFieldType(0)); // BLOB = byte[]
+          Assert.AreEqual(typeof(long), reader.GetFieldType(1));   // integer
+        }
+      }
+
+      client.Close();
+      server.Close();
+    }
+
+    [Test]
+    public void ServerGetFieldTypeWithNoGivenTye()
+    {
+      var server = CreateConnection();
+      server.Open();
+      const string sqlMaster = "CREATE TABLE t1(x SOMETYPE, y INTEGER, z)";
+      using (var command = new SQLiteServerCommand(sqlMaster, server))
+      {
+        command.ExecuteNonQuery();
+      }
+
+      const string sqlSelect = "SELECT * FROM t1";
+      using (var command = new SQLiteServerCommand(sqlSelect, server))
+      {
+        using (var reader = command.ExecuteReader())
+        {
+          Assert.AreEqual(typeof(object), reader.GetFieldType(0)); // SOMETYPE = object
+          Assert.AreEqual(typeof(long), reader.GetFieldType(1));   // integer
+          Assert.AreEqual(typeof(object), reader.GetFieldType(2)); // "" = object
+        }
+      }
+      server.Close();
+    }
+
+    [Test]
+    public void ServerGetFieldTypeWithNoGivenTyeAfterInsert()
+    {
+      var server = CreateConnection();
+      server.Open();
+      const string sqlMaster = "CREATE TABLE t1(x SOMETYPE, y INTEGER, z)";
+      using (var command = new SQLiteServerCommand(sqlMaster, server))
+      {
+        command.ExecuteNonQuery();
+      }
+
+      var sql = "INSERT INTO t1 (x, y, z) VALUES(RANDOMBLOB(1), 1, 'z');";
+      using (var command = new SQLiteServerCommand(sql, server)) { command.ExecuteNonQuery(); }
+      sql = "INSERT INTO t1 (x, y, z) VALUES(RANDOMBLOB(1), 1, 12);";
+      using (var command = new SQLiteServerCommand(sql, server)) { command.ExecuteNonQuery(); }
+
+      const string sqlSelect = "SELECT * FROM t1";
+      using (var command = new SQLiteServerCommand(sqlSelect, server))
+      {
+        using (var reader = command.ExecuteReader())
+        {
+          Assert.IsTrue(reader.Read());
+          // we now now the types.
+          Assert.AreEqual(typeof(byte[]), reader.GetFieldType(0)); // SOMETYPE = object
+          Assert.AreEqual(typeof(long), reader.GetFieldType(1));   // integer
+          Assert.AreEqual(typeof(string), reader.GetFieldType(2)); // string
+
+          Assert.IsTrue(reader.Read());
+          Assert.AreEqual(typeof(byte[]), reader.GetFieldType(0)); // SOMETYPE = object
+          Assert.AreEqual(typeof(long), reader.GetFieldType(1));   // integer
+          Assert.AreEqual(typeof(long), reader.GetFieldType(2));   // int
+        }
+      }
+      server.Close();
+    }
+
+    [Test]
+    public void ClientGetFieldTypeWithNoGivenTyeAfterInsert()
+    {
+      var server = CreateConnection();
+      server.Open();
+      var client = CreateConnection();
+      client.Open();
+
+      const string sqlMaster = "CREATE TABLE t1(x SOMETYPE, y INTEGER, z)";
+      using (var command = new SQLiteServerCommand(sqlMaster, server))
+      {
+        command.ExecuteNonQuery();
+      }
+
+      var sql = "INSERT INTO t1 (x, y, z) VALUES(RANDOMBLOB(1), 1, 'z');";
+      using (var command = new SQLiteServerCommand(sql, server)) { command.ExecuteNonQuery(); }
+      sql = "INSERT INTO t1 (x, y, z) VALUES(RANDOMBLOB(1), 1, 12);";
+      using (var command = new SQLiteServerCommand(sql, server)) { command.ExecuteNonQuery(); }
+
+      const string sqlSelect = "SELECT * FROM t1";
+      using (var command = new SQLiteServerCommand(sqlSelect, server))
+      {
+        using (var reader = command.ExecuteReader())
+        {
+          Assert.IsTrue(reader.Read());
+          // we now now the types.
+          Assert.AreEqual(typeof(byte[]), reader.GetFieldType(0)); // SOMETYPE = object
+          Assert.AreEqual(typeof(long), reader.GetFieldType(1));   // integer
+          Assert.AreEqual(typeof(string), reader.GetFieldType(2)); // string
+
+          Assert.IsTrue(reader.Read());
+          Assert.AreEqual(typeof(byte[]), reader.GetFieldType(0)); // SOMETYPE = object
+          Assert.AreEqual(typeof(long), reader.GetFieldType(1));   // integer
+          Assert.AreEqual(typeof(long), reader.GetFieldType(2));   // int
+        }
+      }
+      server.Close();
+    }
+
+    [Test]
+    public void ClientGetFieldTypeWithNoGivenType()
+    {
+      var server = CreateConnection();
+      server.Open();
+      var client = CreateConnection();
+      client.Open();
+      const string sqlMaster = "CREATE TABLE t1(x SOMETYPE, y INTEGER, z)";
+      using (var command = new SQLiteServerCommand(sqlMaster, client))
+      {
+        command.ExecuteNonQuery();
+      }
+
+      const string sqlSelect = "SELECT * FROM t1";
+      using (var command = new SQLiteServerCommand(sqlSelect, client))
+      {
+        using (var reader = command.ExecuteReader())
+        {
+          Assert.AreEqual(typeof(object), reader.GetFieldType(0)); // SOMETYPE = object
+          Assert.AreEqual(typeof(long), reader.GetFieldType(1));   // integer
+          Assert.AreEqual(typeof(object), reader.GetFieldType(2)); // "" = object
+        }
+      }
+
+      client.Close();
+      server.Close();
+    }
   }
 }
