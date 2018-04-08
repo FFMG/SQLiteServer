@@ -145,6 +145,13 @@ namespace SQLiteServer.Data.Workers
     }
 
     /// <inheritdoc />
+    public string GetDataTypeName(int i)
+    {
+      ThrowIfNoReader();
+      return _reader.GetDataTypeName(i);
+    }
+
+    /// <inheritdoc />
     public Type GetFieldType(int i)
     {
       ThrowIfNoReader();

@@ -321,18 +321,18 @@ namespace SQLiteServer.Test.SQLiteServer
       client.Open();
 
       const string sqlMaster = "CREATE TABLE t1(x SOMETYPE, y INTEGER, z)";
-      using (var command = new SQLiteServerCommand(sqlMaster, server))
+      using (var command = new SQLiteServerCommand(sqlMaster, client))
       {
         command.ExecuteNonQuery();
       }
 
       var sql = "INSERT INTO t1 (x, y, z) VALUES(RANDOMBLOB(1), 1, 'z');";
-      using (var command = new SQLiteServerCommand(sql, server)) { command.ExecuteNonQuery(); }
+      using (var command = new SQLiteServerCommand(sql, client)) { command.ExecuteNonQuery(); }
       sql = "INSERT INTO t1 (x, y, z) VALUES(RANDOMBLOB(1), 1, 12);";
-      using (var command = new SQLiteServerCommand(sql, server)) { command.ExecuteNonQuery(); }
+      using (var command = new SQLiteServerCommand(sql, client)) { command.ExecuteNonQuery(); }
 
       const string sqlSelect = "SELECT * FROM t1";
-      using (var command = new SQLiteServerCommand(sqlSelect, server))
+      using (var command = new SQLiteServerCommand(sqlSelect, client))
       {
         using (var reader = command.ExecuteReader())
         {

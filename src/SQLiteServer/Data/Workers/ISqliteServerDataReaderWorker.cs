@@ -106,6 +106,13 @@ namespace SQLiteServer.Data.Workers
     Type GetFieldType(int i);
 
     /// <summary>
+    /// Get the field name for a given colum
+    /// </summary>
+    /// <param name="i">The index of the column.</param>
+    /// <returns></returns>
+    string GetDataTypeName(int i);
+
+    /// <summary>
     /// Get a raw value 
     /// </summary>
     /// <param name="i">The index of the column.</param>

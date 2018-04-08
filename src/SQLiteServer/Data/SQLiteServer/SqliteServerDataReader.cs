@@ -398,7 +398,7 @@ namespace SQLiteServer.Data.SQLiteServer
       {
         throw new IndexOutOfRangeException("Trying to get a name type out of range.");
       }
-      throw new NotImplementedException();
+      return _worker.GetDataTypeName(i);
     }
 
     /// <inheritdoc />

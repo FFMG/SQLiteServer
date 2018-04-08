@@ -48,6 +48,11 @@ namespace SQLiteServer.Data.Workers
     private readonly Dictionary<int, Type> _fieldTypes = new Dictionary<int, Type>();
 
     /// <summary>
+    /// Save the field names.
+    /// </summary>
+    private readonly Dictionary<int, string> _dataTypeName = new Dictionary<int, string>();
+
+    /// <summary>
     /// Get the number of fields.
     /// If the value is null, we will ask the server, otherwise it is cached.
     /// </summary>
@@ -124,7 +129,15 @@ namespace SQLiteServer.Data.Workers
     /// <inheritdoc />
     public bool Read()
     {
-      return GetGuiOnlyValue<int>(SQLiteMessage.ExecuteReaderReadRequest) != 0;
+      if (GetGuiOnlyValue<int>(SQLiteMessage.ExecuteReaderReadRequest) == 0)
+      {
+        return false;
+      }
+
+      // we need to reset some field now.
+      _dataTypeName.Clear();
+      _fieldTypes.Clear();
+      return true;
     }
 
     /// <inheritdoc />
@@ -306,6 +319,17 @@ namespace SQLiteServer.Data.Workers
     public string GetString(int i)
     {
       return GetIndexedValue<string>(SQLiteMessage.ExecuteReaderGetStringRequest, i);
+    }
+
+    /// <inheritdoc />
+    public string GetDataTypeName(int i)
+    {
+      if (_dataTypeName.ContainsKey(i))
+      {
+        return _dataTypeName[i];
+      }
+
+      return null;
     }
 
     /// <inheritdoc />
