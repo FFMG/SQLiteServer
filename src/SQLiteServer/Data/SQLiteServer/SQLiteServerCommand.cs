@@ -14,6 +14,8 @@
 //    along with SQLiteServer.  If not, see<https://www.gnu.org/licenses/gpl-3.0.en.html>.
 using System;
 using System.Data;
+using System.Data.Common;
+using System.Threading;
 using System.Threading.Tasks;
 using SQLiteServer.Data.Exceptions;
 using SQLiteServer.Data.Workers;
@@ -175,6 +177,16 @@ namespace SQLiteServer.Data.SQLiteServer
     }
 
     /// <summary>
+    /// Execute the given query 
+    /// </summary>
+    /// <returns>The number of rows added/deleted/whatever depending on the query.</returns>
+    public Task<int> ExecuteNonQueryAsync()
+    {
+      return Task.FromResult(ExecuteNonQuery());
+    }
+
+
+    /// <summary>
     /// Execute a read operation and return a reader that will alow us to access the data.
     /// </summary>
     /// <returns></returns>
@@ -207,6 +219,24 @@ namespace SQLiteServer.Data.SQLiteServer
       {
         throw new SQLiteServerException(e.Message);
       }
+    }
+
+    /// <summary>
+    /// Execute a read operation and return a reader that will alow us to access the data.
+    /// </summary>
+    /// <returns></returns>
+    public Task<SqliteServerDataReader> ExecuteReaderAsync()
+    {
+      return Task.FromResult(ExecuteReader(CommandBehavior.Default));
+    }
+
+    /// <summary>
+    /// Execute a read operation and return a reader that will alow us to access the data.
+    /// </summary>
+    /// <returns></returns>
+    public Task<SqliteServerDataReader> ExecuteReaderAsync(CommandBehavior commandBehavior)
+    {
+      return Task.FromResult(ExecuteReader(commandBehavior));
     }
   }
 }
