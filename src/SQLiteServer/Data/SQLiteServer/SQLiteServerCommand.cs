@@ -14,6 +14,7 @@
 //    along with SQLiteServer.  If not, see<https://www.gnu.org/licenses/gpl-3.0.en.html>.
 using System;
 using System.Data;
+using System.Threading.Tasks;
 using SQLiteServer.Data.Exceptions;
 using SQLiteServer.Data.Workers;
 
@@ -97,9 +98,13 @@ namespace SQLiteServer.Data.SQLiteServer
     /// <summary>
     /// Do no do anything if we are waiting to reconnect.
     /// </summary>
-    private void WaitIfConnecting()
+    private async Task WaitIfConnectingAsync()
     {
-      _connection?.WaitIfConnecting();
+      if (null == _connection)
+      {
+        return;
+      }
+      await _connection.WaitIfConnectingAsync().ConfigureAwait( false );
     }
 
     /// <summary>
@@ -164,7 +169,7 @@ namespace SQLiteServer.Data.SQLiteServer
     /// <returns>The number of rows added/deleted/whatever depending on the query.</returns>
     public int ExecuteNonQuery()
     {
-      WaitIfConnecting();
+      WaitIfConnectingAsync().Wait();
       ThrowIfAnyAndCreateWorker();
       return _worker.ExecuteNonQuery();
     }
@@ -184,7 +189,7 @@ namespace SQLiteServer.Data.SQLiteServer
     /// <returns></returns>
     public SqliteServerDataReader ExecuteReader( CommandBehavior commandBehavior)
     {
-      WaitIfConnecting();
+      WaitIfConnectingAsync().Wait();
       ThrowIfAnyAndCreateWorker();
 
       try

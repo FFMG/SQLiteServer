@@ -16,6 +16,7 @@ using System;
 using System.Collections.Generic;
 using System.Data;
 using System.Text;
+using System.Threading.Tasks;
 using SQLiteServer.Data.Connections;
 using SQLiteServer.Data.Data;
 using SQLiteServer.Data.Enums;
@@ -101,7 +102,7 @@ namespace SQLiteServer.Data.Workers
       };
       var fields = Fields.Fields.SerializeObject(getValue);
 
-      var response = _controller.SendAndWait(SQLiteMessage.ExecuteReaderRequest, fields.Pack(), _queryTimeouts);
+      var response = _controller.SendAndWaitAsync(SQLiteMessage.ExecuteReaderRequest, fields.Pack(), _queryTimeouts).Result;
       if (null == response)
       {
         throw new TimeoutException("There was a timeout error executing the reader.");
@@ -183,7 +184,7 @@ namespace SQLiteServer.Data.Workers
         return _ordinals[lname];
       }
       // get the value
-      var value = GetNamedValue<int>(SQLiteMessage.ExecuteReaderGetOrdinalRequest, lname);
+      var value = GetNamedValueAsync<int>(SQLiteMessage.ExecuteReaderGetOrdinalRequest, lname).Result;
 
       // save it.
       _ordinals[lname] = value;
@@ -199,7 +200,7 @@ namespace SQLiteServer.Data.Workers
     /// <returns></returns>
     private T GetGuiOnlyValue<T>(SQLiteMessage requestType)
     {
-      var response = _controller.SendAndWait(requestType, Encoding.ASCII.GetBytes(_commandGuid), _queryTimeouts);
+      var response = _controller.SendAndWaitAsync(requestType, Encoding.ASCII.GetBytes(_commandGuid), _queryTimeouts).Result;
       if (null == response)
       {
         throw new TimeoutException("There was a timeout error executing the read request from the reader.");
@@ -235,7 +236,7 @@ namespace SQLiteServer.Data.Workers
       };
       var fields = Fields.Fields.SerializeObject(getValue);
 
-      var response = _controller.SendAndWait(requestType, fields.Pack(), _queryTimeouts);
+      var response = _controller.SendAndWaitAsync(requestType, fields.Pack(), _queryTimeouts).Result;
       if (null == response)
       {
         throw new TimeoutException("There was a timeout error executing the read request from the reader.");
@@ -262,7 +263,7 @@ namespace SQLiteServer.Data.Workers
     /// <param name="requestType"></param>
     /// <param name="name"></param>
     /// <returns></returns>
-    private T GetNamedValue<T>(SQLiteMessage requestType, string name )
+    private async Task<T> GetNamedValueAsync<T>(SQLiteMessage requestType, string name )
     {
       var getValue = new NameRequest()
       {
@@ -271,7 +272,7 @@ namespace SQLiteServer.Data.Workers
       };
       var fields = Fields.Fields.SerializeObject(getValue);
 
-      var response = _controller.SendAndWait(requestType, fields.Pack(), _queryTimeouts);
+      var response = await _controller.SendAndWaitAsync(requestType, fields.Pack(), _queryTimeouts).ConfigureAwait( false );
       if (null == response)
       {
         throw new TimeoutException("There was a timeout error executing the read request from the reader.");

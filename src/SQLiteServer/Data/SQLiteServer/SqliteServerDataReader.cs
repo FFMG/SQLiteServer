@@ -16,6 +16,7 @@ using System;
 using System.Collections;
 using System.Data;
 using System.Data.Common;
+using System.Threading.Tasks;
 using SQLiteServer.Data.Exceptions;
 using SQLiteServer.Data.Workers;
 
@@ -89,9 +90,13 @@ namespace SQLiteServer.Data.SQLiteServer
     /// <summary>
     /// Do no do anything if we are waiting to reconnect.
     /// </summary>
-    private void WaitIfConnecting()
+    private async Task WaitIfConnectingAsync()
     {
-      _connection?.WaitIfConnecting();
+      if (null == _connection)
+      {
+        return;
+      }
+      await _connection.WaitIfConnectingAsync().ConfigureAwait( false );
     }
 
     /// <summary>
@@ -154,7 +159,7 @@ namespace SQLiteServer.Data.SQLiteServer
     /// </summary>
     public void ExecuteReader()
     {
-      WaitIfConnecting();
+      WaitIfConnectingAsync().Wait();
       ThrowIfAny();
       _worker.ExecuteReader(_commandBehavior);
     }
@@ -167,7 +172,7 @@ namespace SQLiteServer.Data.SQLiteServer
     /// <inheritdoc />
     public override bool Read()
     {
-      WaitIfConnecting();
+      WaitIfConnectingAsync().Wait();
       ThrowIfAny();
 
       // if we only want the schema ... then there is nothing to read
@@ -208,7 +213,7 @@ namespace SQLiteServer.Data.SQLiteServer
     {
       get
       {
-        WaitIfConnecting();
+        WaitIfConnectingAsync().Wait();
         ThrowIfAny();
         return _worker.FieldCount;
       }
@@ -219,7 +224,7 @@ namespace SQLiteServer.Data.SQLiteServer
     {
       get
       {
-        WaitIfConnecting();
+        WaitIfConnectingAsync().Wait();
         ThrowIfAny();
         return _worker.HasRows;
       }
@@ -234,7 +239,7 @@ namespace SQLiteServer.Data.SQLiteServer
     /// <inheritdoc />
     public override int GetValues(object[] values)
     {
-      WaitIfConnecting();
+      WaitIfConnectingAsync().Wait();
       ThrowIfAny();
 
       // how many fields are we getting?
@@ -251,7 +256,7 @@ namespace SQLiteServer.Data.SQLiteServer
     /// <inheritdoc />
     public override int GetOrdinal(string name)
     {
-      WaitIfConnecting();
+      WaitIfConnectingAsync().Wait();
       ThrowIfAny();
       return _worker.GetOrdinal(name);
     }
@@ -295,7 +300,7 @@ namespace SQLiteServer.Data.SQLiteServer
     /// <inheritdoc />
     public override string GetString(int i)
     {
-      WaitIfConnecting();
+      WaitIfConnectingAsync().Wait();
       ThrowIfAny();
       try
       {
@@ -316,7 +321,7 @@ namespace SQLiteServer.Data.SQLiteServer
     /// <inheritdoc />
     public override short GetInt16(int i)
     {
-      WaitIfConnecting();
+      WaitIfConnectingAsync().Wait();
       ThrowIfAny();
       try
       {
@@ -331,7 +336,7 @@ namespace SQLiteServer.Data.SQLiteServer
     /// <inheritdoc />
     public override int GetInt32(int i)
     {
-      WaitIfConnecting();
+      WaitIfConnectingAsync().Wait();
       ThrowIfAny();
       try
       {
@@ -346,7 +351,7 @@ namespace SQLiteServer.Data.SQLiteServer
     /// <inheritdoc />
     public override long GetInt64(int i)
     {
-      WaitIfConnecting();
+      WaitIfConnectingAsync().Wait();
       ThrowIfAny();
       try
       {
@@ -373,7 +378,7 @@ namespace SQLiteServer.Data.SQLiteServer
     /// <inheritdoc />
     public override double GetDouble(int i)
     {
-      WaitIfConnecting();
+      WaitIfConnectingAsync().Wait();
       ThrowIfAny();
       try
       {
@@ -405,7 +410,7 @@ namespace SQLiteServer.Data.SQLiteServer
     public override Type GetFieldType(int i)
     {
       // @see https://www.tutorialspoint.com/sqlite/sqlite_data_types.htm
-      WaitIfConnecting();
+      WaitIfConnectingAsync().Wait();
       ThrowIfAny();
       try
       {
@@ -420,7 +425,7 @@ namespace SQLiteServer.Data.SQLiteServer
     /// <inheritdoc />
     public override object GetValue(int i)
     {
-      WaitIfConnecting();
+      WaitIfConnectingAsync().Wait();
       ThrowIfAny();
       try
       {
@@ -435,7 +440,7 @@ namespace SQLiteServer.Data.SQLiteServer
     /// <inheritdoc />
     public override string GetName(int i)
     {
-      WaitIfConnecting();
+      WaitIfConnectingAsync().Wait();
       ThrowIfAny();
       try
       {
@@ -450,7 +455,7 @@ namespace SQLiteServer.Data.SQLiteServer
     /// <inheritdoc />
     public override bool IsDBNull(int i)
     {
-      WaitIfConnecting();
+      WaitIfConnectingAsync().Wait();
       ThrowIfAny();
       try
       {
@@ -469,7 +474,7 @@ namespace SQLiteServer.Data.SQLiteServer
     /// <returns>string the table name</returns>
     public string GetTableName(int i)
     {
-      WaitIfConnecting();
+      WaitIfConnectingAsync().Wait();
       ThrowIfAny();
       try
       {

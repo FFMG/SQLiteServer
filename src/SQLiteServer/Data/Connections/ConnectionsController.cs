@@ -17,6 +17,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Net;
 using System.Net.Sockets;
+using System.Threading.Tasks;
 using System.Timers;
 using SQLiteServer.Data.Enums;
 
@@ -555,13 +556,13 @@ namespace SQLiteServer.Data.Connections
       }
     }
 
-    public Packet SendAndWait(SQLiteMessage type, byte[] data, int timeout )
+    public async Task<Packet> SendAndWaitAsync(SQLiteMessage type, byte[] data, int timeout )
     {
       // create the packer
       var packer = new ResponsePacketHandler( this, WaitForResponseSleepTime);
 
       // send and wait for the response.
-      return packer.SendAndWait( type, data, timeout );
+      return await packer.SendAndWaitAsync( type, data, timeout ).ConfigureAwait( false );
     }
 
     /// <summary>

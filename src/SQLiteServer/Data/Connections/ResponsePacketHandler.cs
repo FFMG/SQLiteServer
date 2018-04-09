@@ -59,7 +59,7 @@ namespace SQLiteServer.Data.Connections
     /// <param name="data"></param>
     /// <param name="timeout">The max number of ms we will be waitng.</param>
     /// <returns>The response packet</returns>
-    public Packet SendAndWait(SQLiteMessage type, byte[] data, int timeout )
+    public async Task<Packet> SendAndWaitAsync(SQLiteMessage type, byte[] data, int timeout )
     {
       // listen for new messages.
       _response = null;
@@ -77,7 +77,7 @@ namespace SQLiteServer.Data.Connections
         // send the data and wait for a response.
         _connection.Send(SQLiteMessage.SendAndWaitRequest, packet.Packed );
 
-        Task.Run(async () => {
+        await Task.Run(async () => {
           var watch = System.Diagnostics.Stopwatch.StartNew();
           while (_response == null )
           {
@@ -99,7 +99,7 @@ namespace SQLiteServer.Data.Connections
             }
           }
           watch.Stop();
-        }).Wait();
+        }).ConfigureAwait( false );
 
       }
       finally

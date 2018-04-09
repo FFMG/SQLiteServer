@@ -58,7 +58,7 @@ namespace SQLiteServer.Data.SQLiteServer
     public override string ConnectionString { get; set; }
 
     /// <inheritdoc />
-    public override string Database { get { throw new NotSupportedException(); } }
+    public override string Database => throw new NotSupportedException();
 
     /// <inheritdoc />
     public override string DataSource
@@ -192,8 +192,19 @@ namespace SQLiteServer.Data.SQLiteServer
 
         // re-open, we will change no state
         // and we will not check anything,
-        OpenNoStateCheck();
-
+        try
+        {
+          OpenWithNoValidationAsync().Wait();
+        }
+        catch (AggregateException e)
+        {
+          if (e.InnerException != null)
+          {
+            throw e.InnerException;
+          }
+          throw;
+        }
+        
         // we are now open
         _connectionState = ConnectionState.Open;
       }
@@ -211,7 +222,7 @@ namespace SQLiteServer.Data.SQLiteServer
       // it might sound silly
       // but if we are connecting, we need to wait a little.
       // so we don't disconnect ... while connecting.
-      WaitIfConnecting();
+      WaitIfConnectingAsync().Wait();
 
       // are we open?
       ThrowIfNotOpen();
@@ -278,7 +289,7 @@ namespace SQLiteServer.Data.SQLiteServer
 
         // re-open, we will change no state
         // and we will not check anything,
-        OpenNoStateCheck();
+        OpenWithNoValidationAsync().Wait();
 
         // we re-opened.
         _connectionState = ConnectionState.Open;
@@ -299,16 +310,16 @@ namespace SQLiteServer.Data.SQLiteServer
       _connectionState = ConnectionState.Broken;
     }
 
-    private void OpenNoStateCheck()
+    private async Task OpenWithNoValidationAsync()
     {
       // try and re-connect.
-      Task.Run(async () =>
+      await Task.Run(async () =>
         await _connectionBuilder.ConnectAsync(this)
-      ).Wait();
+      ).ConfigureAwait(false);
 
-      Task.Run(async () =>
+      await Task.Run(async () =>
         _worker = await _connectionBuilder.OpenAsync(ConnectionString)
-      ).Wait();
+      ).ConfigureAwait(false);
 
       _worker.Open();
     }
@@ -316,7 +327,7 @@ namespace SQLiteServer.Data.SQLiteServer
     /// <summary>
     /// Do no do anything if we are waiting to reconnect.
     /// </summary>
-    internal void WaitIfConnecting()
+    internal async Task WaitIfConnectingAsync()
     {
       // wait for 30 seconds.
       if (State != ConnectionState.Connecting)
@@ -325,7 +336,7 @@ namespace SQLiteServer.Data.SQLiteServer
       }
 
       const int timeout = 30000;
-      Task.Run(async () => {
+      await Task.Run(async () => {
         var start = DateTime.Now;
         while (State == ConnectionState.Connecting)
         {
@@ -337,7 +348,7 @@ namespace SQLiteServer.Data.SQLiteServer
             break;
           }
         }
-      }).Wait();
+      }).ConfigureAwait( false );
     }
 
     /// <summary>
@@ -347,7 +358,8 @@ namespace SQLiteServer.Data.SQLiteServer
     /// <returns></returns>
     internal ISQLiteServerCommandWorker CreateCommand(string commandText)
     {
-      WaitIfConnecting();
+      WaitIfConnectingAsync().Wait();
+
       ThrowIfAny();
       return _worker.CreateCommand(commandText);
     }

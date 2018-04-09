@@ -62,7 +62,7 @@ namespace SQLiteServer.Data.Workers
       _controller = controller;
       _serverGuid = null;
 
-      var response = _controller.SendAndWait( SQLiteMessage.CreateCommandRequest, Encoding.ASCII.GetBytes(commandText), QueryTimeouts);
+      var response = _controller.SendAndWaitAsync( SQLiteMessage.CreateCommandRequest, Encoding.ASCII.GetBytes(commandText), QueryTimeouts).Result;
       if (null == response)
       {
         throw new TimeoutException( "There was a timeout error creating the Command.");
@@ -122,7 +122,7 @@ namespace SQLiteServer.Data.Workers
     public int ExecuteNonQuery()
     {
       ThrowIfAny();
-      var response = _controller.SendAndWait(SQLiteMessage.ExecuteNonQueryRequest, Encoding.ASCII.GetBytes(_serverGuid), QueryTimeouts);
+      var response = _controller.SendAndWaitAsync(SQLiteMessage.ExecuteNonQueryRequest, Encoding.ASCII.GetBytes(_serverGuid), QueryTimeouts).Result;
       if (null == response)
       {
         throw new TimeoutException("There was a timeout error creating the Command.");
