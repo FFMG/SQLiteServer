@@ -16,6 +16,7 @@ using System;
 using System.Data;
 using System.Data.Common;
 using System.Data.SQLite;
+using System.IO;
 using System.Net;
 using System.Threading.Tasks;
 using SQLiteServer.Data.Connections;
@@ -58,7 +59,13 @@ namespace SQLiteServer.Data.SQLiteServer
     public override string ConnectionString { get; set; }
 
     /// <inheritdoc />
-    public override string Database => throw new NotSupportedException();
+    public override string Database
+    {
+      get
+      {
+        throw new NotSupportedException();
+      }
+    }
 
     /// <inheritdoc />
     public override string DataSource
@@ -89,6 +96,18 @@ namespace SQLiteServer.Data.SQLiteServer
       ConnectionString = connectionString;
       _connectionState = ConnectionState.Closed;
     }
+
+    #region Static
+    /// <summary>
+    /// Creates an empty database file. .
+    /// </summary>
+    /// <param name="fileName">The file to create</param>
+    public static void CreateFile(string fileName)
+    {
+      var fs = File.Create(fileName);
+      fs.Close();
+    }
+    #endregion
 
     #region Validations
     /// <summary>
