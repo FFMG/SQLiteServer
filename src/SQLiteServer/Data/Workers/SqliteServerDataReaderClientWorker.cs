@@ -142,6 +142,12 @@ namespace SQLiteServer.Data.Workers
     }
 
     /// <inheritdoc />
+    public bool NextResult()
+    {
+      return GetGuiOnlyValue<int>(SQLiteMessage.ExecuteReaderNextResultRequest) != 0;
+    }
+    
+    /// <inheritdoc />
     public int FieldCount
     {
       get

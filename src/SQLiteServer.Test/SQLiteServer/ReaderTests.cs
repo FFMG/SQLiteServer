@@ -12,7 +12,6 @@
 //
 //    You should have received a copy of the GNU General Public License
 //    along with SQLiteServer.  If not, see<https://www.gnu.org/licenses/gpl-3.0.en.html>.
-
 using System.Data;
 using NUnit.Framework;
 using SQLiteServer.Data.Exceptions;
@@ -1991,6 +1990,90 @@ namespace SQLiteServer.Test.SQLiteServer
 
           // then no more rows can be read.
           Assert.IsFalse(reader.Read());
+        }
+      }
+      client.Close();
+      server.Close();
+    }
+
+    [Test]
+    public void ServerGetNextResult()
+    {
+      var server = CreateConnection();
+      server.Open();
+      var sql = "create table t1 (name varchar(20), value INTEGER)";
+      using (var command = new SQLiteServerCommand(sql, server)){command.ExecuteNonQuery();}
+
+      sql = "create table t2 (name varchar(20), value REAL)";
+      using (var command = new SQLiteServerCommand(sql, server)) { command.ExecuteNonQuery(); }
+
+      sql = "insert into t1(name, value) VALUES ('t1', 10)";
+      using (var command = new SQLiteServerCommand(sql, server)) { command.ExecuteNonQuery(); }
+
+      sql = "insert into t2(name, value) VALUES ('t2', 3.14)";
+      using (var command = new SQLiteServerCommand(sql, server)) { command.ExecuteNonQuery(); }
+
+      const string sqlSelect = "SELECT * FROM t1; select * from t2;";
+      using (var command = new SQLiteServerCommand(sqlSelect, server))
+      {
+        using (var reader = command.ExecuteReader())
+        {
+          // t1
+          Assert.IsTrue(reader.Read());
+          Assert.AreEqual("t1", reader.GetString(0));
+          Assert.IsFalse(reader.Read());
+
+          Assert.IsTrue(reader.NextResult());
+
+          // t2
+          Assert.IsTrue(reader.Read());
+          Assert.AreEqual("t2", reader.GetString(0));
+          Assert.IsFalse(reader.Read());
+
+          Assert.IsFalse(reader.NextResult());
+        }
+      }
+      server.Close();
+    }
+
+    [Test]
+    public void ClientGetNextResult()
+    {
+      var server = CreateConnection();
+      server.Open();
+      var client = CreateConnection();
+      client.Open();
+
+      var sql = "create table t1 (name varchar(20), value INTEGER)";
+      using (var command = new SQLiteServerCommand(sql, client)) { command.ExecuteNonQuery(); }
+
+      sql = "create table t2 (name varchar(20), value REAL)";
+      using (var command = new SQLiteServerCommand(sql, client)) { command.ExecuteNonQuery(); }
+
+      sql = "insert into t1(name, value) VALUES ('t1', 10)";
+      using (var command = new SQLiteServerCommand(sql, client)) { command.ExecuteNonQuery(); }
+
+      sql = "insert into t2(name, value) VALUES ('t2', 3.14)";
+      using (var command = new SQLiteServerCommand(sql, client)) { command.ExecuteNonQuery(); }
+
+      const string sqlSelect = "SELECT * FROM t1; select * from t2;";
+      using (var command = new SQLiteServerCommand(sqlSelect, client))
+      {
+        using (var reader = command.ExecuteReader())
+        {
+          // t1
+          Assert.IsTrue(reader.Read());
+          Assert.AreEqual("t1", reader.GetString(0));
+          Assert.IsFalse(reader.Read());
+
+          Assert.IsTrue(reader.NextResult());
+
+          // t2
+          Assert.IsTrue(reader.Read());
+          Assert.AreEqual("t2", reader.GetString(0));
+          Assert.IsFalse(reader.Read());
+
+          Assert.IsFalse(reader.NextResult());
         }
       }
       client.Close();

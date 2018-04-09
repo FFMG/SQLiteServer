@@ -277,6 +277,38 @@ namespace SQLiteServer.Data.Workers
     }
 
     /// <summary>
+    /// Handle a next result request
+    /// </summary>
+    /// <param name="packet"></param>
+    /// <param name="response"></param>
+    private void HandleExecuteReaderNextResultRequest(Packet packet, Action<Packet> response)
+    {
+      //  get the guid
+      try
+      {
+        var guid = packet.Get<string>();
+        lock (_commandsLock)
+        {
+          var command = GetCommandWorker(guid);
+          if (command == null)
+          {
+            response(new Packet(SQLiteMessage.ExecuteReaderException, $"Invalid Command id sent to server for reader : {guid}."));
+            return;
+          }
+
+          // we know that the command exists
+          var reader = _commands[guid].Reader;
+          var result = reader.NextResult();
+          response(new Packet(SQLiteMessage.ExecuteReaderResponse, result ? 1 : 0));
+        }
+      }
+      catch (Exception e)
+      {
+        response(new Packet(SQLiteMessage.ExecuteReaderException, e.Message));
+      }
+    }
+
+    /// <summary>
     /// Handle a read request
     /// </summary>
     /// <param name="packet"></param>
@@ -461,6 +493,10 @@ namespace SQLiteServer.Data.Workers
           HandleExecuteReaderHasRowsRequest(packet, response);
           break;
 
+        case SQLiteMessage.ExecuteReaderNextResultRequest:
+          HandleExecuteReaderNextResultRequest(packet, response);
+          break;
+          
         case SQLiteMessage.ExecuteReaderReadRequest:
           HandleExecuteReaderReadRequest(packet, response);
           break;

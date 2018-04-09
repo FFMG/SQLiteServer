@@ -166,7 +166,19 @@ namespace SQLiteServer.Data.SQLiteServer
 
     public override bool NextResult()
     {
-      throw new NotImplementedException();
+      WaitIfConnectingAsync().Wait();
+      ThrowIfAny();
+
+      if (!_worker.NextResult())
+      {
+        return false;
+      }
+
+      // we are at the start of rows read
+      _rowsRead = 0;
+
+      // success
+      return true;
     }
 
     /// <inheritdoc />

@@ -95,6 +95,7 @@ I am using the `\performance\SQLiteServerPerformance.sln` application to run com
 * <s>`GetDecimal( idx )`</s> 0.1.1.2
 * <s>`GetDouble( idx )`</s> 0.1.1.0
 * <s>``GetFloat( idx )`</s> 0.1.1.2
+* <s>`NextResult()`</s> 0.1.1.3
 
 ## Other
 * Namepipe might be faster, need to investigate more.

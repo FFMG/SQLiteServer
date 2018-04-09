@@ -77,6 +77,13 @@ namespace SQLiteServer.Data.Workers
     }
 
     /// <inheritdoc />
+    public bool NextResult()
+    {
+      ThrowIfNoReader();
+      return _reader.NextResult();
+    }
+
+    /// <inheritdoc />
     public int FieldCount
     {
       get

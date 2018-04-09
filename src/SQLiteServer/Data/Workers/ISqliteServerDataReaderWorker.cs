@@ -57,6 +57,12 @@ namespace SQLiteServer.Data.Workers
     bool Read();
 
     /// <summary>
+    /// Prepare to read the next result set.
+    /// </summary>
+    /// <returns></returns>
+    bool NextResult();
+
+    /// <summary>
     /// Retrieves the column index given its name.
     /// </summary>
     /// <param name="name">The name of the column.</param>
