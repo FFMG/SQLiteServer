@@ -122,7 +122,7 @@ namespace SQLiteServer.Data.Workers
           var index = indexRequest.Index;
           var reader = _commands[guid].Reader;
 
-          switch (packet.Type)
+          switch (packet.Message)
           {
             case SQLiteMessage.ExecuteReaderGetInt16Request:
               response(new Packet(SQLiteMessage.ExecuteReaderResponse, reader.GetInt16(index)));
@@ -166,7 +166,7 @@ namespace SQLiteServer.Data.Workers
               break;
 
             default:
-              response(new Packet(SQLiteMessage.ExecuteReaderException, $"The requested data type {packet.Type} is not supported."));
+              response(new Packet(SQLiteMessage.ExecuteReaderException, $"The requested data type {packet.Message} is not supported."));
               break;
           }
         }
@@ -206,14 +206,14 @@ namespace SQLiteServer.Data.Workers
           var name = nameRequest.Name;
           var reader = _commands[guid].Reader;
 
-          switch (packet.Type)
+          switch (packet.Message)
           {
             case SQLiteMessage.ExecuteReaderGetOrdinalRequest:
               response(new Packet(SQLiteMessage.ExecuteReaderResponse, reader.GetOrdinal(name)));
               break;
 
             default:
-              response(new Packet(SQLiteMessage.ExecuteReaderException, $"The requested data type {packet.Type} is not supported."));
+              response(new Packet(SQLiteMessage.ExecuteReaderException, $"The requested data type {packet.Message} is not supported."));
               break;
           }
         }
@@ -466,7 +466,7 @@ namespace SQLiteServer.Data.Workers
 
     private void OnReceived(Packet packet, Action<Packet> response)
     {
-      switch( packet.Type )
+      switch( packet.Message)
       {
         case SQLiteMessage.ExecuteReaderGetInt16Request:
         case SQLiteMessage.ExecuteReaderGetInt32Request:

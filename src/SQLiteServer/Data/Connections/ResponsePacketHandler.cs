@@ -115,7 +115,7 @@ namespace SQLiteServer.Data.Connections
     private void OnReceived(Packet packet, Action<Packet> response )
     {
       // is it the response we might be waiting for?
-      if (packet.Type != SQLiteMessage.SendAndWaitResponse)
+      if (packet.Message != SQLiteMessage.SendAndWaitResponse)
       {
         // it is not a response, so we are not really interested.
         return;

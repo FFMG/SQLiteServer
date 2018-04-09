@@ -170,7 +170,7 @@ namespace SQLiteServer.Test.Packets
           6, 0, 0, 0 });
 
       Assert.That( p.Get<int>() == 6 );
-      Assert.That( (uint)p.Type == 2);
+      Assert.That( (uint)p.Message == 2);
     }
 
     [Test]

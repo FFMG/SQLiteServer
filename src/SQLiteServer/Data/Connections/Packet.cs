@@ -26,9 +26,9 @@ namespace SQLiteServer.Data.Connections
     private byte[] _packed;
 
     /// <summary>
-    /// The data type
+    /// The data Message
     /// </summary>
-    public SQLiteMessage Type { get; }
+    public SQLiteMessage Message { get; }
 
     /// <summary>
     /// The payload.
@@ -38,12 +38,12 @@ namespace SQLiteServer.Data.Connections
     /// <summary>
     /// Constructor with a byte array
     /// </summary>
-    /// <param name="type"></param>
+    /// <param name="message"></param>
     /// <param name="payload"></param>
-    public Packet( SQLiteMessage type, byte[] payload )
+    public Packet( SQLiteMessage message, byte[] payload )
     {
       Payload = payload;
-      Type = type;
+      Message = message;
     }
 
     /// <summary>
@@ -52,7 +52,7 @@ namespace SQLiteServer.Data.Connections
     /// <param name="payload"></param>
     public Packet( byte[] payload)
     {
-      // we need at least 4x bytes for lenght and 4x bytes for the type.
+      // we need at least 4x bytes for lenght and 4x bytes for the message.
       if (payload.Length < sizeof(int) + sizeof(uint))
       {
         throw new ArgumentOutOfRangeException( nameof(payload), "The payload does not have a valid size.");
@@ -69,7 +69,7 @@ namespace SQLiteServer.Data.Connections
       }
 
       // we can now put everything to gether.
-      Type = (SQLiteMessage)BitConverter.ToUInt32(payload, sizeof(uint));
+      Message = (SQLiteMessage)BitConverter.ToUInt32(payload, sizeof(uint));
       if (length == 0)
       {
         Payload = null;
@@ -84,56 +84,56 @@ namespace SQLiteServer.Data.Connections
     /// <summary>
     /// Constructor with a string
     /// </summary>
-    /// <param name="type"></param>
+    /// <param name="message"></param>
     /// <param name="payload"></param>
-    public Packet(SQLiteMessage type, string payload)
+    public Packet(SQLiteMessage message, string payload)
     {
       Payload = payload == null ? null : Encoding.ASCII.GetBytes(payload);
-      Type = type;
+      Message = message;
     }
 
     /// <summary>
     /// Constructor with a short.
     /// </summary>
-    /// <param name="type"></param>
+    /// <param name="message"></param>
     /// <param name="payload"></param>
-    public Packet(SQLiteMessage type, short payload)
+    public Packet(SQLiteMessage message, short payload)
     {
       Payload = BitConverter.GetBytes(payload);
-      Type = type;
+      Message = message;
     }
 
     /// <summary>
     /// Constructor with a double.
     /// </summary>
-    /// <param name="type"></param>
+    /// <param name="message"></param>
     /// <param name="payload"></param>
-    public Packet(SQLiteMessage type, double payload)
+    public Packet(SQLiteMessage message, double payload)
     {
       Payload = BitConverter.GetBytes(payload);
-      Type = type;
+      Message = message;
     }
 
     /// <summary>
     /// Constructor with an int.
     /// </summary>
-    /// <param name="type"></param>
+    /// <param name="message"></param>
     /// <param name="payload"></param>
-    public Packet(SQLiteMessage type, int payload)
+    public Packet(SQLiteMessage message, int payload)
     {
       Payload = BitConverter.GetBytes(payload);
-      Type = type;
+      Message = message;
     }
 
     /// <summary>
     /// Constructor with an int.
     /// </summary>
-    /// <param name="type"></param>
+    /// <param name="message"></param>
     /// <param name="payload"></param>
-    public Packet(SQLiteMessage type, long payload)
+    public Packet(SQLiteMessage message, long payload)
     {
       Payload = BitConverter.GetBytes(payload);
-      Type = type;
+      Message = message;
     }
 
     /// <summary>
@@ -142,7 +142,7 @@ namespace SQLiteServer.Data.Connections
     public int Length => sizeof(int) + sizeof(uint) + (Payload?.Length ?? 0);
 
     /// <summary>
-    /// Create the full payload in bytes, that is te length + type + payload
+    /// Create the full payload in bytes, that is te length + message + payload
     /// That wat we know what to look for.
     /// </summary>
     public byte[] Packed
@@ -154,14 +154,14 @@ namespace SQLiteServer.Data.Connections
           return _packed;
         }
 
-        // the payload + length + type
+        // the payload + length + message
         // is simply [int][uint][payload]
         var bLen = BitConverter.GetBytes(Payload?.Length ?? 0);
-        var bType = BitConverter.GetBytes((uint) Type);
+        var bMessage = BitConverter.GetBytes((int)Message);
 
         // create the new array
         // [int]  len
-        // [uint] type
+        // [int]  message
         // [xx]   payload
         var bytes = new byte[Length];
 
@@ -170,7 +170,7 @@ namespace SQLiteServer.Data.Connections
         Buffer.BlockCopy(bLen, 0, bytes, dstOffset, sizeof(int));
         dstOffset += sizeof(int);
 
-        Buffer.BlockCopy(bType, 0, bytes, dstOffset, sizeof(uint));
+        Buffer.BlockCopy(bMessage, 0, bytes, dstOffset, sizeof(uint));
         dstOffset += sizeof(uint);
 
         if (Payload != null && Payload.Length > 0)

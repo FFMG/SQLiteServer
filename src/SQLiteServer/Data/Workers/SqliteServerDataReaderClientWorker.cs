@@ -108,7 +108,7 @@ namespace SQLiteServer.Data.Workers
         throw new TimeoutException("There was a timeout error executing the reader.");
       }
 
-      switch (response.Type)
+      switch (response.Message)
       {
         case SQLiteMessage.ExecuteReaderResponse:
           var result = response.Get<int>();
@@ -123,7 +123,7 @@ namespace SQLiteServer.Data.Workers
           throw new SQLiteServerException(error);
 
         default:
-          throw new InvalidOperationException($"Unknown response {response.Type} from the server.");
+          throw new InvalidOperationException($"Unknown response {response.Message} from the server.");
       }
     }
 
@@ -212,7 +212,7 @@ namespace SQLiteServer.Data.Workers
         throw new TimeoutException("There was a timeout error executing the read request from the reader.");
       }
 
-      switch (response.Type)
+      switch (response.Message)
       {
         case SQLiteMessage.ExecuteReaderResponse:
           return response.Get<T>();
@@ -222,7 +222,7 @@ namespace SQLiteServer.Data.Workers
           throw new SQLiteServerException(error);
 
         default:
-          throw new InvalidOperationException($"Unknown response {response.Type} from the server.");
+          throw new InvalidOperationException($"Unknown response {response.Message} from the server.");
       }
     }
 
@@ -248,7 +248,7 @@ namespace SQLiteServer.Data.Workers
         throw new TimeoutException("There was a timeout error executing the read request from the reader.");
       }
 
-      switch (response.Type)
+      switch (response.Message)
       {
         case SQLiteMessage.ExecuteReaderResponse:
           return response.Get<T>();
@@ -258,7 +258,7 @@ namespace SQLiteServer.Data.Workers
           throw new SQLiteServerException(error);
 
         default:
-          throw new InvalidOperationException($"Unknown response {response.Type} from the server.");
+          throw new InvalidOperationException($"Unknown response {response.Message} from the server.");
       }
     }
 
@@ -284,7 +284,7 @@ namespace SQLiteServer.Data.Workers
         throw new TimeoutException("There was a timeout error executing the read request from the reader.");
       }
 
-      switch (response.Type)
+      switch (response.Message)
       {
         case SQLiteMessage.ExecuteReaderResponse:
           return response.Get<T>();
@@ -294,7 +294,7 @@ namespace SQLiteServer.Data.Workers
           throw new SQLiteServerException(error);
 
         default:
-          throw new InvalidOperationException($"Unknown response {response.Type} from the server.");
+          throw new InvalidOperationException($"Unknown response {response.Message} from the server.");
       }
     }
 

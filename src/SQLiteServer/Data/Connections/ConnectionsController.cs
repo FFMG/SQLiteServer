@@ -823,7 +823,7 @@ namespace SQLiteServer.Data.Connections
       {
         // if this is a 'sendreceived' type of message
         // we need to unpack it, so we can handle the response, (if there is one).
-        SendOnReceived( socket, packetTypeAndPayload.Type, packetTypeAndPayload.Payload);
+        SendOnReceived( socket, packetTypeAndPayload.Message, packetTypeAndPayload.Payload);
       }
     }
 
