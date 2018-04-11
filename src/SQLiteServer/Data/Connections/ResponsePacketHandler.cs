@@ -76,11 +76,24 @@ namespace SQLiteServer.Data.Connections
 
         // send the data and wait for a response.
         _connection.Send(SQLiteMessage.SendAndWaitRequest, packet.Packed );
-
+        
         await Task.Run(async () => {
           var watch = System.Diagnostics.Stopwatch.StartNew();
-          while (_response == null )
+          while (true )
           {
+            if (_response != null)
+            {
+              if (_response.Message == SQLiteMessage.SendAndWaitBusy)
+              {
+                watch.Restart();
+                _response = null;
+              }
+              else
+              {
+                break;
+              }
+            }
+
             // delay a little to give other thread a chance.
             if (_waitForResponseSleepTime > 0)
             {

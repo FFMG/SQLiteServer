@@ -15,7 +15,6 @@
 using System;
 using System.Data;
 using NUnit.Framework;
-using SQLiteServer.Data.Exceptions;
 using SQLiteServer.Data.SQLiteServer;
 
 namespace SQLiteServer.Test.SQLiteServer
@@ -30,6 +29,20 @@ namespace SQLiteServer.Test.SQLiteServer
       server.Open();
       Assert.Throws<InvalidOperationException>(() => { server.Open(); });
       server.Close();
+    }
+
+    [Test]
+    public void TryingToRunCodeWhenDatabaseIsNotOpen()
+    {
+      var con = CreateConnection();
+      const string sql = "select 1;";
+      using (var command = new SQLiteServerCommand(sql, con))
+      {
+        Assert.Throws<InvalidOperationException>(() =>
+        {
+          command.ExecuteNonQuery();
+        });
+      }
     }
 
     [Test]

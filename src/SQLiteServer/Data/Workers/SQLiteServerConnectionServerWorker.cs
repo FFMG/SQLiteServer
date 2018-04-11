@@ -17,6 +17,7 @@ using System;
 using System.Collections.Generic;
 using System.Data;
 using System.Data.SQLite;
+using System.Threading.Tasks;
 using SQLiteServer.Data.Data;
 using SQLiteServer.Data.Enums;
 using SQLiteServer.Fields;
@@ -466,7 +467,37 @@ namespace SQLiteServer.Data.Workers
 
     private void OnReceived(Packet packet, Action<Packet> response)
     {
-      switch( packet.Message)
+      const int busytimeout = 1500;
+
+      var t1 = new Task(() => ExecuteReceived(packet, response) );
+      var t2 = new Task(() => 
+      {
+        var watch = System.Diagnostics.Stopwatch.StartNew();
+        while (!t1.IsCompleted)
+        {
+          // delay a little to give other thread a chance.
+          Task.Yield();
+
+          // check for delay
+          if (watch.ElapsedMilliseconds < busytimeout)
+          {
+            continue;
+          }
+
+          response(new Packet(SQLiteMessage.SendAndWaitBusy, 1));
+          watch.Restart();
+        }
+
+        watch.Stop();
+      });
+      t1.Start();
+      t2.Start();
+      Task.WhenAll(t1, t2);
+    }
+
+    private void ExecuteReceived(Packet packet, Action<Packet> response)
+    {
+      switch ( packet.Message)
       {
         case SQLiteMessage.ExecuteReaderGetInt16Request:
         case SQLiteMessage.ExecuteReaderGetInt32Request:
