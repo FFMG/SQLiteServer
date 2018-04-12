@@ -63,6 +63,7 @@
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="SQLiteServer\CommandTests.cs" />
     <Compile Include="SQLiteServer\Common.cs" />
+    <Compile Include="SQLiteServer\ConnectionStringBuilderTests.cs" />
     <Compile Include="SQLiteServer\ConnectionTests.cs" />
     <Compile Include="SQLiteServer\ReaderTests.cs" />
     <Compile Include="SQLiteServer\TransactionTests.cs" />

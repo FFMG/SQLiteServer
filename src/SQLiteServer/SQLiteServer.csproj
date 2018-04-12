@@ -75,6 +75,7 @@
     <Compile Include="Data\Data\IndexRequest.cs" />
     <Compile Include="Data\Data\NameRequest.cs" />
     <Compile Include="Data\Exceptions\SQLiteServerException.cs" />
+    <Compile Include="Data\SQLiteServer\SQLiteServerConnectionStringBuilder.cs" />
     <Compile Include="Data\SQLiteServer\SqliteServerDataReader.cs" />
     <Compile Include="Data\Enums\SQLiteMessage.cs" />
     <Compile Include="Data\SQLiteServer\SQLiteServerTransaction.cs" />
