@@ -85,8 +85,8 @@ namespace SQLiteServer.Data.SQLiteServer
     public override string ServerVersion { get { throw new NotSupportedException(); } }
     #endregion
 
-    public SQLiteServerConnection(string connectionString, IPAddress address, int port, int backlog, int heartBeatTimeOutInMs) :
-      this( connectionString, new SocketConnectionBuilder(address, port, backlog, heartBeatTimeOutInMs))
+    public SQLiteServerConnection(string connectionString, int queryTimeoutMs, IPAddress address, int port, int backlog, int heartBeatTimeOutInMs) :
+      this( connectionString, new SocketConnectionBuilder(queryTimeoutMs, address, port, backlog, heartBeatTimeOutInMs))
     { 
     }
 

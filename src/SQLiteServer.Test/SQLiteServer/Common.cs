@@ -19,6 +19,7 @@ using System.Data;
 using System.IO;
 using System.Net;
 using NUnit.Framework;
+using SQLiteServer.Data.Connections;
 using SQLiteServer.Data.SQLiteServer;
 
 namespace SQLiteServer.Test.SQLiteServer
@@ -30,6 +31,7 @@ namespace SQLiteServer.Test.SQLiteServer
     protected const int Port = 1100;
     protected const int Backlog = 500;
     protected const int HeartBeatTimeOut = 500;
+    protected const int QueryTimeoutMs = 30000;
 
     private string _source;
     private readonly List<SQLiteServerConnection> _connections = new List<SQLiteServerConnection>();
@@ -60,9 +62,13 @@ namespace SQLiteServer.Test.SQLiteServer
       }
     }
 
-    protected SQLiteServerConnection CreateConnection()
+    protected SQLiteServerConnection CreateConnection(IConnectionBuilder connectionBuilder = null )
     {
-      var connection  = new SQLiteServerConnection($"Data Source={_source};Version=3;", Address, Port, Backlog, HeartBeatTimeOut);
+      if (connectionBuilder == null)
+      {
+        connectionBuilder = new SocketConnectionBuilder(QueryTimeoutMs, Address, Port, Backlog, HeartBeatTimeOut);
+      }
+      var connection  = new SQLiteServerConnection($"Data Source={_source};Version=3;", connectionBuilder );
       _connections.Add(connection);
       return connection;
     }

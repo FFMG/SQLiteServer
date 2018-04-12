@@ -20,16 +20,26 @@ namespace SQLiteServer.Data.Workers
   // ReSharper disable once InconsistentNaming
   internal class SQLiteServerConnectionClientWorker : ISQLiteServerConnectionWorker
   {
+    #region Command Information
+    /// <inheritdoc />
+    public int QueryTimeoutMs { get; }
+    #endregion
 
+    #region Private
+    /// <summary>
+    /// The contoller
+    /// </summary>
     private readonly ConnectionsController _controller;
+    #endregion
 
-    public SQLiteServerConnectionClientWorker(ConnectionsController controller)
+    public SQLiteServerConnectionClientWorker(ConnectionsController controller, int queryTimeoutMs)
     {
       if (null == controller)
       {
         throw new ArgumentNullException( nameof(controller));
       }
       _controller = controller;
+      QueryTimeoutMs = queryTimeoutMs;
     }
 
     public void Open()
@@ -45,7 +55,7 @@ namespace SQLiteServer.Data.Workers
 
     public ISQLiteServerCommandWorker CreateCommand(string commandText)
     {
-      return new SQLiteServerCommandClientWorker( commandText, _controller );;
+      return new SQLiteServerCommandClientWorker( commandText, _controller, QueryTimeoutMs );
     }
   }
 }

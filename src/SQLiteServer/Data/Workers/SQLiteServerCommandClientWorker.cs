@@ -25,12 +25,10 @@ namespace SQLiteServer.Data.Workers
   // ReSharper disable once InconsistentNaming
   internal class SQLiteServerCommandClientWorker : ISQLiteServerCommandWorker
   {
-    #region Constant
-
-    private const int QueryTimeouts = 5000;
-    #endregion
-
     #region Private Variables
+    /// <inheritdoc />
+    public int QueryTimeoutMs { get; }
+
     /// <summary>
     /// Have we disposed of everything?
     /// </summary>
@@ -52,17 +50,20 @@ namespace SQLiteServer.Data.Workers
     private readonly string _serverGuid;
     #endregion
 
-    public SQLiteServerCommandClientWorker(string commandText, ConnectionsController controller)
+    public SQLiteServerCommandClientWorker(string commandText, ConnectionsController controller, int queryTimeoutMs )
     {
       if (null == controller)
       {
         throw new ArgumentNullException( nameof(controller));
       }
+
+      QueryTimeoutMs = queryTimeoutMs;
+
       _commandText = commandText;
       _controller = controller;
       _serverGuid = null;
 
-      var response = _controller.SendAndWaitAsync( SQLiteMessage.CreateCommandRequest, Encoding.ASCII.GetBytes(commandText), QueryTimeouts).Result;
+      var response = _controller.SendAndWaitAsync( SQLiteMessage.CreateCommandRequest, Encoding.ASCII.GetBytes(commandText), QueryTimeoutMs).Result;
       if (null == response)
       {
         throw new TimeoutException( "There was a timeout error creating the Command.");
@@ -122,7 +123,7 @@ namespace SQLiteServer.Data.Workers
     public int ExecuteNonQuery()
     {
       ThrowIfAny();
-      var response = _controller.SendAndWaitAsync(SQLiteMessage.ExecuteNonQueryRequest, Encoding.ASCII.GetBytes(_serverGuid), QueryTimeouts).Result;
+      var response = _controller.SendAndWaitAsync(SQLiteMessage.ExecuteNonQueryRequest, Encoding.ASCII.GetBytes(_serverGuid), QueryTimeoutMs).Result;
       if (null == response)
       {
         throw new TimeoutException("There was a timeout error creating the Command.");
@@ -164,7 +165,7 @@ namespace SQLiteServer.Data.Workers
 
     public ISqliteServerDataReaderWorker CreateReaderWorker()
     {
-      return new SqliteServerDataReaderClientWorker(_controller, _serverGuid, QueryTimeouts );
+      return new SqliteServerDataReaderClientWorker(_controller, _serverGuid, QueryTimeoutMs);
     }
   }
 }

@@ -55,13 +55,19 @@ namespace SQLiteServer.Data.Connections
     private readonly int _heartBeatTimeOutInMs;
 
     /// <summary>
+    /// Number of ms before a query expires
+    /// </summary>
+    private readonly int _queryTimeoutMs;
+
+    /// <summary>
     /// Have we disposed of everything?
     /// </summary>
     private bool _disposed;
     #endregion
 
-    public SocketConnectionBuilder(IPAddress address, int port, int backlog, int heartBeatTimeOutInMs)
+    public SocketConnectionBuilder( int queryTimeoutMs, IPAddress address, int port, int backlog, int heartBeatTimeOutInMs)
     {
+      _queryTimeoutMs = queryTimeoutMs;
       _address = address;
       _port = port;
       _backlog = backlog;
@@ -122,7 +128,7 @@ namespace SQLiteServer.Data.Connections
     }
 
     /// <inheritdoc />
-    public Task<ISQLiteServerConnectionWorker> OpenAsync(string connectionString)
+    public Task<ISQLiteServerConnectionWorker> OpenAsync(string connectionString )
     {
       // sanity check
       ThrowIfDisposed();
@@ -132,12 +138,12 @@ namespace SQLiteServer.Data.Connections
       ISQLiteServerConnectionWorker worker;
       if (_connectionController.Server)
       {
-        worker = new SQLiteServerConnectionServerWorker(connectionString, _connectionController);
+        worker = new SQLiteServerConnectionServerWorker(connectionString, _connectionController, _queryTimeoutMs);
         return Task.FromResult(worker) ;
       }
 
       _connectionController.OnServerDisconnect += OnServerDisconnect;
-      worker = new SQLiteServerConnectionClientWorker(_connectionController);
+      worker = new SQLiteServerConnectionClientWorker(_connectionController, _queryTimeoutMs);
 
       return Task.FromResult(worker);
     }

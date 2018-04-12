@@ -33,14 +33,14 @@ namespace SQLiteServer.Data.Connections
     private readonly ConnectionsController _connection;
 
     /// <summary>
-    /// This is the response we got back
-    /// </summary>
-    private Packet _response;
-
-    /// <summary>
     /// This is the expected GUID as a response.
     /// </summary>
     private string _guid;
+
+    /// <summary>
+    /// This is our response lock
+    /// </summary>
+    private readonly object _lock = new object();
 
     public ResponsePacketHandler(ConnectionsController connection, int waitForResponseSleepTime )
     {
@@ -62,8 +62,51 @@ namespace SQLiteServer.Data.Connections
     public async Task<Packet> SendAndWaitAsync(SQLiteMessage type, byte[] data, int timeout )
     {
       // listen for new messages.
-      _response = null;
-      _connection.OnReceived += OnReceived;
+      Packet response = null;
+      var watch = System.Diagnostics.Stopwatch.StartNew();
+
+      var received = new ConnectionsController.DelegateOnReceived((p, r) =>
+      {
+        lock (_lock)
+        {
+          try
+          {
+            // is it the response we might be waiting for?
+            if (p.Message != SQLiteMessage.SendAndWaitResponse)
+            {
+              // it is not a response, so we are not really interested.
+              return;
+            }
+
+            // it looks like a posible match
+            // so we will try and unpack it and see if it is the actual response.
+            var packetResponse = new PacketResponse(p.Packed);
+            if (packetResponse.Guid != _guid)
+            {
+              // not the response packet we were looking for.
+              return;
+            }
+            
+            // we cannot use the payload of packet.Payload as it is
+            // it is the payload of "Types.SendAndWaitResponse"
+            var r2 = new Packet(packetResponse.Payload);
+            if (r2.Message == SQLiteMessage.SendAndWaitBusy)
+            {
+              watch.Restart();
+              return;
+            }
+
+            response = r2;
+          }
+          catch
+          {
+            response = null;
+          }
+        }
+      });
+
+      // start listenting
+      _connection.OnReceived += received;
 
       // try and send.
       try
@@ -78,22 +121,9 @@ namespace SQLiteServer.Data.Connections
         _connection.Send(SQLiteMessage.SendAndWaitRequest, packet.Packed );
         
         await Task.Run(async () => {
-          var watch = System.Diagnostics.Stopwatch.StartNew();
-          while (true )
+          watch.Restart();
+          while (response == null )
           {
-            if (_response != null)
-            {
-              if (_response.Message == SQLiteMessage.SendAndWaitBusy)
-              {
-                watch.Restart();
-                _response = null;
-              }
-              else
-              {
-                break;
-              }
-            }
-
             // delay a little to give other thread a chance.
             if (_waitForResponseSleepTime > 0)
             {
@@ -118,34 +148,11 @@ namespace SQLiteServer.Data.Connections
       finally
       {
         // whatever happens, we are no longer listening
-        _connection.OnReceived -= OnReceived;
+        _connection.OnReceived -= received;
       }
 
       // return what we found.
-      return _response;
-    }
-
-    private void OnReceived(Packet packet, Action<Packet> response )
-    {
-      // is it the response we might be waiting for?
-      if (packet.Message != SQLiteMessage.SendAndWaitResponse)
-      {
-        // it is not a response, so we are not really interested.
-        return;
-      }
-
-      // it looks like a posible match
-      // so we will try and unpack it and see if it is the actual response.
-      var packetResponse = new PacketResponse(packet.Packed);
-      if (packetResponse.Guid != _guid)
-      {
-        // not the response packet we were looking for.
-        return;
-      }
-
-      // we cannot use the payload of packet.Payload as it is
-      // it is the payload of "Types.SendAndWaitResponse"
-      _response = new Packet(packetResponse.Payload);
+      return response;
     }
   }
 }

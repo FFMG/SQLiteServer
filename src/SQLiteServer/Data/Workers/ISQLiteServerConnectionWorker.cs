@@ -18,6 +18,11 @@ namespace SQLiteServer.Data.Workers
   internal interface ISQLiteServerConnectionWorker
   {
     /// <summary>
+    /// How long we will run a query before timing out.
+    /// </summary>
+    int QueryTimeoutMs { get; }
+
+    /// <summary>
     /// Open the database using the connection string.
     /// </summary>
     void Open();
