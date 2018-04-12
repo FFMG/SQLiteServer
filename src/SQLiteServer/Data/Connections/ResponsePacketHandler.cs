@@ -135,7 +135,7 @@ namespace SQLiteServer.Data.Connections
             }
 
             // check for delay
-            if (watch.ElapsedMilliseconds >= timeout)
+            if (watch.ElapsedMilliseconds >= timeout*1000)
             {
               // we timed out.
               break;

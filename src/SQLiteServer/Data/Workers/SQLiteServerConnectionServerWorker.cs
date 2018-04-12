@@ -29,7 +29,7 @@ namespace SQLiteServer.Data.Workers
   {
     #region Command Information
     /// <inheritdoc />
-    public int QueryTimeoutMs { get; }
+    public int QueryTimeout { get; }
 
     private struct CommandData
     {
@@ -66,14 +66,14 @@ namespace SQLiteServer.Data.Workers
 
     #endregion
 
-    public SQLiteServerConnectionServerWorker(string connectionString, ConnectionsController controller, int queryTimeoutMs)
+    public SQLiteServerConnectionServerWorker(string connectionString, ConnectionsController controller, int queryTimeout)
     {
       if (null == controller)
       {
         throw new ArgumentNullException(nameof(controller));
       }
 
-      QueryTimeoutMs = queryTimeoutMs;
+      QueryTimeout = queryTimeout;
       _controller = controller;
       _connection = new SQLiteConnection(connectionString);
 
@@ -470,7 +470,7 @@ namespace SQLiteServer.Data.Workers
 
     private void OnReceived(Packet packet, Action<Packet> response)
     {
-      var busytimeout = Convert.ToInt64(QueryTimeoutMs * 0.75);
+      var busytimeoutMs = Convert.ToInt64( (QueryTimeout*1000) * 0.75);
 
       var t1 = new Task(() => ExecuteReceived(packet, response) );
       var t2 = new Task(() => 
@@ -482,7 +482,7 @@ namespace SQLiteServer.Data.Workers
           Task.Yield();
 
           // check for delay
-          if (watch.ElapsedMilliseconds < busytimeout)
+          if (watch.ElapsedMilliseconds < busytimeoutMs)
           {
             continue;
           }
@@ -593,7 +593,7 @@ namespace SQLiteServer.Data.Workers
     public ISQLiteServerCommandWorker CreateCommand(string commandText)
     {
       ThrowIfAny();
-      return new SQLiteServerCommandServerWorker( commandText, _connection, QueryTimeoutMs );
+      return new SQLiteServerCommandServerWorker( commandText, _connection, QueryTimeout );
     }
 
     public void Dispose()

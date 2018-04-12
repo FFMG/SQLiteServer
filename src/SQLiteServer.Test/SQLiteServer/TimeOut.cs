@@ -9,11 +9,11 @@ namespace SQLiteServer.Test.SQLiteServer
     [Test]
     public void CheckBusyTimeout()
     {
-      const int timeout = 1000;
-      var shortTimeout1 = new SocketConnectionBuilder(timeout, Address, Port, Backlog, HeartBeatTimeOut);
-      var shortTimeout2 = new SocketConnectionBuilder(timeout, Address, Port, Backlog, HeartBeatTimeOut);
-      var con1 = CreateConnection(shortTimeout1);
-      var con2 = CreateConnection(shortTimeout2);
+      const int timeout = 1;
+      var shortTimeout1 = new SocketConnectionBuilder(Address, Port, Backlog, HeartBeatTimeOut);
+      var shortTimeout2 = new SocketConnectionBuilder(Address, Port, Backlog, HeartBeatTimeOut);
+      var con1 = CreateConnection(shortTimeout1, timeout);
+      var con2 = CreateConnection(shortTimeout2, timeout);
 
       const string sql = @"WITH RECURSIVE r(i) AS (
                   VALUES(0)

@@ -27,7 +27,7 @@ namespace SQLiteServer.Data.Workers
   {
     #region Private Variables
     /// <inheritdoc />
-    public int QueryTimeoutMs { get; }
+    public int QueryTimeout { get; }
 
     /// <summary>
     /// Have we disposed of everything?
@@ -50,20 +50,20 @@ namespace SQLiteServer.Data.Workers
     private readonly string _serverGuid;
     #endregion
 
-    public SQLiteServerCommandClientWorker(string commandText, ConnectionsController controller, int queryTimeoutMs )
+    public SQLiteServerCommandClientWorker(string commandText, ConnectionsController controller, int queryTimeout )
     {
       if (null == controller)
       {
         throw new ArgumentNullException( nameof(controller));
       }
 
-      QueryTimeoutMs = queryTimeoutMs;
+      QueryTimeout = queryTimeout;
 
       _commandText = commandText;
       _controller = controller;
       _serverGuid = null;
 
-      var response = _controller.SendAndWaitAsync( SQLiteMessage.CreateCommandRequest, Encoding.ASCII.GetBytes(commandText), QueryTimeoutMs).Result;
+      var response = _controller.SendAndWaitAsync( SQLiteMessage.CreateCommandRequest, Encoding.ASCII.GetBytes(commandText), QueryTimeout).Result;
       if (null == response)
       {
         throw new TimeoutException( "There was a timeout error creating the Command.");
@@ -123,7 +123,7 @@ namespace SQLiteServer.Data.Workers
     public int ExecuteNonQuery()
     {
       ThrowIfAny();
-      var response = _controller.SendAndWaitAsync(SQLiteMessage.ExecuteNonQueryRequest, Encoding.ASCII.GetBytes(_serverGuid), QueryTimeoutMs).Result;
+      var response = _controller.SendAndWaitAsync(SQLiteMessage.ExecuteNonQueryRequest, Encoding.ASCII.GetBytes(_serverGuid), QueryTimeout).Result;
       if (null == response)
       {
         throw new TimeoutException("There was a timeout error creating the Command.");
@@ -165,7 +165,7 @@ namespace SQLiteServer.Data.Workers
 
     public ISqliteServerDataReaderWorker CreateReaderWorker()
     {
-      return new SqliteServerDataReaderClientWorker(_controller, _serverGuid, QueryTimeoutMs);
+      return new SqliteServerDataReaderClientWorker(_controller, _serverGuid, QueryTimeout);
     }
   }
 }

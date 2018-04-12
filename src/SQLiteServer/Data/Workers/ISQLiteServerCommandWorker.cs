@@ -22,7 +22,7 @@ namespace SQLiteServer.Data.Workers
     /// <summary>
     /// How long we will run a query before timing out.
     /// </summary>
-    int QueryTimeoutMs { get; }
+    int QueryTimeout { get; }
 
     /// <summary>
     /// Execute the given query 

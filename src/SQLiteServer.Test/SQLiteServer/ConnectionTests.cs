@@ -58,7 +58,7 @@ namespace SQLiteServer.Test.SQLiteServer
     [Test]
     public void BadDatabaseNameBecomesBroken()
     {
-      var server = new SQLiteServerConnection("Data Source=;Version=3;", QueryTimeoutMs, Address, Port, Backlog, HeartBeatTimeOut);
+      var server = new SQLiteServerConnection("Data Source=;Version=3;", Address, Port, Backlog, HeartBeatTimeOut);
       Assert.Throws<ArgumentException>(() => { server.Open(); });
 
       // make sure it is broken.

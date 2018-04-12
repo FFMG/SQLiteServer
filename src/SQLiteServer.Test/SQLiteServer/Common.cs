@@ -62,13 +62,20 @@ namespace SQLiteServer.Test.SQLiteServer
       }
     }
 
-    protected SQLiteServerConnection CreateConnection(IConnectionBuilder connectionBuilder = null )
+    protected SQLiteServerConnection CreateConnection(IConnectionBuilder connectionBuilder = null, int? defaultTimeout = null )
     {
       if (connectionBuilder == null)
       {
-        connectionBuilder = new SocketConnectionBuilder(QueryTimeoutMs, Address, Port, Backlog, HeartBeatTimeOut);
+        connectionBuilder = new SocketConnectionBuilder(Address, Port, Backlog, HeartBeatTimeOut);
       }
-      var connection  = new SQLiteServerConnection($"Data Source={_source};Version=3;", connectionBuilder );
+
+      var connectionString = $"Data Source={_source}";
+      if (defaultTimeout != null)
+      {
+        connectionString = $"{connectionString};Default Timeout={(int)defaultTimeout}";
+      }
+      var connection = new SQLiteServerConnection(connectionString, connectionBuilder);
+
       _connections.Add(connection);
       return connection;
     }
