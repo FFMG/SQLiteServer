@@ -95,7 +95,6 @@ namespace SQLiteServer.Data.Connections
               watch.Restart();
               return;
             }
-
             response = r2;
           }
           catch
@@ -152,7 +151,7 @@ namespace SQLiteServer.Data.Connections
       }
 
       // return what we found.
-      return response;
+      return response ?? new Packet( SQLiteMessage.SendAndWaitTimeOut, 1 );
     }
   }
 }

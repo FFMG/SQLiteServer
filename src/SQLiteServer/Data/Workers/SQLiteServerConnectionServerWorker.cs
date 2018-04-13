@@ -487,9 +487,9 @@ namespace SQLiteServer.Data.Workers
 
         if (QueryTimeout > 0 && totalWatch.Elapsed.TotalSeconds > QueryTimeout)
         {
+          response(new Packet(SQLiteMessage.SendAndWaitTimeOut, 1));
           var command = GetCommandWorker(packet);
           command.Cancel();
-          response(new Packet(SQLiteMessage.SendAndWaitTimeOut, 1));
           break;
         }
 
