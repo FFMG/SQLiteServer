@@ -28,7 +28,7 @@ namespace SQLiteServer.Test.SQLiteServer
   internal class Common
   {
     protected static readonly IPAddress Address = IPAddress.Parse("127.0.0.1");
-    protected const int Port = 1100;
+    protected const int Port = 1201;
     protected const int Backlog = 500;
     protected const int HeartBeatTimeOut = 500;
     protected const int QueryTimeoutMs = 30000;
