@@ -112,6 +112,20 @@ namespace SQLiteServer.Data.Workers
     }
 
     /// <inheritdoc />
+    public void Cancel()
+    {
+      ThrowIfAny();
+      try
+      {
+        _command.Cancel();
+      }
+      catch (SQLiteException e)
+      {
+        throw new SQLiteServerException(e.Message);
+      }
+    }
+
+    /// <inheritdoc />
     public int ExecuteNonQuery()
     {
       ThrowIfAny();

@@ -142,7 +142,14 @@ namespace SQLiteServer.Data.Workers
           throw new InvalidOperationException($"Unknown response {response.Message} from the server.");
       }
     }
-    
+
+    public void Cancel()
+    {
+      ThrowIfAny();
+      ThrowIfAny();
+      _controller.Send(SQLiteMessage.CancelCommand, Encoding.ASCII.GetBytes(_serverGuid));
+    }
+
     public void Dispose()
     {
       //  done already?
@@ -154,7 +161,7 @@ namespace SQLiteServer.Data.Workers
       try
       {
         ThrowIfAny();
-      _controller.Send( SQLiteMessage.DisposeCommand, Encoding.ASCII.GetBytes(_serverGuid) );
+        _controller.Send(SQLiteMessage.DisposeCommand, Encoding.ASCII.GetBytes(_serverGuid));
       }
       finally
       {

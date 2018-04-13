@@ -31,6 +31,11 @@ namespace SQLiteServer.Data.Workers
     int ExecuteNonQuery();
 
     /// <summary>
+    /// Try and cancel the command. 
+    /// </summary>
+    void Cancel();
+
+    /// <summary>
     /// Create the reader that will get data from the db.
     /// </summary>
     /// <returns></returns>

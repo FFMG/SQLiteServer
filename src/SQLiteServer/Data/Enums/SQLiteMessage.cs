@@ -22,10 +22,12 @@ namespace SQLiteServer.Data.Enums
     SendAndWaitRequest,
     SendAndWaitResponse,
     SendAndWaitBusy,
+    SendAndWaitTimeOut,
 
     CreateCommandRequest,
     CreateCommandResponse,
     DisposeCommand,
+    CancelCommand,
     CreateCommandException,
 
     ExecuteNonQueryRequest,

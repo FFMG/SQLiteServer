@@ -83,37 +83,64 @@ namespace SQLiteServer.Data.Workers
     }
 
     /// <summary>
-    /// Get the command guid if we have one
+    /// Get the command reader if we have one
     /// </summary>
     /// <param name="guid"></param>
-    /// <returns>return null or the command worker</returns>
-    private ISQLiteServerCommandWorker GetCommandWorker(string guid)
+    /// <returns>return null or the command reader</returns>
+    private ISqliteServerDataReaderWorker GetCommandReader(string guid)
     {
-      if (!_commands.ContainsKey(guid))
-      {
-        return null;
-      }
-
-      return _commands[guid].Worker;
+      return !_commands.ContainsKey(guid) ? null : _commands[guid].Reader;
     }
 
     /// <summary>
-    /// Get the command guid if we have one
+    /// Get the command reader if we have one
     /// </summary>
-    /// <param name="guid"></param>
-    /// <returns>return null or the command worker</returns>
-    private ISqliteServerDataReaderWorker GetCommandReader(string guid)
+    /// <param name="packet"></param>
+    /// <returns>return null or the command reader</returns>
+    private ISQLiteServerCommandWorker GetCommandWorker(Packet packet)
     {
-      if (!_commands.ContainsKey(guid))
+      string guid;
+      switch (packet.Message)
       {
-        return null;
+        case SQLiteMessage.ExecuteReaderGetInt16Request:
+        case SQLiteMessage.ExecuteReaderGetInt32Request:
+        case SQLiteMessage.ExecuteReaderGetInt64Request:
+        case SQLiteMessage.ExecuteReaderGetDoubleRequest:
+        case SQLiteMessage.ExecuteReaderGetStringRequest:
+        case SQLiteMessage.ExecuteReaderGetFieldTypeRequest:
+        case SQLiteMessage.ExecuteReaderGetDataTypeNameRequest:
+        case SQLiteMessage.ExecuteReaderGetIsDBNullRequest:
+        case SQLiteMessage.ExecuteReaderGetNameRequest:
+        case SQLiteMessage.ExecuteReaderGetTableNameRequest:
+        case SQLiteMessage.ExecuteReaderRequest:
+          var indexRequest = Fields.Fields.Unpack(packet.Payload).DeserializeObject<IndexRequest>();
+          guid = indexRequest.Guid;
+          break;
+
+        case SQLiteMessage.ExecuteReaderFieldCountRequest:
+        case SQLiteMessage.ExecuteReaderHasRowsRequest:
+        case SQLiteMessage.ExecuteReaderNextResultRequest:
+        case SQLiteMessage.ExecuteReaderReadRequest:
+        case SQLiteMessage.ExecuteNonQueryRequest:
+        case SQLiteMessage.CreateCommandRequest:
+        case SQLiteMessage.DisposeCommand:
+          guid = packet.Get<string>();
+          break;
+
+        case SQLiteMessage.ExecuteReaderGetOrdinalRequest:
+          var nameRequest = Fields.Fields.Unpack(packet.Payload).DeserializeObject<NameRequest>();
+          guid = nameRequest.Guid;
+          break;
+
+        default:
+          throw new ArgumentOutOfRangeException();
       }
 
-      // we know that the command exists
-      // so get the reader.
-      return _commands[guid].Reader;
+      lock (_commandsLock)
+      {
+        return !_commands.ContainsKey(guid) ? null : _commands[guid].Worker;
+      }
     }
-
 
     /// <summary>
     /// Handle a client request for a specific value type.
@@ -122,7 +149,6 @@ namespace SQLiteServer.Data.Workers
     /// <param name="response"></param>
     private void HandleExecuteReaderIndexRequest(Packet packet, Action<Packet> response )
     {
-      //  get the guid
       try
       {
         // Get the index request.
@@ -142,7 +168,6 @@ namespace SQLiteServer.Data.Workers
 
           // and now get the index.
           var index = indexRequest.Index;
-          
           switch (packet.Message)
           {
             case SQLiteMessage.ExecuteReaderGetInt16Request:
@@ -215,8 +240,8 @@ namespace SQLiteServer.Data.Workers
         var guid = nameRequest.Guid;
         lock (_commandsLock)
         {
-          var command = GetCommandWorker(guid);
-          if (command == null)
+          var reader = GetCommandReader(guid);
+          if (reader == null)
           {
             response(new Packet(SQLiteMessage.ExecuteReaderException, $"Invalid Command id sent to server for reader : {guid}."));
             return;
@@ -225,8 +250,6 @@ namespace SQLiteServer.Data.Workers
           // we know that the command exists
           // so we can get the index
           var name = nameRequest.Name;
-          var reader = _commands[guid].Reader;
-
           switch (packet.Message)
           {
             case SQLiteMessage.ExecuteReaderGetOrdinalRequest:
@@ -244,43 +267,13 @@ namespace SQLiteServer.Data.Workers
         response(new Packet(SQLiteMessage.ExecuteReaderException, e.Message));
       }
     }
-
-    /// <summary>
-    /// Handle a HasRows request.
-    /// </summary>
-    /// <param name="packet"></param>
-    /// <param name="response"></param>
-    private void HandleExecuteReaderHasRowsRequest(Packet packet, Action<Packet> response)
-    {
-      //  get the guid
-      try
-      {
-        var guid = packet.Get<string>();
-        lock (_commandsLock)
-        {
-          var reader = GetCommandReader(guid);
-          if (reader == null)
-          {
-            response(new Packet(SQLiteMessage.ExecuteReaderException, $"Invalid Command id sent to server for reader : {guid}."));
-            return;
-          }
-
-          // we know that the command exists
-          response(new Packet(SQLiteMessage.ExecuteReaderResponse, reader.HasRows ? 1 : 0));
-        }
-      }
-      catch (Exception e)
-      {
-        response(new Packet(SQLiteMessage.ExecuteReaderException, e.Message));
-      }
-    }
-
+    
     /// <summary>
     /// Handle a field count request
     /// </summary>
     /// <param name="packet"></param>
     /// <param name="response"></param>
-    private void HandleExecuteReaderFieldCountRequest(Packet packet, Action<Packet> response)
+    private void HandleExecuteReaderGuiRequest(Packet packet, Action<Packet> response)
     {
       //  get the guid
       try
@@ -295,39 +288,32 @@ namespace SQLiteServer.Data.Workers
             return;
           }
 
-          // we know that the command exists
-          response(new Packet(SQLiteMessage.ExecuteReaderResponse, reader.FieldCount));
-        }
-      }
-      catch (Exception e)
-      {
-        response(new Packet(SQLiteMessage.ExecuteReaderException, e.Message));
-      }
-    }
-
-    /// <summary>
-    /// Handle a next result request
-    /// </summary>
-    /// <param name="packet"></param>
-    /// <param name="response"></param>
-    private void HandleExecuteReaderNextResultRequest(Packet packet, Action<Packet> response)
-    {
-      //  get the guid
-      try
-      {
-        var guid = packet.Get<string>();
-        lock (_commandsLock)
-        {
-          var reader = GetCommandReader(guid);
-          if (reader == null)
+          switch (packet.Message)
           {
-            response(new Packet(SQLiteMessage.ExecuteReaderException, $"Invalid Command id sent to server for reader : {guid}."));
-            return;
-          }
+            case SQLiteMessage.DisposeCommand:
+              if (_commands.ContainsKey(guid))
+              {
+                _commands.Remove(guid);
+              }
+              response(new Packet(SQLiteMessage.ExecuteReaderResponse, 1));
+              break;
 
-          // we know that the command exists
-          var result = reader.NextResult();
-          response(new Packet(SQLiteMessage.ExecuteReaderResponse, result ? 1 : 0));
+            case SQLiteMessage.ExecuteReaderReadRequest:
+              response(new Packet(SQLiteMessage.ExecuteReaderResponse, reader.Read() ? 1 : 0));
+              break;
+
+            case SQLiteMessage.ExecuteReaderNextResultRequest:
+              response(new Packet(SQLiteMessage.ExecuteReaderResponse, reader.NextResult() ? 1 : 0));
+              break;
+
+            case SQLiteMessage.ExecuteReaderHasRowsRequest:
+              response(new Packet(SQLiteMessage.ExecuteReaderResponse, reader.HasRows ? 1 : 0));
+              break;
+
+            case SQLiteMessage.ExecuteReaderFieldCountRequest:
+              response(new Packet(SQLiteMessage.ExecuteReaderResponse, reader.FieldCount));
+              break;
+          }
         }
       }
       catch (Exception e)
@@ -335,38 +321,7 @@ namespace SQLiteServer.Data.Workers
         response(new Packet(SQLiteMessage.ExecuteReaderException, e.Message));
       }
     }
-
-    /// <summary>
-    /// Handle a read request
-    /// </summary>
-    /// <param name="packet"></param>
-    /// <param name="response"></param>
-    private void HandleExecuteReaderReadRequest(Packet packet, Action<Packet> response)
-    {
-      //  get the guid
-      try
-      {
-        var guid = packet.Get<string>();
-        lock (_commandsLock)
-        {
-          var reader = GetCommandReader(guid);
-          if (reader == null)
-          {
-            response(new Packet(SQLiteMessage.ExecuteReaderException, $"Invalid Command id sent to server for reader : {guid}."));
-            return;
-          }
-
-          // we know that the command exists
-          var result = reader.Read();
-          response(new Packet(SQLiteMessage.ExecuteReaderResponse, result ? 1 : 0));
-        }
-      }
-      catch (Exception e)
-      {
-        response(new Packet(SQLiteMessage.ExecuteReaderException, e.Message));
-      }
-    }
-
+    
     /// <summary>
     /// Execute the reader request for a given command... if we have one.
     /// </summary>
@@ -377,25 +332,24 @@ namespace SQLiteServer.Data.Workers
       //  get the guid
       try
       {
-        // Get the index request.
-        var indexRequest = Fields.Fields.Unpack(packet.Payload).DeserializeObject<IndexRequest>();
-
-        var guid = indexRequest.Guid;
         lock (_commandsLock)
         {
-          var command = GetCommandWorker(guid);
+          var command = GetCommandWorker(packet);
           if (command == null)
           {
-            response(new Packet(SQLiteMessage.ExecuteReaderException, $"Invalid Command id sent to server for reader : {guid}."));
+            response(new Packet(SQLiteMessage.ExecuteReaderException, $"Invalid Command id sent to server for reader."));
             return;
           }
+
+          // Get the index request.
+          var indexRequest = Fields.Fields.Unpack(packet.Payload).DeserializeObject<IndexRequest>();
 
           var reader = command.CreateReaderWorker();
           reader.ExecuteReader( (CommandBehavior)indexRequest.Index );
 
           // we know that the command exists
           // so we can simply update the value.
-          _commands[guid] = new CommandData
+          _commands[indexRequest.Guid] = new CommandData
           {
             Worker = command,
             Reader = reader
@@ -414,17 +368,47 @@ namespace SQLiteServer.Data.Workers
     /// </summary>
     /// <param name="packet"></param>
     /// <param name="response"></param>
+    private void HandleCancelRequest(Packet packet, Action<Packet> response)
+    {
+      //  get the guid
+      try
+      {
+        lock (_commandsLock)
+        {
+          var command = GetCommandWorker(packet);
+          if (command == null)
+          {
+            var guid = packet.Get<string>();
+            response(new Packet(SQLiteMessage.ExecuteNonQueryException, $"Invalid Command id sent to server : {guid}."));
+            return;
+          }
+
+          command.Cancel();
+          response(new Packet(SQLiteMessage.ExecuteNonQueryResponse, 1));
+        }
+      }
+      catch (Exception e)
+      {
+        response(new Packet(SQLiteMessage.ExecuteNonQueryException, e.Message));
+      }
+    }
+
+    /// <summary>
+    /// Execute a command... assuming that all is good.
+    /// </summary>
+    /// <param name="packet"></param>
+    /// <param name="response"></param>
     private void HandleExecuteNonQueryRequest(Packet packet, Action<Packet> response)
     {
       //  get the guid
       try
       {
-        var guid = packet.Get<string>();
         lock (_commandsLock)
         {
-          var command = GetCommandWorker(guid);
+          var command = GetCommandWorker(packet);
           if (command == null )
           {
+            var guid = packet.Get<string>();
             response(new Packet(SQLiteMessage.ExecuteNonQueryException, $"Invalid Command id sent to server : {guid}."));
             return;
           }
@@ -475,22 +459,6 @@ namespace SQLiteServer.Data.Workers
       response(new Packet(SQLiteMessage.CreateCommandResponse, guid));
     }
 
-    /// <summary>
-    /// Sent when the client wants us to dispose of a Command
-    /// </summary>
-    /// <param name="packet"></param>
-    private void HandleDisposeCommand(Packet packet)
-    {
-      var guid = packet.Get<string>();
-      lock (_commandsLock)
-      {
-        if (_commands.ContainsKey(guid))
-        {
-          _commands.Remove(guid);
-        }
-      }
-    }
-
     private void OnReceived(Packet packet, Action<Packet> response)
     {
       var t1 = new Task(() => ExecuteReceived(packet, response) );
@@ -519,7 +487,10 @@ namespace SQLiteServer.Data.Workers
 
         if (QueryTimeout > 0 && totalWatch.Elapsed.TotalSeconds > QueryTimeout)
         {
-          
+          var command = GetCommandWorker(packet);
+          command.Cancel();
+          response(new Packet(SQLiteMessage.SendAndWaitTimeOut, 1));
+          break;
         }
 
           // check for delay
@@ -551,24 +522,21 @@ namespace SQLiteServer.Data.Workers
           HandleExecuteReaderIndexRequest(packet, response );
           break;
 
+        case SQLiteMessage.ExecuteReaderFieldCountRequest:
+        case SQLiteMessage.ExecuteReaderHasRowsRequest:
+        case SQLiteMessage.ExecuteReaderNextResultRequest:
+        case SQLiteMessage.ExecuteReaderReadRequest:
+        case SQLiteMessage.DisposeCommand:
+          HandleExecuteReaderGuiRequest(packet, response);
+          break;
+
+        case SQLiteMessage.CancelCommand:
+          HandleCancelRequest(packet, response);
+          break;
+
+
         case SQLiteMessage.ExecuteReaderGetOrdinalRequest:
           HandleExecuteReaderNameRequest(packet, response);
-          break;
-
-        case SQLiteMessage.ExecuteReaderFieldCountRequest:
-          HandleExecuteReaderFieldCountRequest(packet, response);
-          break;
-
-        case SQLiteMessage.ExecuteReaderHasRowsRequest:
-          HandleExecuteReaderHasRowsRequest(packet, response);
-          break;
-
-        case SQLiteMessage.ExecuteReaderNextResultRequest:
-          HandleExecuteReaderNextResultRequest(packet, response);
-          break;
-          
-        case SQLiteMessage.ExecuteReaderReadRequest:
-          HandleExecuteReaderReadRequest(packet, response);
           break;
 
         case SQLiteMessage.ExecuteReaderRequest:
@@ -581,10 +549,6 @@ namespace SQLiteServer.Data.Workers
 
         case SQLiteMessage.CreateCommandRequest:
           HandleReceiveCommandRequest(packet, response);
-          break;
-
-        case SQLiteMessage.DisposeCommand:
-          HandleDisposeCommand(packet);
           break;
       }
     }
