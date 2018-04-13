@@ -26,6 +26,34 @@ namespace SQLiteServer.Data.SQLiteServer
   // ReSharper disable once InconsistentNaming
   public sealed class SQLiteServerConnectionStringBuilder : DbConnectionStringBuilder
   {
+    #region Key Names
+    private const string KeyUseUtf16Encoding = "UseUtf16Encoding";
+    private const string KeyVersion = "Version";
+    private const string KeyPooling = "Pooling";
+    private const string KeyReadOnly = "Read Only";
+    private const string KeyDataSource = "Data Source";
+    private const string KeyPassword = "Password";
+    private const string KeyUri = "Uri";
+    private const string KeyFullUri = "FullUri";
+    private const string KeySynchronous = "Synchronous";
+    private const string KeyDefaultTimeOut = "Default Timeout";
+    private const string KeyBusyTimeOut = "BusyTimeout";
+    #endregion
+
+    #region Default values
+    private const int DefaultVersion = 3;
+    private const int DefaultDefaultTimeOut = 30;
+    private const int DefaultBusyTimeOut = 0;
+    private const string DefaultDataSource = "";
+    private const string DefaultPassword = "";
+    private const string DefaultUri = null;
+    private const string DefaultFullUri = null;
+    private const bool DefaultPooling = false;
+    private const bool DefaultReadOnly = false;
+    private const bool DefaultUseUtf16Encoding = false;
+    private const SynchronizationModes DefaultSynchronous = SynchronizationModes.Normal;
+    #endregion
+
     #region Private
 
     /// <summary>
@@ -59,27 +87,14 @@ namespace SQLiteServer.Data.SQLiteServer
       }
     }
 
-    private const string KeyUseUtf16Encoding = "UseUtf16Encoding";
-    private const string KeyVersion = "Version";
-    private const string KeyPooling = "Pooling";
-    private const string KeyReadOnly = "Read Only";
-    private const string KeyDataSource = "Data Source";
-    private const string KeyUri = "Uri";
-    private const string KeyFullUri = "FullUri";
-    private const string KeySynchronous = "Synchronous";
-    private const string KeyDefaultTimeOut = "Default Timeout";
-    private const string KeyBusyTimeOut = "BusyTimeout";
-    private const int DefaultVersion = 3;
-    private const int DefaultDefaultTimeOut = 30;
-    private const int DefaultBusyTimeOut = 0;
-    private const string DefaultDataSource = "";
-    private const string DefaultUri = null;
-    private const string DefaultFullUri = null;
-    private const bool DefaultPooling = false;
-    private const bool DefaultReadOnly = false;
-    private const SynchronizationModes DefaultSynchronous = SynchronizationModes.Normal;
-    private const bool DefaultUseUtf16Encoding = false;
-
+    /// <summary>
+    /// Get a value from the list, if it exists.
+    /// If it does not exist, we will return the default.
+    /// </summary>
+    /// <typeparam name="T"></typeparam>
+    /// <param name="key"></param>
+    /// <param name="defaultValue"></param>
+    /// <returns></returns>
     private T GetValue<T>(string key, T defaultValue)
     {
       object value;
@@ -157,7 +172,7 @@ namespace SQLiteServer.Data.SQLiteServer
         {
           try
           {
-            returnValue = (SynchronizationModes) GetConverter(typeof(SynchronizationModes)).ConvertFrom(value);
+            returnValue = (SynchronizationModes)( GetConverter(typeof(SynchronizationModes)).ConvertFrom(value) ?? defaultValue);
           }
           catch
           {
@@ -273,6 +288,15 @@ namespace SQLiteServer.Data.SQLiteServer
     {
       get { return GetValue(KeyFullUri, DefaultFullUri); }
       set { this[KeyFullUri] = value; }
+    }
+
+    /// <summary>
+    /// Database password.
+    /// </summary>
+    public string Password
+    {
+      get { return GetValue(KeyPassword, DefaultPassword); }
+      set { this[KeyPassword] = value; }
     }
   }
 }
