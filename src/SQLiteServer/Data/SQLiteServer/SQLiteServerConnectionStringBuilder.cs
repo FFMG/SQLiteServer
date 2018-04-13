@@ -32,6 +32,7 @@ namespace SQLiteServer.Data.SQLiteServer
     private const string KeyPooling = "Pooling";
     private const string KeyReadOnly = "Read Only";
     private const string KeyDataSource = "Data Source";
+    private const string KeyPassword = "Password";
     private const string KeyUri = "Uri";
     private const string KeyFullUri = "FullUri";
     private const string KeySynchronous = "Synchronous";
@@ -44,6 +45,7 @@ namespace SQLiteServer.Data.SQLiteServer
     private const int DefaultDefaultTimeOut = 30;
     private const int DefaultBusyTimeOut = 0;
     private const string DefaultDataSource = "";
+    private const string DefaultPassword = "";
     private const string DefaultUri = null;
     private const string DefaultFullUri = null;
     private const bool DefaultPooling = false;
@@ -51,7 +53,6 @@ namespace SQLiteServer.Data.SQLiteServer
     private const bool DefaultUseUtf16Encoding = false;
     private const SynchronizationModes DefaultSynchronous = SynchronizationModes.Normal;
     #endregion
-
 
     #region Private
 
@@ -287,6 +288,15 @@ namespace SQLiteServer.Data.SQLiteServer
     {
       get { return GetValue(KeyFullUri, DefaultFullUri); }
       set { this[KeyFullUri] = value; }
+    }
+
+    /// <summary>
+    /// Database password.
+    /// </summary>
+    public string Password
+    {
+      get { return GetValue(KeyPassword, DefaultPassword); }
+      set { this[KeyPassword] = value; }
     }
   }
 }
