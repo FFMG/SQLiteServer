@@ -98,6 +98,24 @@ namespace SQLiteServer.Data.Workers
     }
 
     /// <summary>
+    /// Get the command guid if we have one
+    /// </summary>
+    /// <param name="guid"></param>
+    /// <returns>return null or the command worker</returns>
+    private ISqliteServerDataReaderWorker GetCommandReader(string guid)
+    {
+      if (!_commands.ContainsKey(guid))
+      {
+        return null;
+      }
+
+      // we know that the command exists
+      // so get the reader.
+      return _commands[guid].Reader;
+    }
+
+
+    /// <summary>
     /// Handle a client request for a specific value type.
     /// </summary>
     /// <param name="packet"></param>
@@ -114,18 +132,17 @@ namespace SQLiteServer.Data.Workers
         var guid = indexRequest.Guid;
         lock (_commandsLock)
         {
-          var command = GetCommandWorker(guid);
-          if (command == null)
+          // get the reader
+          var reader = GetCommandReader(guid);
+          if (reader == null)
           {
             response(new Packet(SQLiteMessage.ExecuteReaderException, $"Invalid Command id sent to server for reader : {guid}."));
             return;
           }
 
-          // we know that the command exists
-          // so we can get the index
+          // and now get the index.
           var index = indexRequest.Index;
-          var reader = _commands[guid].Reader;
-
+          
           switch (packet.Message)
           {
             case SQLiteMessage.ExecuteReaderGetInt16Request:
@@ -228,6 +245,11 @@ namespace SQLiteServer.Data.Workers
       }
     }
 
+    /// <summary>
+    /// Handle a HasRows request.
+    /// </summary>
+    /// <param name="packet"></param>
+    /// <param name="response"></param>
     private void HandleExecuteReaderHasRowsRequest(Packet packet, Action<Packet> response)
     {
       //  get the guid
@@ -236,15 +258,14 @@ namespace SQLiteServer.Data.Workers
         var guid = packet.Get<string>();
         lock (_commandsLock)
         {
-          var command = GetCommandWorker(guid);
-          if (command == null)
+          var reader = GetCommandReader(guid);
+          if (reader == null)
           {
             response(new Packet(SQLiteMessage.ExecuteReaderException, $"Invalid Command id sent to server for reader : {guid}."));
             return;
           }
 
           // we know that the command exists
-          var reader = _commands[guid].Reader;
           response(new Packet(SQLiteMessage.ExecuteReaderResponse, reader.HasRows ? 1 : 0));
         }
       }
@@ -254,6 +275,11 @@ namespace SQLiteServer.Data.Workers
       }
     }
 
+    /// <summary>
+    /// Handle a field count request
+    /// </summary>
+    /// <param name="packet"></param>
+    /// <param name="response"></param>
     private void HandleExecuteReaderFieldCountRequest(Packet packet, Action<Packet> response)
     {
       //  get the guid
@@ -262,15 +288,14 @@ namespace SQLiteServer.Data.Workers
         var guid = packet.Get<string>();
         lock (_commandsLock)
         {
-          var command = GetCommandWorker(guid);
-          if (command == null)
+          var reader = GetCommandReader(guid);
+          if (reader == null)
           {
             response(new Packet(SQLiteMessage.ExecuteReaderException, $"Invalid Command id sent to server for reader : {guid}."));
             return;
           }
 
           // we know that the command exists
-          var reader = _commands[guid].Reader;
           response(new Packet(SQLiteMessage.ExecuteReaderResponse, reader.FieldCount));
         }
       }
@@ -293,15 +318,14 @@ namespace SQLiteServer.Data.Workers
         var guid = packet.Get<string>();
         lock (_commandsLock)
         {
-          var command = GetCommandWorker(guid);
-          if (command == null)
+          var reader = GetCommandReader(guid);
+          if (reader == null)
           {
             response(new Packet(SQLiteMessage.ExecuteReaderException, $"Invalid Command id sent to server for reader : {guid}."));
             return;
           }
 
           // we know that the command exists
-          var reader = _commands[guid].Reader;
           var result = reader.NextResult();
           response(new Packet(SQLiteMessage.ExecuteReaderResponse, result ? 1 : 0));
         }
@@ -325,15 +349,14 @@ namespace SQLiteServer.Data.Workers
         var guid = packet.Get<string>();
         lock (_commandsLock)
         {
-          var command = GetCommandWorker(guid);
-          if (command == null)
+          var reader = GetCommandReader(guid);
+          if (reader == null)
           {
             response(new Packet(SQLiteMessage.ExecuteReaderException, $"Invalid Command id sent to server for reader : {guid}."));
             return;
           }
 
           // we know that the command exists
-          var reader = _commands[guid].Reader;
           var result = reader.Read();
           response(new Packet(SQLiteMessage.ExecuteReaderResponse, result ? 1 : 0));
         }
@@ -470,32 +493,45 @@ namespace SQLiteServer.Data.Workers
 
     private void OnReceived(Packet packet, Action<Packet> response)
     {
-      var busytimeoutMs = Convert.ToInt64( (QueryTimeout*1000) * 0.75);
-
       var t1 = new Task(() => ExecuteReceived(packet, response) );
-      var t2 = new Task(() => 
-      {
-        var watch = System.Diagnostics.Stopwatch.StartNew();
-        while (!t1.IsCompleted)
-        {
-          // delay a little to give other thread a chance.
-          Task.Yield();
+      var t2 = new Task(() => KeepBusyUntilTimeout(t1, packet, response) );
 
-          // check for delay
-          if (watch.ElapsedMilliseconds < busytimeoutMs)
-          {
-            continue;
-          }
-
-          response(new Packet(SQLiteMessage.SendAndWaitBusy, 1));
-          watch.Restart();
-        }
-
-        watch.Stop();
-      });
       t1.Start();
       t2.Start();
       Task.WhenAll(t1, t2);
+    }
+
+    /// <summary>
+    /// Keep sending 'busy' messages until the message arrives.
+    /// </summary>
+    /// <param name="executeTask"></param>
+    /// <param name="packet"></param>
+    /// <param name="response"></param>
+    private void KeepBusyUntilTimeout( IAsyncResult executeTask, Packet packet, Action<Packet> response)
+    {
+      var busytimeoutMs = QueryTimeout == 0 ? 1000 : Convert.ToInt64((QueryTimeout * 1000) * 0.10);
+      var watch = System.Diagnostics.Stopwatch.StartNew();
+      var totalWatch = System.Diagnostics.Stopwatch.StartNew();
+      while (!executeTask.IsCompleted)
+      {
+        // delay a little to give other thread a chance.
+        Task.Yield();
+
+        if (QueryTimeout > 0 && totalWatch.Elapsed.TotalSeconds > QueryTimeout)
+        {
+          
+        }
+
+          // check for delay
+        if (watch.ElapsedMilliseconds < busytimeoutMs)
+        {
+          continue;
+        }
+
+        response(new Packet(SQLiteMessage.SendAndWaitBusy, 1));
+        watch.Restart();
+      }
+      watch.Stop();
     }
 
     private void ExecuteReceived(Packet packet, Action<Packet> response)
