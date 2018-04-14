@@ -25,7 +25,7 @@ namespace SQLiteServer.Data.Workers
   {
     #region Private Variables
     /// <inheritdoc />
-    public int QueryTimeout { get; }
+    public int CommandTimeout { get; }
 
     /// <summary>
     /// Have we disposed of everything?
@@ -43,7 +43,7 @@ namespace SQLiteServer.Data.Workers
     private readonly SQLiteConnection _connection;
     #endregion
 
-    public SQLiteServerCommandServerWorker(string commandText, SQLiteConnection connection, int queryTimeout)
+    public SQLiteServerCommandServerWorker(string commandText, SQLiteConnection connection, int commandTimeout)
     {
       if (null == connection)
       {
@@ -56,7 +56,7 @@ namespace SQLiteServer.Data.Workers
         throw new ArgumentNullException(nameof(commandText));
       }
 
-      QueryTimeout = queryTimeout;
+      CommandTimeout = commandTimeout;
 
       try
       {

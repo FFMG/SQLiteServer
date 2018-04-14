@@ -107,7 +107,7 @@ namespace SQLiteServer.Data.SQLiteServer
     {
       if (_disposed)
       {
-        throw new ObjectDisposedException(nameof(SQLiteServerCommand));
+        throw new ObjectDisposedException(nameof(SqliteServerDataReader));
       }
     }
 

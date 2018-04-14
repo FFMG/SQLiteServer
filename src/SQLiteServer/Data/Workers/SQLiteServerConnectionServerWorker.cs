@@ -29,7 +29,13 @@ namespace SQLiteServer.Data.Workers
   {
     #region Command Information
     /// <inheritdoc />
-    public int QueryTimeout { get; }
+    public int CommandTimeout { get; }
+
+    /// <summary>
+    /// How often we want to send a 'busy' message to keep reminding
+    /// the client that we are still busy.
+    /// </summary>
+    private const long DefaultBusyTimeout = 1000;
 
     private struct CommandData
     {
@@ -66,14 +72,14 @@ namespace SQLiteServer.Data.Workers
 
     #endregion
 
-    public SQLiteServerConnectionServerWorker(string connectionString, ConnectionsController controller, int queryTimeout)
+    public SQLiteServerConnectionServerWorker(string connectionString, ConnectionsController controller, int commandTimeout)
     {
       if (null == controller)
       {
         throw new ArgumentNullException(nameof(controller));
       }
 
-      QueryTimeout = queryTimeout;
+      CommandTimeout = commandTimeout;
       _controller = controller;
       _connection = new SQLiteConnection(connectionString);
 
@@ -477,7 +483,7 @@ namespace SQLiteServer.Data.Workers
     /// <param name="response"></param>
     private void KeepBusyUntilTimeout( IAsyncResult executeTask, Packet packet, Action<Packet> response)
     {
-      var busytimeoutMs = QueryTimeout == 0 ? 1000 : Convert.ToInt64((QueryTimeout * 1000) * 0.10);
+      var busytimeoutMs = GetBusyTimeoutInMs( packet.Message );
       var watch = System.Diagnostics.Stopwatch.StartNew();
       var totalWatch = System.Diagnostics.Stopwatch.StartNew();
       while (!executeTask.IsCompleted)
@@ -485,7 +491,7 @@ namespace SQLiteServer.Data.Workers
         // delay a little to give other thread a chance.
         Task.Yield();
 
-        if (QueryTimeout > 0 && totalWatch.Elapsed.TotalSeconds > QueryTimeout)
+        if (CommandTimeout > 0 && totalWatch.Elapsed.TotalSeconds > CommandTimeout)
         {
           response(new Packet(SQLiteMessage.SendAndWaitTimeOut, 1));
           var command = GetCommandWorker(packet);
@@ -503,6 +509,20 @@ namespace SQLiteServer.Data.Workers
         watch.Restart();
       }
       watch.Stop();
+    }
+
+    private long GetBusyTimeoutInMs(SQLiteMessage packetMessage)
+    {
+      switch (packetMessage)
+      {
+        case SQLiteMessage.CreateCommandException:
+        case SQLiteMessage.ExecuteNonQueryRequest:
+        case SQLiteMessage.ExecuteReaderRequest:
+          return CommandTimeout == 0 ? DefaultBusyTimeout : Convert.ToInt64((CommandTimeout * 1000) * 0.10);
+
+        default:
+          return DefaultBusyTimeout;
+      }
     }
 
     private void ExecuteReceived(Packet packet, Action<Packet> response)
@@ -593,7 +613,7 @@ namespace SQLiteServer.Data.Workers
     public ISQLiteServerCommandWorker CreateCommand(string commandText)
     {
       ThrowIfAny();
-      return new SQLiteServerCommandServerWorker( commandText, _connection, QueryTimeout );
+      return new SQLiteServerCommandServerWorker( commandText, _connection, CommandTimeout);
     }
 
     public void Dispose()

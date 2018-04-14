@@ -27,7 +27,7 @@ namespace SQLiteServer.Data.Workers
   {
     #region Private Variables
     /// <inheritdoc />
-    public int QueryTimeout { get; }
+    public int CommandTimeout { get; }
 
     /// <summary>
     /// Have we disposed of everything?
@@ -50,20 +50,20 @@ namespace SQLiteServer.Data.Workers
     private readonly string _serverGuid;
     #endregion
 
-    public SQLiteServerCommandClientWorker(string commandText, ConnectionsController controller, int queryTimeout )
+    public SQLiteServerCommandClientWorker(string commandText, ConnectionsController controller, int commandTimeout)
     {
       if (null == controller)
       {
         throw new ArgumentNullException( nameof(controller));
       }
 
-      QueryTimeout = queryTimeout;
+      CommandTimeout = commandTimeout;
 
       _commandText = commandText;
       _controller = controller;
       _serverGuid = null;
 
-      var response = _controller.SendAndWaitAsync( SQLiteMessage.CreateCommandRequest, Encoding.ASCII.GetBytes(commandText), QueryTimeout).Result;
+      var response = _controller.SendAndWaitAsync( SQLiteMessage.CreateCommandRequest, Encoding.ASCII.GetBytes(commandText), CommandTimeout).Result;
       switch (response.Message)
       {
         case SQLiteMessage.SendAndWaitTimeOut:
@@ -121,7 +121,7 @@ namespace SQLiteServer.Data.Workers
     public int ExecuteNonQuery()
     {
       ThrowIfAny();
-      var response = _controller.SendAndWaitAsync(SQLiteMessage.ExecuteNonQueryRequest, Encoding.ASCII.GetBytes(_serverGuid), QueryTimeout).Result;
+      var response = _controller.SendAndWaitAsync(SQLiteMessage.ExecuteNonQueryRequest, Encoding.ASCII.GetBytes(_serverGuid), CommandTimeout).Result;
       switch (response.Message)
       {
         case SQLiteMessage.SendAndWaitTimeOut:
@@ -168,7 +168,7 @@ namespace SQLiteServer.Data.Workers
 
     public ISqliteServerDataReaderWorker CreateReaderWorker()
     {
-      return new SqliteServerDataReaderClientWorker(_controller, _serverGuid, QueryTimeout);
+      return new SqliteServerDataReaderClientWorker(_controller, _serverGuid, CommandTimeout );
     }
   }
 }

@@ -62,6 +62,10 @@ namespace SQLiteServer.Data.SQLiteServer
     {
       _connection = connection;
       CommandText = commandText;
+
+      // set the connection timeout
+      var builder = new SQLiteServerConnectionStringBuilder(connection?.ConnectionString);
+      CommandTimeout = builder.DefaultTimeout;
     }
 
     /// <summary>

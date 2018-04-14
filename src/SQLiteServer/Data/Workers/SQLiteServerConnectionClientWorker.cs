@@ -22,7 +22,7 @@ namespace SQLiteServer.Data.Workers
   {
     #region Command Information
     /// <inheritdoc />
-    public int QueryTimeout { get; }
+    public int CommandTimeout { get; }
     #endregion
 
     #region Private
@@ -32,14 +32,14 @@ namespace SQLiteServer.Data.Workers
     private readonly ConnectionsController _controller;
     #endregion
 
-    public SQLiteServerConnectionClientWorker(ConnectionsController controller, int queryTimeout)
+    public SQLiteServerConnectionClientWorker(ConnectionsController controller, int commandTimeout)
     {
       if (null == controller)
       {
         throw new ArgumentNullException( nameof(controller));
       }
       _controller = controller;
-      QueryTimeout = queryTimeout;
+      CommandTimeout = commandTimeout;
     }
 
     public void Open()
@@ -55,7 +55,7 @@ namespace SQLiteServer.Data.Workers
 
     public ISQLiteServerCommandWorker CreateCommand(string commandText)
     {
-      return new SQLiteServerCommandClientWorker( commandText, _controller, QueryTimeout );
+      return new SQLiteServerCommandClientWorker( commandText, _controller, CommandTimeout);
     }
   }
 }
