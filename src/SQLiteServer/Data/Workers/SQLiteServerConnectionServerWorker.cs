@@ -470,9 +470,22 @@ namespace SQLiteServer.Data.Workers
       var t1 = new Task(() => ExecuteReceived(packet, response) );
       var t2 = new Task(() => KeepBusyUntilTimeout(t1, packet, response) );
 
+      // start the tasks
       t1.Start();
       t2.Start();
-      Task.WhenAll(t1, t2);
+      var tasks = Task.WhenAll(t1, t2);
+      try
+      {
+        tasks.Wait();
+      }
+      catch (AggregateException e)
+      {
+        if (e.InnerException != null)
+        {
+          throw e.InnerException;
+        }
+        throw;
+      }
     }
 
     /// <summary>
@@ -509,6 +522,7 @@ namespace SQLiteServer.Data.Workers
         watch.Restart();
       }
       watch.Stop();
+      totalWatch.Stop();
     }
 
     private long GetBusyTimeoutInMs(SQLiteMessage packetMessage)
