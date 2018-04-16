@@ -15,6 +15,7 @@
 using System;
 using System.Data;
 using System.Data.SQLite;
+using System.Threading.Tasks;
 using SQLiteServer.Data.Exceptions;
 using SQLiteServer.Data.SQLiteServer;
 
@@ -24,6 +25,9 @@ namespace SQLiteServer.Data.Workers
   internal class SQLiteServerCommandServerWorker : ISQLiteServerCommandWorker
   {
     #region Private Variables
+    /// <inheritdoc />
+    public int CommandTimeout { get; }
+
     /// <summary>
     /// Have we disposed of everything?
     /// </summary>
@@ -40,7 +44,7 @@ namespace SQLiteServer.Data.Workers
     private readonly SQLiteConnection _connection;
     #endregion
 
-    public SQLiteServerCommandServerWorker(string commandText, SQLiteConnection connection)
+    public SQLiteServerCommandServerWorker(string commandText, SQLiteConnection connection, int commandTimeout)
     {
       if (null == connection)
       {
@@ -52,6 +56,8 @@ namespace SQLiteServer.Data.Workers
       {
         throw new ArgumentNullException(nameof(commandText));
       }
+
+      CommandTimeout = commandTimeout;
 
       try
       {
@@ -107,19 +113,80 @@ namespace SQLiteServer.Data.Workers
     }
 
     /// <inheritdoc />
+    public void Cancel()
+    {
+      ThrowIfAny();
+      try
+      {
+        _command.Cancel();
+      }
+      catch (SQLiteException e)
+      {
+        throw new SQLiteServerException(e.Message);
+      }
+    }
+
+    /// <inheritdoc />
     public int ExecuteNonQuery()
     {
       ThrowIfAny();
       try
       {
-        return _command.ExecuteNonQuery();
+        var queryResult = 0;
+        var t1 = new Task(() => queryResult = _command.ExecuteNonQuery());
+        var t2 = new Task(() => KeepBusyUntilTimeout(t1));
+
+        t1.Start();
+        t2.Start();
+        var tasks = Task.WhenAll(t1, t2);
+        try
+        {
+          tasks.Wait();
+        }
+        catch (AggregateException e)
+        {
+          if (e.InnerException != null)
+          {
+            throw e.InnerException;
+          }
+          throw;
+        }
+        return queryResult;
       }
       catch (SQLiteException e)
       {
         throw new SQLiteServerException( e.Message );
       }
     }
-    
+
+    /// <summary>
+    /// Keep sending 'busy' messages until the message arrives.
+    /// </summary>
+    /// <param name="executeTask"></param>
+    private void KeepBusyUntilTimeout(IAsyncResult executeTask )
+    {
+      // do we even need to wait?
+      if (CommandTimeout == 0)
+      {
+        return;
+      }
+
+      var totalWatch = System.Diagnostics.Stopwatch.StartNew();
+      while (!executeTask.IsCompleted)
+      {
+        // delay a little to give other thread a chance.
+        Task.Yield();
+
+        if (totalWatch.Elapsed.TotalSeconds > CommandTimeout)
+        {
+          totalWatch.Stop();
+          _command.Cancel();
+          throw new TimeoutException("There was a timeout error executing the read request from the reader.");
+        }
+      }
+      totalWatch.Stop();
+    }
+
     public ISqliteServerDataReaderWorker CreateReaderWorker()
     {
       return new SqliteServerDataReaderServerWorker( _command );

@@ -70,6 +70,7 @@
     <Compile Include="SQLiteServer\ConnectionStringBuilderTests.cs" />
     <Compile Include="SQLiteServer\ConnectionTests.cs" />
     <Compile Include="SQLiteServer\ReaderTests.cs" />
+    <Compile Include="SQLiteServer\TimeOut.cs" />
     <Compile Include="SQLiteServer\TransactionTests.cs" />
     <Compile Include="SQLiteServer\TypeTests.cs" />
   </ItemGroup>

@@ -20,10 +20,20 @@ namespace SQLiteServer.Data.Workers
   internal interface ISQLiteServerCommandWorker : IDisposable
   {
     /// <summary>
+    /// How long we will run a query before timing out.
+    /// </summary>
+    int CommandTimeout { get; }
+
+    /// <summary>
     /// Execute the given query 
     /// </summary>
     /// <returns>The number of rows added/deleted/whatever depending on the query.</returns>
     int ExecuteNonQuery();
+
+    /// <summary>
+    /// Try and cancel the command. 
+    /// </summary>
+    void Cancel();
 
     /// <summary>
     /// Create the reader that will get data from the db.

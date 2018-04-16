@@ -86,7 +86,7 @@ namespace SQLiteServer.Data.SQLiteServer
     #endregion
 
     public SQLiteServerConnection(string connectionString, IPAddress address, int port, int backlog, int heartBeatTimeOutInMs) :
-      this( connectionString, new SocketConnectionBuilder(address, port, backlog, heartBeatTimeOutInMs))
+      this( connectionString, new SocketConnectionBuilder( address, port, backlog, heartBeatTimeOutInMs))
     { 
     }
 
@@ -354,13 +354,16 @@ namespace SQLiteServer.Data.SQLiteServer
         return;
       }
 
-      const int timeout = 30000;
+      // parse the connection string
+      var builder = new SQLiteServerConnectionStringBuilder( ConnectionString );
+      var timeout = builder.DefaultTimeout;
+
       await Task.Run(async () => {
         var start = DateTime.Now;
         while (State == ConnectionState.Connecting)
         {
           await Task.Yield();
-          var elapsed = (DateTime.Now - start).TotalMilliseconds;
+          var elapsed = (DateTime.Now - start).TotalSeconds;
           if (elapsed >= timeout)
           {
             // we timed out.

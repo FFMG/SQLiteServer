@@ -103,13 +103,11 @@ namespace SQLiteServer.Data.Workers
       var fields = Fields.Fields.SerializeObject(getValue);
 
       var response = _controller.SendAndWaitAsync(SQLiteMessage.ExecuteReaderRequest, fields.Pack(), _queryTimeouts).Result;
-      if (null == response)
-      {
-        throw new TimeoutException("There was a timeout error executing the reader.");
-      }
-
       switch (response.Message)
       {
+        case SQLiteMessage.SendAndWaitTimeOut:
+          throw new TimeoutException("There was a timeout error creating the Command.");
+
         case SQLiteMessage.ExecuteReaderResponse:
           var result = response.Get<int>();
           if( 1 != result )
@@ -207,13 +205,11 @@ namespace SQLiteServer.Data.Workers
     private T GetGuiOnlyValue<T>(SQLiteMessage requestType)
     {
       var response = _controller.SendAndWaitAsync(requestType, Encoding.ASCII.GetBytes(_commandGuid), _queryTimeouts).Result;
-      if (null == response)
-      {
-        throw new TimeoutException("There was a timeout error executing the read request from the reader.");
-      }
-
       switch (response.Message)
       {
+        case SQLiteMessage.SendAndWaitTimeOut:
+          throw new TimeoutException("There was a timeout error executing the read request from the reader.");
+
         case SQLiteMessage.ExecuteReaderResponse:
           return response.Get<T>();
 
@@ -243,13 +239,11 @@ namespace SQLiteServer.Data.Workers
       var fields = Fields.Fields.SerializeObject(getValue);
 
       var response = _controller.SendAndWaitAsync(requestType, fields.Pack(), _queryTimeouts).Result;
-      if (null == response)
-      {
-        throw new TimeoutException("There was a timeout error executing the read request from the reader.");
-      }
-
       switch (response.Message)
       {
+        case SQLiteMessage.SendAndWaitTimeOut:
+          throw new TimeoutException("There was a timeout error executing the read request from the reader.");
+
         case SQLiteMessage.ExecuteReaderResponse:
           return response.Get<T>();
 
@@ -279,13 +273,11 @@ namespace SQLiteServer.Data.Workers
       var fields = Fields.Fields.SerializeObject(getValue);
 
       var response = await _controller.SendAndWaitAsync(requestType, fields.Pack(), _queryTimeouts).ConfigureAwait( false );
-      if (null == response)
-      {
-        throw new TimeoutException("There was a timeout error executing the read request from the reader.");
-      }
-
       switch (response.Message)
       {
+        case SQLiteMessage.SendAndWaitTimeOut:
+          throw new TimeoutException("There was a timeout error executing the read request from the reader.");
+
         case SQLiteMessage.ExecuteReaderResponse:
           return response.Get<T>();
 

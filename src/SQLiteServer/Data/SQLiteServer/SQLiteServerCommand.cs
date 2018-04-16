@@ -14,8 +14,6 @@
 //    along with SQLiteServer.  If not, see<https://www.gnu.org/licenses/gpl-3.0.en.html>.
 using System;
 using System.Data;
-using System.Data.Common;
-using System.Threading;
 using System.Threading.Tasks;
 using SQLiteServer.Data.Exceptions;
 using SQLiteServer.Data.Workers;
@@ -64,6 +62,10 @@ namespace SQLiteServer.Data.SQLiteServer
     {
       _connection = connection;
       CommandText = commandText;
+
+      // set the connection timeout
+      var builder = new SQLiteServerConnectionStringBuilder(connection?.ConnectionString);
+      CommandTimeout = builder.DefaultTimeout;
     }
 
     /// <summary>

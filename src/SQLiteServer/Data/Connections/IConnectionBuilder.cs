@@ -26,7 +26,7 @@ namespace SQLiteServer.Data.Connections
     /// </summary>
     /// <param name="connection"></param>
     /// <returns></returns>
-    Task<bool> ConnectAsync( SQLiteServerConnection connection );
+    Task<bool> ConnectAsync( SQLiteServerConnection connection);
 
     /// <summary>
     /// Open the database, (assumes that we are connected already).

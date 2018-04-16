@@ -25,12 +25,10 @@ namespace SQLiteServer.Data.Workers
   // ReSharper disable once InconsistentNaming
   internal class SQLiteServerCommandClientWorker : ISQLiteServerCommandWorker
   {
-    #region Constant
-
-    private const int QueryTimeouts = 5000;
-    #endregion
-
     #region Private Variables
+    /// <inheritdoc />
+    public int CommandTimeout { get; }
+
     /// <summary>
     /// Have we disposed of everything?
     /// </summary>
@@ -52,24 +50,25 @@ namespace SQLiteServer.Data.Workers
     private readonly string _serverGuid;
     #endregion
 
-    public SQLiteServerCommandClientWorker(string commandText, ConnectionsController controller)
+    public SQLiteServerCommandClientWorker(string commandText, ConnectionsController controller, int commandTimeout)
     {
       if (null == controller)
       {
         throw new ArgumentNullException( nameof(controller));
       }
+
+      CommandTimeout = commandTimeout;
+
       _commandText = commandText;
       _controller = controller;
       _serverGuid = null;
 
-      var response = _controller.SendAndWaitAsync( SQLiteMessage.CreateCommandRequest, Encoding.ASCII.GetBytes(commandText), QueryTimeouts).Result;
-      if (null == response)
-      {
-        throw new TimeoutException( "There was a timeout error creating the Command.");
-      }
-
+      var response = _controller.SendAndWaitAsync( SQLiteMessage.CreateCommandRequest, Encoding.ASCII.GetBytes(commandText), CommandTimeout).Result;
       switch (response.Message)
       {
+        case SQLiteMessage.SendAndWaitTimeOut:
+          throw new TimeoutException("There was a timeout error creating the Command.");
+
         case SQLiteMessage.CreateCommandResponse:
           _serverGuid = response.Get<string>();
           break;
@@ -122,14 +121,12 @@ namespace SQLiteServer.Data.Workers
     public int ExecuteNonQuery()
     {
       ThrowIfAny();
-      var response = _controller.SendAndWaitAsync(SQLiteMessage.ExecuteNonQueryRequest, Encoding.ASCII.GetBytes(_serverGuid), QueryTimeouts).Result;
-      if (null == response)
-      {
-        throw new TimeoutException("There was a timeout error creating the Command.");
-      }
-
+      var response = _controller.SendAndWaitAsync(SQLiteMessage.ExecuteNonQueryRequest, Encoding.ASCII.GetBytes(_serverGuid), CommandTimeout).Result;
       switch (response.Message)
       {
+        case SQLiteMessage.SendAndWaitTimeOut:
+          throw new TimeoutException("There was a timeout error creating the Command.");
+
         case SQLiteMessage.ExecuteNonQueryResponse:
           return response.Get<int>();
 
@@ -141,7 +138,14 @@ namespace SQLiteServer.Data.Workers
           throw new InvalidOperationException($"Unknown response {response.Message} from the server.");
       }
     }
-    
+
+    public void Cancel()
+    {
+      ThrowIfAny();
+      ThrowIfAny();
+      _controller.Send(SQLiteMessage.CancelCommand, Encoding.ASCII.GetBytes(_serverGuid));
+    }
+
     public void Dispose()
     {
       //  done already?
@@ -153,7 +157,7 @@ namespace SQLiteServer.Data.Workers
       try
       {
         ThrowIfAny();
-      _controller.Send( SQLiteMessage.DisposeCommand, Encoding.ASCII.GetBytes(_serverGuid) );
+        _controller.Send(SQLiteMessage.DisposeCommand, Encoding.ASCII.GetBytes(_serverGuid));
       }
       finally
       {
@@ -164,7 +168,7 @@ namespace SQLiteServer.Data.Workers
 
     public ISqliteServerDataReaderWorker CreateReaderWorker()
     {
-      return new SqliteServerDataReaderClientWorker(_controller, _serverGuid, QueryTimeouts );
+      return new SqliteServerDataReaderClientWorker(_controller, _serverGuid, CommandTimeout );
     }
   }
 }
