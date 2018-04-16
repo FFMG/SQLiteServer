@@ -1,4 +1,4 @@
-# MyOddWeb.com SQLiteServer [![Release](https://img.shields.io/badge/release-v0.1.1.4-brightgreen.png?style=flat)](https://github.com/FFMG/SQLiteServer/) [![Build Status](https://travis-ci.org/FFMG/SQLiteServer.svg?branch=master)](https://travis-ci.org/FFMG/SQLiteServer)
+# MyOddWeb.com SQLiteServer [![Release](https://img.shields.io/badge/release-v0.1.1.5-brightgreen.png?style=flat)](https://github.com/FFMG/SQLiteServer/) [![Build Status](https://travis-ci.org/FFMG/SQLiteServer.svg?branch=master)](https://travis-ci.org/FFMG/SQLiteServer)
 A library to allow multiple applications/processes to share a single SQLite database
 
 ## Why?
