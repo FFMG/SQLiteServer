@@ -1,4 +1,4 @@
-# MyOddWeb.com SQLiteServer [![Release](https://img.shields.io/badge/release-v0.1.1.5-brightgreen.png?style=flat)](https://github.com/FFMG/SQLiteServer/) [![Build Status](https://travis-ci.org/FFMG/SQLiteServer.svg?branch=master)](https://travis-ci.org/FFMG/SQLiteServer)
+# MyOddWeb.com SQLiteServer [![Release](https://img.shields.io/badge/release-v0.1.2.0-brightgreen.png?style=flat)](https://github.com/FFMG/SQLiteServer/) [![Build Status](https://travis-ci.org/FFMG/SQLiteServer.svg?branch=master)](https://travis-ci.org/FFMG/SQLiteServer)
 A library to allow multiple applications/processes to share a single SQLite database
 
 ## Why?
@@ -80,6 +80,7 @@ While 'similar' performance will never be achieved, I am aiming for a degradatio
 I am using the `\performance\SQLiteServerPerformance.sln` application to run comparaison tests.
 
 ## A couple of common SQLite commands are missing.
+* `BackupDatabase`
 * <s>`IsDBNull( idx )`</s> 0.1.1.0
 * <s>`HasRows`</s> 0.1.1.0
 * <s>`FieldCount`</s> 0.1.1.0

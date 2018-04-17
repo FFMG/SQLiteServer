@@ -20,6 +20,7 @@ using System.Data.SQLite;
 using System.Threading.Tasks;
 using SQLiteServer.Data.Data;
 using SQLiteServer.Data.Enums;
+using SQLiteServer.Data.SQLiteServer;
 using SQLiteServer.Fields;
 
 namespace SQLiteServer.Data.Workers
@@ -652,7 +653,44 @@ namespace SQLiteServer.Data.Workers
       {
         _disposed = true;
       }
+    }
 
+    /// <inheritdoc />
+    public void BackupDatabase(
+      SQLiteServerConnection destination,
+      string destinationName,
+      string sourceName,
+      int pages,
+      SQLiteServerBackupCallback callback,
+      int retryMilliseconds)
+    {
+      //  check not disposed
+      ThrowIfAny();
+
+      // check destination is valid.
+      if (destination == null)
+      {
+        throw new ArgumentNullException(nameof(destination));
+      }
+
+      // destination is open.
+      if (destination.State != ConnectionState.Open)
+      {
+        throw new ArgumentException("Destination database is not open.", nameof(destination));
+      }
+
+      // validate the names
+      if (destinationName == null)
+      {
+        throw new ArgumentNullException(nameof(destinationName));
+      }
+      if (sourceName == null)
+      {
+        throw new ArgumentNullException(nameof(sourceName));
+      }
+
+      // todo
+      throw new NotImplementedException();
     }
   }
 }

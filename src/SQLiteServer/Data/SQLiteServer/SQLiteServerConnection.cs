@@ -197,6 +197,10 @@ namespace SQLiteServer.Data.SQLiteServer
     }
 
     #region Database Operations
+    /// <inheritdoc />
+    /// <summary>
+    /// Open the database and connect as Server/Client
+    /// </summary>
     public override void Open()
     {
       if (State != ConnectionState.Closed)
@@ -233,6 +237,30 @@ namespace SQLiteServer.Data.SQLiteServer
         OpenError();
         throw;
       }
+    }
+
+    /// <summary>
+    /// Backup the database
+    /// </summary>
+    /// <param name="destination"></param>
+    /// <param name="destinationName"></param>
+    /// <param name="sourceName"></param>
+    /// <param name="pages"></param>
+    /// <param name="callback"></param>
+    /// <param name="retryMilliseconds"></param>
+    public void BackupDatabase(
+      SQLiteServerConnection destination, 
+      string destinationName, 
+      string sourceName, 
+      int pages,
+      SQLiteServerBackupCallback callback, 
+      int retryMilliseconds)
+    {
+      //  check not disposed
+      ThrowIfAny();
+      
+      // do the work.
+      _worker.BackupDatabase( destination, destinationName, sourceName, pages, callback, retryMilliseconds );
     }
 
     /// <inheritdoc />

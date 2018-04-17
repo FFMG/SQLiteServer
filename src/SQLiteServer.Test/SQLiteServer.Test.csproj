@@ -65,12 +65,13 @@
     <Compile Include="Packets\PacketTests.cs" />
     <Compile Include="Packets\ResponsePacketTests.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="SQLiteServer\BackupTests.cs" />
     <Compile Include="SQLiteServer\CommandTests.cs" />
     <Compile Include="SQLiteServer\Common.cs" />
     <Compile Include="SQLiteServer\ConnectionStringBuilderTests.cs" />
     <Compile Include="SQLiteServer\ConnectionTests.cs" />
     <Compile Include="SQLiteServer\ReaderTests.cs" />
-    <Compile Include="SQLiteServer\TimeOut.cs" />
+    <Compile Include="SQLiteServer\TimeOutTests.cs" />
     <Compile Include="SQLiteServer\TransactionTests.cs" />
     <Compile Include="SQLiteServer\TypeTests.cs" />
   </ItemGroup>

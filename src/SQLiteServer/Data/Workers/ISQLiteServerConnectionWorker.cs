@@ -12,6 +12,9 @@
 //
 //    You should have received a copy of the GNU General Public License
 //    along with SQLiteServer.  If not, see<https://www.gnu.org/licenses/gpl-3.0.en.html>.
+
+using SQLiteServer.Data.SQLiteServer;
+
 namespace SQLiteServer.Data.Workers
 {
   // ReSharper disable once InconsistentNaming
@@ -32,6 +35,28 @@ namespace SQLiteServer.Data.Workers
     /// </summary>
     void Close();
 
+    /// <summary>
+    /// Create a command worker.
+    /// </summary>
+    /// <param name="commandText"></param>
+    /// <returns></returns>
     ISQLiteServerCommandWorker CreateCommand(string commandText);
+
+    /// <summary>
+    /// Backup the database
+    /// </summary>
+    /// <param name="destination"></param>
+    /// <param name="destinationName"></param>
+    /// <param name="sourceName"></param>
+    /// <param name="pages"></param>
+    /// <param name="callback"></param>
+    /// <param name="retryMilliseconds"></param>
+    void BackupDatabase(
+      SQLiteServerConnection destination,
+      string destinationName,
+      string sourceName,
+      int pages,
+      SQLiteServerBackupCallback callback,
+      int retryMilliseconds);
   }
 }
