@@ -20,7 +20,6 @@ using System.Data.SQLite;
 using System.Threading.Tasks;
 using SQLiteServer.Data.Data;
 using SQLiteServer.Data.Enums;
-using SQLiteServer.Data.SQLiteServer;
 using SQLiteServer.Fields;
 
 namespace SQLiteServer.Data.Workers
@@ -55,11 +54,8 @@ namespace SQLiteServer.Data.Workers
     #endregion
 
     #region Private Variables
-
-    /// <summary>
-    /// The actual SQLite connection.
-    /// </summary>
-    private readonly SQLiteConnection _connection;
+    /// <inheritdoc />
+    public SQLiteConnection Connection { get; }
 
     /// <summary>
     /// The contoller
@@ -82,7 +78,7 @@ namespace SQLiteServer.Data.Workers
 
       CommandTimeout = commandTimeout;
       _controller = controller;
-      _connection = new SQLiteConnection(connectionString);
+      Connection = new SQLiteConnection(connectionString);
 
       // we listen for messages right away
       // as we might not be the one who opens
@@ -615,20 +611,20 @@ namespace SQLiteServer.Data.Workers
     public void Open()
     {
       // open the connection
-      _connection.Open();
+      Connection.Open();
     }
 
     /// <inheritdoc />
     public void Close()
     {
-      _connection.Close();
+      Connection.Close();
     }
 
     /// <inheritdoc />
     public ISQLiteServerCommandWorker CreateCommand(string commandText)
     {
       ThrowIfAny();
-      return new SQLiteServerCommandServerWorker( commandText, _connection, CommandTimeout);
+      return new SQLiteServerCommandServerWorker( commandText, Connection, CommandTimeout);
     }
 
     public void Dispose()
@@ -653,44 +649,6 @@ namespace SQLiteServer.Data.Workers
       {
         _disposed = true;
       }
-    }
-
-    /// <inheritdoc />
-    public void BackupDatabase(
-      SQLiteServerConnection destination,
-      string destinationName,
-      string sourceName,
-      int pages,
-      SQLiteServerBackupCallback callback,
-      int retryMilliseconds)
-    {
-      //  check not disposed
-      ThrowIfAny();
-
-      // check destination is valid.
-      if (destination == null)
-      {
-        throw new ArgumentNullException(nameof(destination));
-      }
-
-      // destination is open.
-      if (destination.State != ConnectionState.Open)
-      {
-        throw new ArgumentException("Destination database is not open.", nameof(destination));
-      }
-
-      // validate the names
-      if (destinationName == null)
-      {
-        throw new ArgumentNullException(nameof(destinationName));
-      }
-      if (sourceName == null)
-      {
-        throw new ArgumentNullException(nameof(sourceName));
-      }
-
-      // todo
-      throw new NotImplementedException();
     }
   }
 }

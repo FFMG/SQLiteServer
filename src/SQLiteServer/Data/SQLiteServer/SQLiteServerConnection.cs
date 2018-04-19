@@ -259,8 +259,37 @@ namespace SQLiteServer.Data.SQLiteServer
       //  check not disposed
       ThrowIfAny();
       
-      // do the work.
-      _worker.BackupDatabase( destination, destinationName, sourceName, pages, callback, retryMilliseconds );
+      // check destination is valid.
+      if (destination == null)
+      {
+        throw new ArgumentNullException(nameof(destination));
+      }
+      if (destination.State != ConnectionState.Open)
+      {
+        throw new InvalidOperationException("Destination database is not open.");
+      }
+
+      // validate the names
+      if (destinationName == null)
+      {
+        throw new ArgumentNullException(nameof(destinationName));
+      }
+      if (sourceName == null)
+      {
+        throw new ArgumentNullException(nameof(sourceName));
+      }
+
+      // convert the callback to sqlite callback
+      // but only if the caller gave us a callback.
+      var callback2 = callback == null ?
+        null
+        :
+        new SQLiteBackupCallback(
+          (source2, sourceName2, destination2, destinationName2, pages2, remainingPages, totalPages, retry)
+            => callback(this, sourceName2, destination, destinationName2, pages2, remainingPages, totalPages, retry));
+
+      // Call the SQlite connection.
+      _worker.Connection.BackupDatabase(destination._worker.Connection, destinationName, sourceName, pages, callback2, retryMilliseconds);
     }
 
     /// <inheritdoc />

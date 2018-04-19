@@ -36,7 +36,7 @@ namespace SQLiteServer.Test.SQLiteServer
       var source = CreateConnection();
       source.Open();
       var destination = CreateConnection();
-      Assert.Throws<ArgumentException>(() => source.BackupDatabase(destination, "main", "main", -1, null, 0));
+      Assert.Throws<InvalidOperationException>(() => source.BackupDatabase(destination, "main", "main", -1, null, 0));
       source.Close();
     }
 

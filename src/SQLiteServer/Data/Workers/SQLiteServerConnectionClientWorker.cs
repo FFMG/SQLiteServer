@@ -13,9 +13,8 @@
 //    You should have received a copy of the GNU General Public License
 //    along with SQLiteServer.  If not, see<https://www.gnu.org/licenses/gpl-3.0.en.html>.
 using System;
-using System.Data;
+using System.Data.SQLite;
 using SQLiteServer.Data.Connections;
-using SQLiteServer.Data.SQLiteServer;
 
 namespace SQLiteServer.Data.Workers
 {
@@ -102,47 +101,17 @@ namespace SQLiteServer.Data.Workers
     }
     #endregion
 
+    /// <inheritdoc />
+    public SQLiteConnection Connection {
+      get
+      {
+        throw new NotImplementedException();
+      }
+    }
+    
     public ISQLiteServerCommandWorker CreateCommand(string commandText)
     {
       return new SQLiteServerCommandClientWorker( commandText, _controller, CommandTimeout);
-    }
-
-    /// <inheritdoc />
-    public void BackupDatabase(
-      SQLiteServerConnection destination,
-      string destinationName,
-      string sourceName,
-      int pages,
-      SQLiteServerBackupCallback callback,
-      int retryMilliseconds)
-    {
-      //  check not disposed
-      ThrowIfAny();
-
-      // check destination is valid.
-      if (destination == null)
-      {
-        throw new ArgumentNullException(nameof(destination));
-      }
-
-      // destination is open.
-      if (destination.State != ConnectionState.Open)
-      {
-        throw new ArgumentException("Destination database is not open.", nameof(destination));
-      }
-
-      // validate the names
-      if (destinationName == null)
-      {
-        throw new ArgumentNullException(nameof(destinationName));
-      }
-      if (sourceName == null)
-      {
-        throw new ArgumentNullException(nameof(sourceName));
-      }
-
-      // todo
-      throw new NotImplementedException();
     }
   }
 }

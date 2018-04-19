@@ -13,6 +13,7 @@
 //    You should have received a copy of the GNU General Public License
 //    along with SQLiteServer.  If not, see<https://www.gnu.org/licenses/gpl-3.0.en.html>.
 
+using System.Data.SQLite;
 using SQLiteServer.Data.SQLiteServer;
 
 namespace SQLiteServer.Data.Workers
@@ -24,6 +25,12 @@ namespace SQLiteServer.Data.Workers
     /// How long we will run a query before timing out.
     /// </summary>
     int CommandTimeout { get; }
+
+    /// <summary>
+    /// Get the direct SQLite connection, that could me blocking all other
+    /// clients from accessing the data.
+    /// </summary>
+    SQLiteConnection Connection { get; }
 
     /// <summary>
     /// Open the database using the connection string.
@@ -41,22 +48,5 @@ namespace SQLiteServer.Data.Workers
     /// <param name="commandText"></param>
     /// <returns></returns>
     ISQLiteServerCommandWorker CreateCommand(string commandText);
-
-    /// <summary>
-    /// Backup the database
-    /// </summary>
-    /// <param name="destination"></param>
-    /// <param name="destinationName"></param>
-    /// <param name="sourceName"></param>
-    /// <param name="pages"></param>
-    /// <param name="callback"></param>
-    /// <param name="retryMilliseconds"></param>
-    void BackupDatabase(
-      SQLiteServerConnection destination,
-      string destinationName,
-      string sourceName,
-      int pages,
-      SQLiteServerBackupCallback callback,
-      int retryMilliseconds);
   }
 }
