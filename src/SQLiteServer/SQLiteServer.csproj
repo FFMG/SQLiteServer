@@ -86,9 +86,7 @@
     <Compile Include="Data\Workers\ISqliteServerDataReaderWorker.cs" />
     <Compile Include="Data\Workers\SQLiteServerCommandClientWorker.cs" />
     <Compile Include="Data\Workers\SQLiteServerCommandServerWorker.cs" />
-    <Compile Include="Data\SQLiteServer\SQLiteServerConnection.cs">
-      <SubType>Component</SubType>
-    </Compile>
+    <Compile Include="Data\SQLiteServer\SQLiteServerConnection.cs" />
     <Compile Include="Data\Workers\SQLiteServerConnectionClientWorker.cs" />
     <Compile Include="Data\Workers\SQLiteServerConnectionServerWorker.cs" />
     <Compile Include="Data\Workers\SqliteServerDataReaderClientWorker.cs" />
