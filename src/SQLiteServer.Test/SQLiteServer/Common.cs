@@ -67,6 +67,8 @@ namespace SQLiteServer.Test.SQLiteServer
             // ignored
           }
         }
+        // remove all the files from the list.
+        _sources.Clear();
       }
       catch
       {
