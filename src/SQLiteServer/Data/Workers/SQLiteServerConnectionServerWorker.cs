@@ -21,7 +21,6 @@ using System.Threading.Tasks;
 using SQLiteServer.Data.Data;
 using SQLiteServer.Data.Enums;
 using SQLiteServer.Data.Exceptions;
-using SQLiteServer.Data.SQLiteServer;
 using SQLiteServer.Fields;
 
 namespace SQLiteServer.Data.Workers
@@ -77,7 +76,6 @@ namespace SQLiteServer.Data.Workers
     /// Have we disposed of everything?
     /// </summary>
     private bool _disposed;
-
     #endregion
 
     public SQLiteServerConnectionServerWorker(string connectionString, ConnectionsController controller, int commandTimeout)
@@ -90,6 +88,7 @@ namespace SQLiteServer.Data.Workers
       CommandTimeout = commandTimeout;
       _controller = controller;
       _connection = new SQLiteConnection(connectionString);
+      
 
       // we listen for messages right away
       // as we might not be the one who opens
@@ -637,11 +636,8 @@ namespace SQLiteServer.Data.Workers
       // can we use this?
       ThrowIfAny();
 
-      var builder = new SQLiteServerConnectionStringBuilder(ConnectionString);
-      var timeout = builder.DefaultTimeout;
-
       // wait for the connection
-      if (!WaitForLockedConnectionAsync(timeout).Result)
+      if (!WaitForLockedConnectionAsync(CommandTimeout).Result)
       {
         throw new SQLiteServerException("Unable to obtain connection lock");
       }
