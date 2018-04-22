@@ -30,7 +30,12 @@ namespace SQLiteServer.Data.Workers
     /// Get the direct SQLite connection, that could me blocking all other
     /// clients from accessing the data.
     /// </summary>
-    SQLiteConnection Connection { get; }
+    SQLiteConnection LockConnection();
+
+    /// <summary>
+    /// Release the SQLiteConnection lock.
+    /// </summary>
+    void UnLockConnection();
 
     /// <summary>
     /// Open the database using the connection string.

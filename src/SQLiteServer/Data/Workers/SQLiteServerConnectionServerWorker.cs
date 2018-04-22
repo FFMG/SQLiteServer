@@ -20,6 +20,8 @@ using System.Data.SQLite;
 using System.Threading.Tasks;
 using SQLiteServer.Data.Data;
 using SQLiteServer.Data.Enums;
+using SQLiteServer.Data.Exceptions;
+using SQLiteServer.Data.SQLiteServer;
 using SQLiteServer.Fields;
 
 namespace SQLiteServer.Data.Workers
@@ -54,8 +56,17 @@ namespace SQLiteServer.Data.Workers
     #endregion
 
     #region Private Variables
-    /// <inheritdoc />
-    public SQLiteConnection Connection { get; }
+
+    /// <summary>
+    /// If the connection is locked or not.
+    /// It if is not, then we can use it.
+    /// </summary>
+    private bool _connectionIsLocked;
+
+    /// <summary>
+    /// Our current connection.
+    /// </summary>
+    private readonly SQLiteConnection _connection;
 
     /// <summary>
     /// The contoller
@@ -78,7 +89,7 @@ namespace SQLiteServer.Data.Workers
 
       CommandTimeout = commandTimeout;
       _controller = controller;
-      Connection = new SQLiteConnection(connectionString);
+      _connection = new SQLiteConnection(connectionString);
 
       // we listen for messages right away
       // as we might not be the one who opens
@@ -611,24 +622,41 @@ namespace SQLiteServer.Data.Workers
     public void Open()
     {
       // open the connection
-      Connection.Open();
+      _connection.Open();
     }
 
     /// <inheritdoc />
     public void Close()
     {
-      Connection.Close();
+      _connection.Close();
     }
 
     /// <inheritdoc />
     public ISQLiteServerCommandWorker CreateCommand(string commandText)
     {
+      // can we use this?
       ThrowIfAny();
-      return new SQLiteServerCommandServerWorker( commandText, Connection, CommandTimeout);
+
+      var builder = new SQLiteServerConnectionStringBuilder(ConnectionString);
+      var timeout = builder.DefaultTimeout;
+
+      // wait for the connection
+      if (!WaitForLockedConnectionAsync(timeout).Result)
+      {
+        throw new SQLiteServerException("Unable to obtain connection lock");
+      }
+
+      return new SQLiteServerCommandServerWorker( commandText, _connection, CommandTimeout);
     }
 
     public void Dispose()
     {
+      // wait for the connection
+      if (!WaitForLockedConnectionAsync(-1).Result)
+      {
+        throw new SQLiteServerException("Unable to obtain connection lock");
+      }
+
       //  done already?
       if (_disposed)
       {
@@ -649,6 +677,65 @@ namespace SQLiteServer.Data.Workers
       {
         _disposed = true;
       }
+    }
+
+    /// <inheritdoc />
+    public SQLiteConnection LockConnection()
+    {
+      // can we use this?
+      ThrowIfAny();
+
+      // wait for the connection
+      if (!WaitForLockedConnectionAsync( -1 ).Result)
+      {
+        throw new SQLiteServerException("Unable to obtain connection lock");
+      }
+
+      // lock the connection
+      _connectionIsLocked = true;
+
+      // return the connection
+      return _connection;
+    }
+
+    /// <inheritdoc />
+    public void UnLockConnection()
+    {
+      // can we use this?
+      ThrowIfAny();
+
+      // we can use the connection again.
+      _connectionIsLocked = false;
+    }
+
+    /// <summary>
+    /// Wait for the connection to be available.
+    /// </summary>
+    private async Task<bool> WaitForLockedConnectionAsync( int timeoutSeconds )
+    {
+      // wait for the connection to be availabe.
+      if (false == _connectionIsLocked)
+      {
+        return true;
+      }
+
+      await Task.Run(async () => {
+        var start = DateTime.Now;
+        while (false == _connectionIsLocked )
+        {
+          // give other threads time.
+          await Task.Yield();
+
+          var elapsed = (DateTime.Now - start).TotalSeconds;
+          if (timeoutSeconds > 0 && elapsed >= timeoutSeconds)
+          {
+            // we timed out.
+            break;
+          }
+        }
+      }).ConfigureAwait(false);
+
+      return (_connectionIsLocked == false);
     }
   }
 }

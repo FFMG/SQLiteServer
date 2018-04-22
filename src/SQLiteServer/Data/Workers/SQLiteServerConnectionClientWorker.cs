@@ -102,16 +102,21 @@ namespace SQLiteServer.Data.Workers
     #endregion
 
     /// <inheritdoc />
-    public SQLiteConnection Connection {
-      get
-      {
-        throw new NotImplementedException();
-      }
-    }
-    
     public ISQLiteServerCommandWorker CreateCommand(string commandText)
     {
       return new SQLiteServerCommandClientWorker( commandText, _controller, CommandTimeout);
+    }
+
+    /// <inheritdoc />
+    public SQLiteConnection LockConnection()
+    {
+      throw new NotImplementedException();
+    }
+
+    /// <inheritdoc />
+    public void UnLockConnection()
+    {
+      throw new NotImplementedException();
     }
   }
 }

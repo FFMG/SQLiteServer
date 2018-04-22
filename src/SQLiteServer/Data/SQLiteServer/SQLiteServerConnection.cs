@@ -288,12 +288,20 @@ namespace SQLiteServer.Data.SQLiteServer
           (source2, sourceName2, destination2, destinationName2, pages2, remainingPages, totalPages, retry)
             => callback(this, sourceName2, destination, destinationName2, pages2, remainingPages, totalPages, retry));
 
-      // get the sqlite connections.
-      var sourceConnection = _worker.Connection;
-      var destinationConnection = destination._worker.Connection;
+      try
+      {
+        // get the sqlite connections.
+        var sourceConnection = _worker.LockConnection();
+        var destinationConnection = destination._worker.LockConnection();
 
-      // Call the SQlite connection.
-      sourceConnection.BackupDatabase(destinationConnection, destinationName, sourceName, pages, callback2, retryMilliseconds);
+        // Call the SQlite connection.
+        sourceConnection.BackupDatabase(destinationConnection, destinationName, sourceName, pages, callback2, retryMilliseconds);
+      }
+      finally 
+      {
+        _worker.UnLockConnection();
+        destination._worker.UnLockConnection();
+      }
     }
 
     /// <inheritdoc />
