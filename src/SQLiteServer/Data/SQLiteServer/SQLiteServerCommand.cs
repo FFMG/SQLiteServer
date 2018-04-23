@@ -35,26 +35,47 @@ namespace SQLiteServer.Data.SQLiteServer
     /// </summary>
     private bool _disposed;
 
-    /// <summary>
-    /// The command we want to run
-    /// </summary>
+    /// <inheritdoc />
     public override string CommandText { get; set; }
 
-    /// <summary>
-    /// Get set the command time out.
-    /// </summary>
+    /// <inheritdoc />
     public override int CommandTimeout { get; set; }
 
     public override CommandType CommandType { get; set; }
     public override UpdateRowSource UpdatedRowSource { get; set; }
-    protected override DbConnection DbConnection { get; set; }
+
+    protected override DbConnection DbConnection
+    {
+      get
+      {
+        ThrowIfDisposed();
+        return _connection;
+      }
+      set
+      {
+        ThrowIfDisposed();
+        if (_reader != null )
+        {
+          _reader.Close();
+          _reader = null;
+        }
+        _connection = (SQLiteServerConnection)value;
+      }
+    }
+
     protected override DbTransaction DbTransaction { get; set; }
     public override bool DesignTimeVisible { get; set; }
     protected override DbParameterCollection DbParameterCollection { get; }
+
     /// <summary>
     /// The SQLite server connection.
     /// </summary>
-    private readonly SQLiteServerConnection _connection;
+    private SQLiteServerConnection _connection;
+
+    /// <summary>
+    /// The current active reader.
+    /// </summary>
+    private SqliteServerDataReader _reader;
     #endregion
 
     public SQLiteServerCommand() : this( null, null )
@@ -168,6 +189,7 @@ namespace SQLiteServer.Data.SQLiteServer
         if (disposing)
         {
           _worker?.Dispose();
+          _reader?.Close();
         }
       }
       finally
@@ -222,13 +244,13 @@ namespace SQLiteServer.Data.SQLiteServer
       try
       {
         // create the readeer
-        var reader = new SqliteServerDataReader(_worker.CreateReaderWorker(), _connection, commandBehavior);
+        _reader = new SqliteServerDataReader(_worker.CreateReaderWorker(), _connection, commandBehavior);
 
         // execute the command
-        reader.ExecuteReader();
+        _reader.ExecuteReader();
 
         // read it.
-        return reader;
+        return _reader;
       }
       catch (Exception e)
       {
@@ -258,19 +280,23 @@ namespace SQLiteServer.Data.SQLiteServer
       throw new NotImplementedException();
     }
 
+    /// <inheritdoc />
     public override void Cancel()
     {
-      throw new NotImplementedException();
+      ThrowIfDisposed();
+      _reader?.Close();
     }
 
+    /// <inheritdoc />
     protected override DbParameter CreateDbParameter()
     {
       throw new NotImplementedException();
     }
 
-    protected override DbDataReader ExecuteDbDataReader(CommandBehavior behavior)
+    /// <inheritdoc />
+    protected override DbDataReader ExecuteDbDataReader(CommandBehavior commandBehavior)
     {
-      throw new NotImplementedException();
+      return ExecuteReader(commandBehavior);
     }
 
     /// <summary>
