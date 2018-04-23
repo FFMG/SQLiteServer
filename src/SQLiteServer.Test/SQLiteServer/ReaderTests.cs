@@ -23,6 +23,123 @@ namespace SQLiteServer.Test.SQLiteServer
   internal class ReaderTests : Common
   {
     [Test]
+    public void ServerExecuteScalarWithValues()
+    {
+      var server = CreateConnection();
+      server.Open();
+      const string sqlMaster = "create table tb_config (name varchar(20), value INTEGER)";
+      using (var command = new SQLiteServerCommand(sqlMaster, server))
+      {
+        command.ExecuteNonQuery();
+      }
+
+      var long1 = RandomNumber<long>();
+      var sqlInsert1 = $"insert into tb_config(name, value) VALUES ('a', {long1})";
+      using (var command = new SQLiteServerCommand(sqlInsert1, server))
+      {
+        command.ExecuteNonQuery();
+      }
+
+      // insert another one
+      var long2 = RandomNumber<long>();
+      var sqlInsert2 = $"insert into tb_config(name, value) VALUES ('b', {long2})";
+      using (var command = new SQLiteServerCommand(sqlInsert2, server))
+      {
+        command.ExecuteNonQuery();
+      }
+
+      const string sqlSelect = "SELECT * FROM tb_config";
+      using (var command = new SQLiteServerCommand(sqlSelect, server))
+      {
+        var value = (string)command.ExecuteScalar();
+        Assert.AreEqual("a", value);
+      }
+      server.Close();
+    }
+
+    [Test]
+    public void ServerExecuteScalarWithNoValues()
+    {
+      var server = CreateConnection();
+      server.Open();
+      const string sqlMaster = "create table tb_config (name varchar(20), value INTEGER)";
+      using (var command = new SQLiteServerCommand(sqlMaster, server))
+      {
+        command.ExecuteNonQuery();
+      }
+
+      const string sqlSelect = "SELECT * FROM tb_config";
+      using (var command = new SQLiteServerCommand(sqlSelect, server))
+      {
+        var value = command.ExecuteScalar();
+        Assert.IsNull( value);
+      }
+      server.Close();
+    }
+
+    [Test]
+    public void ClientExecuteScalarWithValues()
+    {
+      var server = CreateConnection();
+      server.Open();
+      const string sqlMaster = "create table tb_config (name varchar(20), value INTEGER)";
+      using (var command = new SQLiteServerCommand(sqlMaster, server))
+      {
+        command.ExecuteNonQuery();
+      }
+
+      var client = CreateConnection();
+      client.Open();
+      var long1 = RandomNumber<long>();
+      var sqlInsert1 = $"insert into tb_config(name, value) VALUES ('a', {long1})";
+      using (var command = new SQLiteServerCommand(sqlInsert1, client))
+      {
+        command.ExecuteNonQuery();
+      }
+
+      // insert another one
+      var long2 = RandomNumber<long>();
+      var sqlInsert2 = $"insert into tb_config(name, value) VALUES ('b', {long2})";
+      using (var command = new SQLiteServerCommand(sqlInsert2, client))
+      {
+        command.ExecuteNonQuery();
+      }
+
+      const string sqlSelect = "SELECT * FROM tb_config";
+      using (var command = new SQLiteServerCommand(sqlSelect, client))
+      {
+        var value = (string)command.ExecuteScalar();
+        Assert.AreEqual("a", value);
+      }
+      client.Close();
+      server.Close();
+    }
+
+    [Test]
+    public void ClientExecuteScalarWithNoValues()
+    {
+      var server = CreateConnection();
+      server.Open();
+      const string sqlMaster = "create table tb_config (name varchar(20), value INTEGER)";
+      using (var command = new SQLiteServerCommand(sqlMaster, server))
+      {
+        command.ExecuteNonQuery();
+      }
+
+      var client = CreateConnection();
+      client.Open();
+      
+      const string sqlSelect = "SELECT * FROM tb_config";
+      using (var command = new SQLiteServerCommand(sqlSelect, client))
+      {
+        var value = command.ExecuteScalar();
+        Assert.IsNull( value);
+      }
+      client.Close();
+      server.Close();
+    }
+
+    [Test]
     public void ClientGetLongValue()
     {
       var server = CreateConnection();

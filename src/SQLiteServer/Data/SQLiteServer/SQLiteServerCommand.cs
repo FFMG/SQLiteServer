@@ -14,6 +14,7 @@
 //    along with SQLiteServer.  If not, see<https://www.gnu.org/licenses/gpl-3.0.en.html>.
 using System;
 using System.Data;
+using System.Data.Common;
 using System.Threading.Tasks;
 using SQLiteServer.Data.Exceptions;
 using SQLiteServer.Data.Workers;
@@ -21,7 +22,7 @@ using SQLiteServer.Data.Workers;
 namespace SQLiteServer.Data.SQLiteServer
 {
   // ReSharper disable once InconsistentNaming
-  public sealed class SQLiteServerCommand : IDisposable
+  public sealed class SQLiteServerCommand : DbCommand
   {
     #region Private Variables
     /// <summary>
@@ -37,13 +38,19 @@ namespace SQLiteServer.Data.SQLiteServer
     /// <summary>
     /// The command we want to run
     /// </summary>
-    public string CommandText { get; set; }
+    public override string CommandText { get; set; }
 
     /// <summary>
     /// Get set the command time out.
     /// </summary>
-    public int CommandTimeout { get; set; }
+    public override int CommandTimeout { get; set; }
 
+    public override CommandType CommandType { get; set; }
+    public override UpdateRowSource UpdatedRowSource { get; set; }
+    protected override DbConnection DbConnection { get; set; }
+    protected override DbTransaction DbTransaction { get; set; }
+    public override bool DesignTimeVisible { get; set; }
+    protected override DbParameterCollection DbParameterCollection { get; }
     /// <summary>
     /// The SQLite server connection.
     /// </summary>
@@ -148,7 +155,7 @@ namespace SQLiteServer.Data.SQLiteServer
       }
     }
 
-    public void Dispose()
+    protected override void Dispose(bool disposing)
     {
       //  done already?
       if (_disposed)
@@ -158,20 +165,25 @@ namespace SQLiteServer.Data.SQLiteServer
 
       try
       {
-        _worker?.Dispose();
+        if (disposing)
+        {
+          _worker?.Dispose();
+        }
       }
       finally
       {
-        // all done.
-        _disposed = true;
+        base.Dispose(disposing);
+
+        if (disposing)
+        {
+          // all done.
+          _disposed = true;
+        }
       }
     }
 
-    /// <summary>
-    /// Execute the given query 
-    /// </summary>
-    /// <returns>The number of rows added/deleted/whatever depending on the query.</returns>
-    public int ExecuteNonQuery()
+    /// <inheritdoc />
+    public override int ExecuteNonQuery()
     {
       WaitIfConnectingAsync().Wait();
       ThrowIfAnyAndCreateWorker();
@@ -182,8 +194,9 @@ namespace SQLiteServer.Data.SQLiteServer
     /// Execute the given query 
     /// </summary>
     /// <returns>The number of rows added/deleted/whatever depending on the query.</returns>
-    public Task<int> ExecuteNonQueryAsync()
+    public new Task<int> ExecuteNonQueryAsync()
     {
+      // all the work/checks are done in the next ExecuteReader() function.
       return Task.FromResult(ExecuteNonQuery());
     }
 
@@ -192,8 +205,9 @@ namespace SQLiteServer.Data.SQLiteServer
     /// Execute a read operation and return a reader that will alow us to access the data.
     /// </summary>
     /// <returns></returns>
-    public SqliteServerDataReader ExecuteReader()
+    public new SqliteServerDataReader ExecuteReader()
     {
+      // all the work/checks are done in the next ExecuteReader() function.
       return ExecuteReader( CommandBehavior.Default );
     }
 
@@ -201,11 +215,10 @@ namespace SQLiteServer.Data.SQLiteServer
     /// Execute a read operation and return a reader that will alow us to access the data.
     /// </summary>
     /// <returns></returns>
-    public SqliteServerDataReader ExecuteReader( CommandBehavior commandBehavior)
+    public new SqliteServerDataReader ExecuteReader( CommandBehavior commandBehavior)
     {
       WaitIfConnectingAsync().Wait();
       ThrowIfAnyAndCreateWorker();
-
       try
       {
         // create the readeer
@@ -223,11 +236,48 @@ namespace SQLiteServer.Data.SQLiteServer
       }
     }
 
+    /// <inheritdoc />
+    public override object ExecuteScalar()
+    {
+      ThrowIfAny();
+
+      // just read one row of data.
+      using (var reader = ExecuteReader( CommandBehavior.SingleRow | CommandBehavior.SingleResult))
+      {
+        // then read that row... and if we have anything, return it.
+        if (reader.Read() && (reader.FieldCount > 0))
+        {
+          return reader[0];
+        }
+      }
+      return null;
+    }
+
+    public override void Prepare()
+    {
+      throw new NotImplementedException();
+    }
+
+    public override void Cancel()
+    {
+      throw new NotImplementedException();
+    }
+
+    protected override DbParameter CreateDbParameter()
+    {
+      throw new NotImplementedException();
+    }
+
+    protected override DbDataReader ExecuteDbDataReader(CommandBehavior behavior)
+    {
+      throw new NotImplementedException();
+    }
+
     /// <summary>
     /// Execute a read operation and return a reader that will alow us to access the data.
     /// </summary>
     /// <returns></returns>
-    public Task<SqliteServerDataReader> ExecuteReaderAsync()
+    public new Task<SqliteServerDataReader> ExecuteReaderAsync()
     {
       return Task.FromResult(ExecuteReader(CommandBehavior.Default));
     }
@@ -236,7 +286,7 @@ namespace SQLiteServer.Data.SQLiteServer
     /// Execute a read operation and return a reader that will alow us to access the data.
     /// </summary>
     /// <returns></returns>
-    public Task<SqliteServerDataReader> ExecuteReaderAsync(CommandBehavior commandBehavior)
+    public new Task<SqliteServerDataReader> ExecuteReaderAsync(CommandBehavior commandBehavior)
     {
       return Task.FromResult(ExecuteReader(commandBehavior));
     }
