@@ -12,6 +12,10 @@
 //
 //    You should have received a copy of the GNU General Public License
 //    along with SQLiteServer.  If not, see<https://www.gnu.org/licenses/gpl-3.0.en.html>.
+
+using System.Data.SQLite;
+using SQLiteServer.Data.SQLiteServer;
+
 namespace SQLiteServer.Data.Workers
 {
   // ReSharper disable once InconsistentNaming
@@ -23,6 +27,17 @@ namespace SQLiteServer.Data.Workers
     int CommandTimeout { get; }
 
     /// <summary>
+    /// Get the direct SQLite connection, that could me blocking all other
+    /// clients from accessing the data.
+    /// </summary>
+    SQLiteConnection LockConnection();
+
+    /// <summary>
+    /// Release the SQLiteConnection lock.
+    /// </summary>
+    void UnLockConnection();
+
+    /// <summary>
     /// Open the database using the connection string.
     /// </summary>
     void Open();
@@ -32,6 +47,11 @@ namespace SQLiteServer.Data.Workers
     /// </summary>
     void Close();
 
+    /// <summary>
+    /// Create a command worker.
+    /// </summary>
+    /// <param name="commandText"></param>
+    /// <returns></returns>
     ISQLiteServerCommandWorker CreateCommand(string commandText);
   }
 }

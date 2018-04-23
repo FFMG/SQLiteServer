@@ -17,6 +17,7 @@ using System;
 using System.Collections.Generic;
 using System.Data;
 using System.IO;
+using System.Linq;
 using System.Net;
 using NUnit.Framework;
 using SQLiteServer.Data.Connections;
@@ -33,13 +34,13 @@ namespace SQLiteServer.Test.SQLiteServer
     protected const int HeartBeatTimeOut = 500;
     protected const int QueryTimeoutMs = 30000;
 
-    private string _source;
+    private readonly List<string> _sources = new List<string>();
     private readonly List<SQLiteServerConnection> _connections = new List<SQLiteServerConnection>();
 
     [SetUp]
     public void SetUp()
     {
-      _source = Path.GetTempFileName();
+      _sources.Add( Path.GetTempFileName() );
     }
 
     [TearDown]
@@ -54,7 +55,20 @@ namespace SQLiteServer.Test.SQLiteServer
             connection.Close();
           }
         }
-        File.Delete(_source);
+
+        foreach (var source in _sources)
+        {
+          try
+          {
+            File.Delete(source);
+          }
+          catch
+          {
+            // ignored
+          }
+        }
+        // remove all the files from the list.
+        _sources.Clear();
       }
       catch
       {
@@ -62,14 +76,33 @@ namespace SQLiteServer.Test.SQLiteServer
       }
     }
 
-    protected SQLiteServerConnection CreateConnection(IConnectionBuilder connectionBuilder = null, int? defaultTimeout = null )
+    protected SQLiteServerConnection CreateConnectionNewSource(IConnectionBuilder connectionBuilder = null
+      , int? defaultTimeout = null)
+    {
+      var source = Path.GetTempFileName();
+      _sources.Add(source);
+      return CreateConnection(connectionBuilder, defaultTimeout, source);
+    }
+
+    protected SQLiteServerConnection CreateConnection(
+      IConnectionBuilder connectionBuilder,
+      SQLiteServerConnection parent )
+    {
+      var connection = new SQLiteServerConnection(parent.ConnectionString, connectionBuilder);
+      _connections.Add(connection);
+      return connection;
+    }
+
+    protected SQLiteServerConnection CreateConnection(IConnectionBuilder connectionBuilder = null
+      , int? defaultTimeout = null,
+      string source = null)
     {
       if (connectionBuilder == null)
       {
         connectionBuilder = new SocketConnectionBuilder(Address, Port, Backlog, HeartBeatTimeOut);
       }
 
-      var connectionString = $"Data Source={_source}";
+      var connectionString = $"Data Source={source ?? _sources.First()}";
       if (defaultTimeout != null)
       {
         connectionString = $"{connectionString};Default Timeout={(int)defaultTimeout}";

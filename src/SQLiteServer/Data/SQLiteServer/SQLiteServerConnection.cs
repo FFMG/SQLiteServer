@@ -197,6 +197,10 @@ namespace SQLiteServer.Data.SQLiteServer
     }
 
     #region Database Operations
+    /// <inheritdoc />
+    /// <summary>
+    /// Open the database and connect as Server/Client
+    /// </summary>
     public override void Open()
     {
       if (State != ConnectionState.Closed)
@@ -232,6 +236,71 @@ namespace SQLiteServer.Data.SQLiteServer
         // close whatever might have  been open
         OpenError();
         throw;
+      }
+    }
+
+    /// <summary>
+    /// Backup the database
+    /// </summary>
+    /// <param name="destination"></param>
+    /// <param name="destinationName"></param>
+    /// <param name="sourceName"></param>
+    /// <param name="pages"></param>
+    /// <param name="callback"></param>
+    /// <param name="retryMilliseconds"></param>
+    public void BackupDatabase(
+      SQLiteServerConnection destination, 
+      string destinationName, 
+      string sourceName, 
+      int pages,
+      SQLiteServerBackupCallback callback, 
+      int retryMilliseconds)
+    {
+      //  check not disposed
+      ThrowIfAny();
+      
+      // check destination is valid.
+      if (destination == null)
+      {
+        throw new ArgumentNullException(nameof(destination));
+      }
+      if (destination.State != ConnectionState.Open)
+      {
+        throw new InvalidOperationException("Destination database is not open.");
+      }
+
+      // validate the names
+      if (destinationName == null)
+      {
+        throw new ArgumentNullException(nameof(destinationName));
+      }
+      if (sourceName == null)
+      {
+        throw new ArgumentNullException(nameof(sourceName));
+      }
+
+      // convert the callback to sqlite callback
+      // but only if the caller gave us a callback.
+      var callback2 = callback == null ?
+        null
+        :
+        new SQLiteBackupCallback(
+          (source2, sourceName2, destination2, destinationName2, pages2, remainingPages, totalPages, retry)
+            => callback(this, sourceName2, destination, destinationName2, pages2, remainingPages, totalPages, retry));
+
+      try
+      {
+        // get the sqlite connections.
+        var sourceConnection = _worker.LockConnection();
+        var destinationConnection = destination._worker.LockConnection();
+
+        // Call the SQlite connection.
+        sourceConnection.BackupDatabase(destinationConnection, destinationName, sourceName, pages, callback2, retryMilliseconds);
+      }
+      finally 
+      {
+        _worker.UnLockConnection();
+        destination._worker.UnLockConnection();
       }
     }
 

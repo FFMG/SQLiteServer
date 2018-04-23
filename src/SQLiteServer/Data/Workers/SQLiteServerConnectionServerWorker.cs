@@ -20,6 +20,7 @@ using System.Data.SQLite;
 using System.Threading.Tasks;
 using SQLiteServer.Data.Data;
 using SQLiteServer.Data.Enums;
+using SQLiteServer.Data.Exceptions;
 using SQLiteServer.Fields;
 
 namespace SQLiteServer.Data.Workers
@@ -54,9 +55,14 @@ namespace SQLiteServer.Data.Workers
     #endregion
 
     #region Private Variables
+    /// <summary>
+    /// If the connection is locked or not.
+    /// It if is not, then we can use it.
+    /// </summary>
+    private bool _connectionIsLocked;
 
     /// <summary>
-    /// The actual SQLite connection.
+    /// Our current connection.
     /// </summary>
     private readonly SQLiteConnection _connection;
 
@@ -69,7 +75,6 @@ namespace SQLiteServer.Data.Workers
     /// Have we disposed of everything?
     /// </summary>
     private bool _disposed;
-
     #endregion
 
     public SQLiteServerConnectionServerWorker(string connectionString, ConnectionsController controller, int commandTimeout)
@@ -82,6 +87,7 @@ namespace SQLiteServer.Data.Workers
       CommandTimeout = commandTimeout;
       _controller = controller;
       _connection = new SQLiteConnection(connectionString);
+      
 
       // we listen for messages right away
       // as we might not be the one who opens
@@ -429,6 +435,33 @@ namespace SQLiteServer.Data.Workers
       }
     }
 
+    private void HandleLockConnectionRequest(Packet packet, Action<Packet> response)
+    {
+      switch (packet.Message)
+      {
+        case SQLiteMessage.LockConnectionRequest:
+          if (!WaitForLockedConnectionAsync(-1).Result)
+          {
+            response(new Packet(SQLiteMessage.LockConnectionException, "There was a timeout error obtaining the lock."));
+            return;
+          }
+
+          _connectionIsLocked = true;
+          response(new Packet(SQLiteMessage.LockConnectionResponse, 1));
+          break;
+
+        case SQLiteMessage.UnLockConnectionRequest:
+          if (_connectionIsLocked == false)
+          {
+            response(new Packet(SQLiteMessage.LockConnectionException, "The connection is not locked."));
+            return;
+          }
+          _connectionIsLocked = false;
+          response(new Packet(SQLiteMessage.LockConnectionResponse, 1));
+          break;
+      }
+    }
+
     /// <summary>
     /// Create a command and send it back to the caller.
     /// </summary>
@@ -584,6 +617,11 @@ namespace SQLiteServer.Data.Workers
         case SQLiteMessage.CreateCommandRequest:
           HandleReceiveCommandRequest(packet, response);
           break;
+
+        case SQLiteMessage.LockConnectionRequest:
+        case SQLiteMessage.UnLockConnectionRequest:
+          HandleLockConnectionRequest(packet, response);
+          break;
       }
     }
 
@@ -626,12 +664,26 @@ namespace SQLiteServer.Data.Workers
     /// <inheritdoc />
     public ISQLiteServerCommandWorker CreateCommand(string commandText)
     {
+      // can we use this?
       ThrowIfAny();
+
+      // wait for the connection
+      if (!WaitForLockedConnectionAsync(CommandTimeout).Result)
+      {
+        throw new SQLiteServerException("Unable to obtain connection lock");
+      }
+
       return new SQLiteServerCommandServerWorker( commandText, _connection, CommandTimeout);
     }
 
     public void Dispose()
     {
+      // wait for the connection
+      if (!WaitForLockedConnectionAsync(-1).Result)
+      {
+        throw new SQLiteServerException("Unable to obtain connection lock");
+      }
+
       //  done already?
       if (_disposed)
       {
@@ -652,7 +704,65 @@ namespace SQLiteServer.Data.Workers
       {
         _disposed = true;
       }
+    }
 
+    /// <inheritdoc />
+    public SQLiteConnection LockConnection()
+    {
+      // can we use this?
+      ThrowIfAny();
+
+      // wait for the connection
+      if (!WaitForLockedConnectionAsync( -1 ).Result)
+      {
+        throw new SQLiteServerException("Unable to obtain connection lock");
+      }
+
+      // lock the connection
+      _connectionIsLocked = true;
+
+      // return the connection
+      return _connection;
+    }
+
+    /// <inheritdoc />
+    public void UnLockConnection()
+    {
+      // can we use this?
+      ThrowIfAny();
+
+      // we can use the connection again.
+      _connectionIsLocked = false;
+    }
+
+    /// <summary>
+    /// Wait for the connection to be available.
+    /// </summary>
+    private async Task<bool> WaitForLockedConnectionAsync( int timeoutSeconds )
+    {
+      // wait for the connection to be availabe.
+      if (false == _connectionIsLocked)
+      {
+        return true;
+      }
+
+      await Task.Run(async () => {
+        var start = DateTime.Now;
+        while ( _connectionIsLocked )
+        {
+          // give other threads time.
+          await Task.Yield();
+
+          var elapsed = (DateTime.Now - start).TotalSeconds;
+          if (timeoutSeconds > 0 && elapsed >= timeoutSeconds)
+          {
+            // we timed out.
+            break;
+          }
+        }
+      }).ConfigureAwait(false);
+
+      return (_connectionIsLocked == false);
     }
   }
 }

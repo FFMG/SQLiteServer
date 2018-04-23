@@ -5,7 +5,7 @@ using SQLiteServer.Data.SQLiteServer;
 
 namespace SQLiteServer.Test.SQLiteServer
 {
-  internal class TimeOut : Common
+  internal class TimeOutTests : Common
   {
     [Test]
     public void ClientZeroTimeoutNeverErrors()

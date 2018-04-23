@@ -39,6 +39,30 @@ namespace SQLiteServer.Test.SQLiteServer
     }
 
     [Test]
+    public void DefaultPassword()
+    {
+      var sql = new SQLiteServerConnectionStringBuilder();
+      Assert.AreEqual("", sql.Password);
+    }
+
+    [Test]
+    public void SetPasswordInConnectionString()
+    {
+      var sql = new SQLiteServerConnectionStringBuilder( "Password=xyz");
+      Assert.AreEqual("xyz", sql.Password);
+    }
+
+    [Test]
+    public void SetPassword()
+    {
+      var sql = new SQLiteServerConnectionStringBuilder
+      {
+        Password = "pass"
+      };
+      Assert.AreEqual("pass", sql.Password);
+    }
+    
+    [Test]
     public void DefaultUri()
     {
       var sql = new SQLiteServerConnectionStringBuilder();

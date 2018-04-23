@@ -140,7 +140,7 @@ namespace SQLiteServer.Data.Connections
       }
 
       _connectionController.OnServerDisconnect += OnServerDisconnect;
-      worker = new SQLiteServerConnectionClientWorker(_connectionController, builder.DefaultTimeout );
+      worker = new SQLiteServerConnectionClientWorker(connectionString, _connectionController, builder.DefaultTimeout );
 
       return Task.FromResult(worker);
     }
