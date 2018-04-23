@@ -55,7 +55,6 @@ namespace SQLiteServer.Data.Workers
     #endregion
 
     #region Private Variables
-
     /// <summary>
     /// If the connection is locked or not.
     /// It if is not, then we can use it.
@@ -436,6 +435,33 @@ namespace SQLiteServer.Data.Workers
       }
     }
 
+    private void HandleLockConnectionRequest(Packet packet, Action<Packet> response)
+    {
+      switch (packet.Message)
+      {
+        case SQLiteMessage.LockConnectionRequest:
+          if (!WaitForLockedConnectionAsync(-1).Result)
+          {
+            response(new Packet(SQLiteMessage.LockConnectionException, "There was a timeout error obtaining the lock."));
+            return;
+          }
+
+          _connectionIsLocked = true;
+          response(new Packet(SQLiteMessage.LockConnectionResponse, 1));
+          break;
+
+        case SQLiteMessage.UnLockConnectionRequest:
+          if (_connectionIsLocked == false)
+          {
+            response(new Packet(SQLiteMessage.LockConnectionException, "The connection is not locked."));
+            return;
+          }
+          _connectionIsLocked = false;
+          response(new Packet(SQLiteMessage.LockConnectionResponse, 1));
+          break;
+      }
+    }
+
     /// <summary>
     /// Create a command and send it back to the caller.
     /// </summary>
@@ -591,6 +617,11 @@ namespace SQLiteServer.Data.Workers
         case SQLiteMessage.CreateCommandRequest:
           HandleReceiveCommandRequest(packet, response);
           break;
+
+        case SQLiteMessage.LockConnectionRequest:
+        case SQLiteMessage.UnLockConnectionRequest:
+          HandleLockConnectionRequest(packet, response);
+          break;
       }
     }
 
@@ -717,7 +748,7 @@ namespace SQLiteServer.Data.Workers
 
       await Task.Run(async () => {
         var start = DateTime.Now;
-        while (false == _connectionIsLocked )
+        while ( _connectionIsLocked )
         {
           // give other threads time.
           await Task.Yield();

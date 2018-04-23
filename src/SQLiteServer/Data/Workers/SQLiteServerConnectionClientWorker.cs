@@ -14,7 +14,10 @@
 //    along with SQLiteServer.  If not, see<https://www.gnu.org/licenses/gpl-3.0.en.html>.
 using System;
 using System.Data.SQLite;
+using System.Threading.Tasks;
 using SQLiteServer.Data.Connections;
+using SQLiteServer.Data.Enums;
+using SQLiteServer.Data.Exceptions;
 
 namespace SQLiteServer.Data.Workers
 {
@@ -28,6 +31,12 @@ namespace SQLiteServer.Data.Workers
 
     #region Private
     /// <summary>
+    /// If the connection is locked or not.
+    /// It if is not, then we can use it.
+    /// </summary>
+    private SQLiteConnection _connection;
+
+    /// <summary>
     /// Have we disposed of everything?
     /// </summary>
     private bool _disposed;
@@ -36,15 +45,21 @@ namespace SQLiteServer.Data.Workers
     /// The contoller
     /// </summary>
     private readonly ConnectionsController _controller;
+
+    /// <summary>
+    /// The SQLiteConnection connection string
+    /// </summary>
+    private readonly string _connectionString;
     #endregion
 
-    public SQLiteServerConnectionClientWorker(ConnectionsController controller, int commandTimeout)
+    public SQLiteServerConnectionClientWorker(string connectionString, ConnectionsController controller, int commandTimeout)
     {
       if (null == controller)
       {
         throw new ArgumentNullException( nameof(controller));
       }
       _controller = controller;
+      _connectionString = connectionString;
       CommandTimeout = commandTimeout;
     }
 
@@ -110,13 +125,100 @@ namespace SQLiteServer.Data.Workers
     /// <inheritdoc />
     public SQLiteConnection LockConnection()
     {
-      throw new NotImplementedException();
+      // can we use this?
+      ThrowIfAny();
+
+      // wait for the connection
+      if (!WaitForLockedConnectionAsync(-1).Result)
+      {
+        throw new SQLiteServerException("Unable to obtain connection lock");
+      }
+
+      // can we use this?
+      ThrowIfAny();
+
+      // wait for the connection
+      if (!WaitForLockedConnectionAsync(-1).Result)
+      {
+        throw new SQLiteServerException("Unable to obtain connection lock");
+      }
+      
+      var response = _controller.SendAndWaitAsync(SQLiteMessage.LockConnectionRequest, null, CommandTimeout).Result;
+      switch (response.Message)
+      {
+        case SQLiteMessage.SendAndWaitTimeOut:
+          throw new TimeoutException("There was a timeout error obtaining the lock.");
+
+        case SQLiteMessage.LockConnectionResponse:
+          _connection = new SQLiteConnection( _connectionString);
+          _connection.Open();
+          return _connection;
+
+        case SQLiteMessage.LockConnectionException:
+          var error = response.Get<string>();
+          throw new SQLiteServerException(error);
+
+        default:
+          throw new InvalidOperationException($"Unknown response {response.Message} from the server.");
+      }
     }
 
     /// <inheritdoc />
     public void UnLockConnection()
     {
-      throw new NotImplementedException();
+      if (_connection == null)
+      {
+        return;
+      }
+
+      var response = _controller.SendAndWaitAsync(SQLiteMessage.UnLockConnectionRequest, null, CommandTimeout).Result;
+      switch (response.Message)
+      {
+        case SQLiteMessage.SendAndWaitTimeOut:
+          throw new TimeoutException("There was a timeout error obtaining the lock.");
+
+        case SQLiteMessage.LockConnectionResponse:
+          _connection.Close();
+          _connection = null;
+          break;
+
+        case SQLiteMessage.LockConnectionException:
+          var error = response.Get<string>();
+          throw new SQLiteServerException(error);
+
+        default:
+          throw new InvalidOperationException($"Unknown response {response.Message} from the server.");
+      }
+    }
+
+    /// <summary>
+    /// Wait for the connection to be available.
+    /// </summary>
+    private async Task<bool> WaitForLockedConnectionAsync(int timeoutSeconds)
+    {
+      // wait for the connection to be availabe.
+      if (null == _connection)
+      {
+        return true;
+      }
+
+      await Task.Run(async () => {
+        var start = DateTime.Now;
+        while (null != _connection)
+        {
+          // give other threads time.
+          await Task.Yield();
+
+          var elapsed = (DateTime.Now - start).TotalSeconds;
+          if (timeoutSeconds > 0 && elapsed >= timeoutSeconds)
+          {
+            // we timed out.
+            break;
+          }
+        }
+      }).ConfigureAwait(false);
+
+      return (_connection == null);
     }
   }
 }

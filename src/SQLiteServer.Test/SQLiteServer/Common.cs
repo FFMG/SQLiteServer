@@ -84,6 +84,15 @@ namespace SQLiteServer.Test.SQLiteServer
       return CreateConnection(connectionBuilder, defaultTimeout, source);
     }
 
+    protected SQLiteServerConnection CreateConnection(
+      IConnectionBuilder connectionBuilder,
+      SQLiteServerConnection parent )
+    {
+      var connection = new SQLiteServerConnection(parent.ConnectionString, connectionBuilder);
+      _connections.Add(connection);
+      return connection;
+    }
+
     protected SQLiteServerConnection CreateConnection(IConnectionBuilder connectionBuilder = null
       , int? defaultTimeout = null,
       string source = null)

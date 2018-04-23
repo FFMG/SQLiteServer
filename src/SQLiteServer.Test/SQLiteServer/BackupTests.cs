@@ -12,7 +12,6 @@
 //
 //    You should have received a copy of the GNU General Public License
 //    along with SQLiteServer.  If not, see<https://www.gnu.org/licenses/gpl-3.0.en.html>.
-
 using System;
 using NUnit.Framework;
 using SQLiteServer.Data.Connections;
@@ -160,6 +159,45 @@ namespace SQLiteServer.Test.SQLiteServer
 
       source.Close();
       destination.Close();
+    }
+
+    [Test]
+    public void BackupMasterToClient()
+    {
+      var source = CreateConnectionNewSource(new SocketConnectionBuilder(Address, 1202, Backlog, HeartBeatTimeOut), null);
+      var destinationMaster = CreateConnectionNewSource(new SocketConnectionBuilder(Address, 1203, Backlog, HeartBeatTimeOut), null);
+      var destinationClient = CreateConnection(new SocketConnectionBuilder(Address, 1203, Backlog, HeartBeatTimeOut), destinationMaster);
+      source.Open();
+      destinationMaster.Open();
+      destinationClient.Open();
+
+      // add data to source
+      const string sqlMaster = "create table tb_config (name varchar(20), value INTEGER)";
+      using (var command = new SQLiteServerCommand(sqlMaster, source)) { command.ExecuteNonQuery(); }
+      var long1 = RandomNumber<long>();
+      var sql = $"insert into tb_config(name, value) VALUES ('a', {long1})";
+      using (var command = new SQLiteServerCommand(sql, source)) { command.ExecuteNonQuery(); }
+
+      // backup
+      source.BackupDatabase(destinationClient, "main", "main", -1, null, 0);
+
+      // check that the backup now has the data
+      sql = "select * FROM tb_config";
+      using (var command = new SQLiteServerCommand(sql, destinationClient))
+      {
+        using (var reader = command.ExecuteReader())
+        {
+          Assert.IsTrue(reader.Read());
+          Assert.AreEqual("a", reader.GetString(0));
+          Assert.AreEqual(long1, reader.GetInt64(1));
+
+          Assert.IsFalse(reader.Read());
+        }
+      }
+
+      source.Close();
+      destinationClient.Close();
+      destinationMaster.Close();
     }
   }
 }
