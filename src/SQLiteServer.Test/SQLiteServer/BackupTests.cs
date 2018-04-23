@@ -162,6 +162,65 @@ namespace SQLiteServer.Test.SQLiteServer
     }
 
     [Test]
+    public void CallbackClientToClient()
+    {
+      var sourceMaster = CreateConnectionNewSource(new SocketConnectionBuilder(Address, 1202, Backlog, HeartBeatTimeOut), null);
+      var sourceClient = CreateConnection(new SocketConnectionBuilder(Address, 1202, Backlog, HeartBeatTimeOut), sourceMaster);
+
+      var destinationMaster = CreateConnectionNewSource(new SocketConnectionBuilder(Address, 1203, Backlog, HeartBeatTimeOut), null);
+      var destinationClient = CreateConnection(new SocketConnectionBuilder(Address, 1203, Backlog, HeartBeatTimeOut), destinationMaster);
+      sourceMaster.Open();
+      sourceClient.Open();
+      destinationMaster.Open();
+      destinationClient.Open();
+
+      // add data to source
+      const string sqlMaster = "create table tb_config (name varchar(20), value INTEGER)";
+      using (var command = new SQLiteServerCommand(sqlMaster, sourceClient)) { command.ExecuteNonQuery(); }
+
+      for (var i = 0; i < 100; ++i)
+      {
+        var long1 = RandomNumber<long>();
+        var sql = $"insert into tb_config(name, value) VALUES ('a', {long1})";
+        using (var command = new SQLiteServerCommand(sql, sourceClient))
+        {
+          command.ExecuteNonQuery();
+        }
+      }
+
+      var called = 0;
+      var callback =
+        new SQLiteServerBackupCallback(
+          (sc, sn, dc, dn, page, remainingPages, totalPages, retry) =>
+          {
+            Assert.AreEqual(page, 1);
+            Assert.AreEqual(remainingPages, 1);
+            Assert.AreEqual(totalPages, 2);
+            Assert.AreEqual(retry, false);
+
+            ++called;
+            return true;
+          });
+
+      // backup
+      // page size is 1 - (or 1024)
+      // we added 100 long = 4 bytes
+      // and we added '100' 'a' = 2 bytes 
+      // 400 + 200 = 600 = one page
+      sourceClient.BackupDatabase(destinationClient, "main", "main", 1, callback, 0);
+
+      // check that this was called exactly once
+      // that way we know the other asserts are checked.
+      Assert.AreEqual(1, called);
+
+      sourceMaster.Close();
+      destinationMaster.Close();
+
+      sourceClient.Close();
+      destinationClient.Close();
+    }
+
+    [Test]
     public void BackupMasterToClient()
     {
       var source = CreateConnectionNewSource(new SocketConnectionBuilder(Address, 1202, Backlog, HeartBeatTimeOut), null);
@@ -198,6 +257,89 @@ namespace SQLiteServer.Test.SQLiteServer
       source.Close();
       destinationClient.Close();
       destinationMaster.Close();
+    }
+
+    [Test]
+    public void BackupClientToClient()
+    {
+      var sourceMaster = CreateConnectionNewSource(new SocketConnectionBuilder(Address, 1202, Backlog, HeartBeatTimeOut), null);
+      var sourceClient = CreateConnection(new SocketConnectionBuilder(Address, 1202, Backlog, HeartBeatTimeOut), sourceMaster );
+
+      var destinationMaster = CreateConnectionNewSource(new SocketConnectionBuilder(Address, 1203, Backlog, HeartBeatTimeOut), null);
+      var destinationClient = CreateConnection(new SocketConnectionBuilder(Address, 1203, Backlog, HeartBeatTimeOut), destinationMaster);
+      sourceMaster.Open();
+      sourceClient.Open();
+      destinationMaster.Open();
+      destinationClient.Open();
+
+      // add data to source
+      const string sqlMaster = "create table tb_config (name varchar(20), value INTEGER)";
+      using (var command = new SQLiteServerCommand(sqlMaster, sourceClient)) { command.ExecuteNonQuery(); }
+      var long1 = RandomNumber<long>();
+      var sql = $"insert into tb_config(name, value) VALUES ('a', {long1})";
+      using (var command = new SQLiteServerCommand(sql, sourceClient)) { command.ExecuteNonQuery(); }
+
+      // backup
+      sourceClient.BackupDatabase(destinationClient, "main", "main", -1, null, 0);
+
+      // check that the backup now has the data
+      sql = "select * FROM tb_config";
+      using (var command = new SQLiteServerCommand(sql, destinationClient))
+      {
+        using (var reader = command.ExecuteReader())
+        {
+          Assert.IsTrue(reader.Read());
+          Assert.AreEqual("a", reader.GetString(0));
+          Assert.AreEqual(long1, reader.GetInt64(1));
+
+          Assert.IsFalse(reader.Read());
+        }
+      }
+
+      sourceClient.Close();
+      sourceMaster.Close();
+      destinationClient.Close();
+      destinationMaster.Close();
+    }
+
+    [Test]
+    public void BackupClientToMaster()
+    {
+      var sourceMaster = CreateConnectionNewSource(new SocketConnectionBuilder(Address, 1202, Backlog, HeartBeatTimeOut), null);
+      var sourceClient = CreateConnection(new SocketConnectionBuilder(Address, 1202, Backlog, HeartBeatTimeOut), sourceMaster);
+
+      var destination = CreateConnectionNewSource(new SocketConnectionBuilder(Address, 1203, Backlog, HeartBeatTimeOut), null);
+      sourceMaster.Open();
+      sourceClient.Open();
+      destination.Open();
+
+      // add data to source
+      const string sqlMaster = "create table tb_config (name varchar(20), value INTEGER)";
+      using (var command = new SQLiteServerCommand(sqlMaster, sourceClient)) { command.ExecuteNonQuery(); }
+      var long1 = RandomNumber<long>();
+      var sql = $"insert into tb_config(name, value) VALUES ('a', {long1})";
+      using (var command = new SQLiteServerCommand(sql, sourceClient)) { command.ExecuteNonQuery(); }
+
+      // backup
+      sourceClient.BackupDatabase(destination, "main", "main", -1, null, 0);
+
+      // check that the backup now has the data
+      sql = "select * FROM tb_config";
+      using (var command = new SQLiteServerCommand(sql, destination))
+      {
+        using (var reader = command.ExecuteReader())
+        {
+          Assert.IsTrue(reader.Read());
+          Assert.AreEqual("a", reader.GetString(0));
+          Assert.AreEqual(long1, reader.GetInt64(1));
+
+          Assert.IsFalse(reader.Read());
+        }
+      }
+
+      sourceClient.Close();
+      sourceMaster.Close();
+      destination.Close();
     }
   }
 }

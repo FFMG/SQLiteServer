@@ -80,7 +80,7 @@ While 'similar' performance will never be achieved, I am aiming for a degradatio
 I am using the `\performance\SQLiteServerPerformance.sln` application to run comparaison tests.
 
 ## A couple of common SQLite commands are missing.
-* `BackupDatabase`
+* <s>`BackupDatabase`</s> 0.1.2.1
 * <s>`IsDBNull( idx )`</s> 0.1.1.0
 * <s>`HasRows`</s> 0.1.1.0
 * <s>`FieldCount`</s> 0.1.1.0
