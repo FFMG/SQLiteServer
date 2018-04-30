@@ -14,6 +14,7 @@
 //    along with SQLiteServer.  If not, see<https://www.gnu.org/licenses/gpl-3.0.en.html>.
 
 using System;
+using System.Collections.Generic;
 using System.Data;
 using NUnit.Framework;
 using SQLiteServer.Data.Exceptions;
@@ -2314,6 +2315,231 @@ namespace SQLiteServer.Test.SQLiteServer
             reader.GetGuid(0);
           });
 
+          Assert.IsFalse(reader.Read());
+        }
+      }
+
+      client.Close();
+      server.Close();
+    }
+
+    [Test]
+    public void ServerGetCharJustOneCharLen()
+    {
+      var server = CreateConnection();
+      server.Open();
+      const string sqlMaster = "create table t1 (char varchar(255))";
+      using (var command = new SQLiteServerCommand(sqlMaster, server))
+      {
+        command.ExecuteNonQuery();
+      }
+
+      var cs = new char[char.MaxValue, char.MinValue, 'a', '1', 'z', 'Z', 128, RandomNumber<char>(), RandomNumber<char>(), RandomNumber<char>()];
+      foreach (var c in cs)
+      {
+        var sql = $"insert into t1(char) VALUES ('{c.ToString()}')";
+        using (var command = new SQLiteServerCommand(sql, server)) { command.ExecuteNonQuery(); }
+      }
+
+      // select it.
+      const string sqlSelect = "SELECT char FROM t1;";
+      using (var command = new SQLiteServerCommand(sqlSelect, server))
+      {
+        using (var reader = command.ExecuteReader())
+        {
+          //
+          foreach (var c in cs)
+          {
+            Assert.IsTrue(reader.Read());
+            var c1 = reader.GetChar(0);
+            Assert.AreEqual(c, c1);
+          }
+          Assert.IsFalse(reader.Read());
+        }
+      }
+      server.Close();
+    }
+
+    [Test]
+    public void ServerGetCharMoreThanOneCharLen()
+    {
+      var server = CreateConnection();
+      server.Open();
+      const string sqlMaster = "create table t1 (string varchar(255))";
+      using (var command = new SQLiteServerCommand(sqlMaster, server))
+      {
+        command.ExecuteNonQuery();
+      }
+
+      var cs = new List<string> { RandomString(5), RandomString(10), RandomString(100)};
+      foreach (var c in cs)
+      {
+        var sql = $"insert into t1(string) VALUES ('{c}')";
+        using (var command = new SQLiteServerCommand(sql, server)) { command.ExecuteNonQuery(); }
+      }
+
+      // select it.
+      const string sqlSelect = "SELECT string FROM t1;";
+      using (var command = new SQLiteServerCommand(sqlSelect, server))
+      {
+        using (var reader = command.ExecuteReader())
+        {
+          //
+          foreach (var unused in cs)
+          {
+            Assert.IsTrue(reader.Read());
+            // ReSharper disable once ReturnValueOfPureMethodIsNotUsed
+            Assert.Throws< SQLiteServerException>( () => reader.GetChar(0));
+          }
+          Assert.IsFalse(reader.Read());
+        }
+      }
+      server.Close();
+    }
+
+    [Test]
+    public void ClientGetCharJustOneCharLen()
+    {
+      var server = CreateConnection();
+      server.Open();
+
+      var client = CreateConnection();
+      client.Open();
+
+      const string sqlMaster = "create table t1 (char varchar(255))";
+      using (var command = new SQLiteServerCommand(sqlMaster, client))
+      {
+        command.ExecuteNonQuery();
+      }
+
+      var cs = new char[char.MaxValue, char.MinValue, 'a', '1', 'z', 'Z', 128, RandomNumber<char>(), RandomNumber<char>(), RandomNumber<char>()];
+      foreach (var c in cs)
+      {
+        var sql = $"insert into t1(char) VALUES ('{c.ToString()}')";
+        using (var command = new SQLiteServerCommand(sql, client)) { command.ExecuteNonQuery(); }
+      }
+
+      // select it.
+      const string sqlSelect = "SELECT char FROM t1;";
+      using (var command = new SQLiteServerCommand(sqlSelect, client))
+      {
+        using (var reader = command.ExecuteReader())
+        {
+          //
+          foreach (var c in cs)
+          {
+            Assert.IsTrue(reader.Read());
+            var c1 = reader.GetChar(0);
+            Assert.AreEqual(c, c1);
+          }
+          Assert.IsFalse(reader.Read());
+        }
+      }
+
+      client.Close();
+      server.Close();
+    }
+
+    [Test]
+    public void ClientGetCharMoreThanOneCharLen()
+    {
+      var server = CreateConnection();
+      server.Open();
+
+      var client = CreateConnection();
+      client.Open();
+
+      const string sqlMaster = "create table t1 (string varchar(255))";
+      using (var command = new SQLiteServerCommand(sqlMaster, client))
+      {
+        command.ExecuteNonQuery();
+      }
+
+      var cs = new List<string> { RandomString(5), RandomString(10), RandomString(100) };
+      foreach (var c in cs)
+      {
+        var sql = $"insert into t1(string) VALUES ('{c}')";
+        using (var command = new SQLiteServerCommand(sql, client)) { command.ExecuteNonQuery(); }
+      }
+
+      // select it.
+      const string sqlSelect = "SELECT string FROM t1;";
+      using (var command = new SQLiteServerCommand(sqlSelect, client))
+      {
+        using (var reader = command.ExecuteReader())
+        {
+          //
+          foreach (var unused in cs)
+          {
+            Assert.IsTrue(reader.Read());
+            // ReSharper disable once ReturnValueOfPureMethodIsNotUsed
+            Assert.Throws<SQLiteServerException>(() => reader.GetChar(0));
+          }
+          Assert.IsFalse(reader.Read());
+        }
+      }
+      client.Close();
+      server.Close();
+    }
+
+    [Test]
+    public void ServerGetCharNull()
+    {
+      var server = CreateConnection();
+      server.Open();
+      const string sqlMaster = "create table t1 (string varchar(255))";
+      using (var command = new SQLiteServerCommand(sqlMaster, server))
+      {
+        command.ExecuteNonQuery();
+      }
+
+      const string sql = "insert into t1(string) VALUES (null)";
+      using (var command = new SQLiteServerCommand(sql, server)) { command.ExecuteNonQuery(); }
+
+      // select it.
+      const string sqlSelect = "SELECT string FROM t1;";
+      using (var command = new SQLiteServerCommand(sqlSelect, server))
+      {
+        using (var reader = command.ExecuteReader())
+        {
+          //
+          Assert.IsTrue(reader.Read());
+          // ReSharper disable once ReturnValueOfPureMethodIsNotUsed
+          Assert.Throws<SQLiteServerException>(() => reader.GetChar(0));
+          Assert.IsFalse(reader.Read());
+        }
+      }
+      server.Close();
+    }
+
+    [Test]
+    public void ClientGetCharNull()
+    {
+      var server = CreateConnection();
+      server.Open();
+
+      var client = CreateConnection();
+      client.Open();
+
+      const string sqlMaster = "create table t1 (string varchar(255))";
+      using (var command = new SQLiteServerCommand(sqlMaster, client))
+      {
+        command.ExecuteNonQuery();
+      }
+
+      const string sql = "insert into t1(string) VALUES (null)";
+      using (var command = new SQLiteServerCommand(sql, client)) { command.ExecuteNonQuery(); }
+
+      // select it.
+      const string sqlSelect = "SELECT string FROM t1;";
+      using (var command = new SQLiteServerCommand(sqlSelect, client))
+      {
+        using (var reader = command.ExecuteReader())
+        {
+          //
+          Assert.IsTrue(reader.Read());
+          // ReSharper disable once ReturnValueOfPureMethodIsNotUsed
+          Assert.Throws<SQLiteServerException>(() => reader.GetChar(0));
           Assert.IsFalse(reader.Read());
         }
       }

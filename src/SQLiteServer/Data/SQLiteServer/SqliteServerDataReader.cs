@@ -292,9 +292,10 @@ namespace SQLiteServer.Data.SQLiteServer
       throw new NotImplementedException();
     }
 
-    public override char GetChar(int ordinal)
+    /// <inheritdoc />
+    public override char GetChar(int i)
     {
-      throw new NotImplementedException();
+      return Convert.ToChar( Convert.ToUInt16( GetInt16(i) ));
     }
 
     /// <inheritdoc />

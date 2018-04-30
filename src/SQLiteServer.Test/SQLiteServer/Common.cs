@@ -113,12 +113,29 @@ namespace SQLiteServer.Test.SQLiteServer
       return connection;
     }
 
+    protected string RandomString(int len)
+    {
+      var value = "";
+      for (var i = 0; i < len; i++)
+      {
+        value += RandomNumber<char>();
+      }
+      return value;
+    }
+
     protected T RandomNumber<T>()
     {
       var random = new Random();
       if (typeof(T) == typeof(double))
       {
         return (T) Convert.ChangeType(random.NextDouble(), typeof(T));
+      }
+
+      if (typeof(T) == typeof(char))
+      {
+        var buffer = new byte[2]; //  2 bytes per char.
+        random.NextBytes(buffer);
+        return (T)Convert.ChangeType(BitConverter.ToChar(buffer, 0), typeof(T));
       }
 
       if (typeof(T) == typeof(float))
