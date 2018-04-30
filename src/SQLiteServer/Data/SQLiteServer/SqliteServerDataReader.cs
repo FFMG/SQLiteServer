@@ -304,9 +304,30 @@ namespace SQLiteServer.Data.SQLiteServer
     }
 
     /// <inheritdoc />
-    public override Guid GetGuid(int ordinal)
+    public override Guid GetGuid(int i)
     {
-      throw new NotImplementedException();
+      try
+      {
+        // get as a string
+        var s = GetString(i);
+
+        // try and cast it to a Guid.
+        return Guid.Parse(s);
+      }
+      catch (FormatException)
+      {
+        // as per the doc, it means that this is not a 'Guid' string.
+        // https://msdn.microsoft.com/en-us/library/system.data.sqlclient.sqldatareader.getguid
+        throw new InvalidCastException();
+      }
+      catch (SQLiteServerException)
+      {
+        throw;
+      }
+      catch (Exception e)
+      {
+        throw new SQLiteServerException(e.Message);
+      }
     }
 
     /// <inheritdoc />

@@ -12,6 +12,8 @@
 //
 //    You should have received a copy of the GNU General Public License
 //    along with SQLiteServer.  If not, see<https://www.gnu.org/licenses/gpl-3.0.en.html>.
+
+using System;
 using System.Data;
 using NUnit.Framework;
 using SQLiteServer.Data.Exceptions;
@@ -903,6 +905,7 @@ namespace SQLiteServer.Test.SQLiteServer
           Assert.Throws<SQLiteServerException>( 
             () =>
             {
+              // ReSharper disable once ReturnValueOfPureMethodIsNotUsed
               reader.GetString(0);
             });
         }
@@ -1065,6 +1068,7 @@ namespace SQLiteServer.Test.SQLiteServer
           Assert.Throws<SQLiteServerException>(
             () =>
             {
+              // ReSharper disable once ReturnValueOfPureMethodIsNotUsed
               reader.GetString(0);
             });
         }
@@ -1201,6 +1205,7 @@ namespace SQLiteServer.Test.SQLiteServer
         {
          Assert.Throws<SQLiteServerException>(() =>
          {
+           // ReSharper disable once ReturnValueOfPureMethodIsNotUsed
            reader.GetName(12);
          });
         }
@@ -1226,6 +1231,7 @@ namespace SQLiteServer.Test.SQLiteServer
         {
           Assert.Throws<SQLiteServerException>(() =>
           {
+            // ReSharper disable once ReturnValueOfPureMethodIsNotUsed
             reader.GetName(-1);
           });
         }
@@ -1255,6 +1261,7 @@ namespace SQLiteServer.Test.SQLiteServer
         {
           Assert.Throws<SQLiteServerException>(() =>
           {
+            // ReSharper disable once ReturnValueOfPureMethodIsNotUsed
             reader.GetName(12);
           });
         }
@@ -1285,6 +1292,7 @@ namespace SQLiteServer.Test.SQLiteServer
         {
           Assert.Throws<SQLiteServerException>(() =>
           {
+            // ReSharper disable once ReturnValueOfPureMethodIsNotUsed
             reader.GetName(-1);
           });
         }
@@ -2076,6 +2084,240 @@ namespace SQLiteServer.Test.SQLiteServer
           Assert.IsFalse(reader.NextResult());
         }
       }
+      client.Close();
+      server.Close();
+    }
+
+    [Test]
+    public void ServerGetGuidValidString()
+    {
+      var server = CreateConnection();
+      server.Open();
+      const string sqlMaster = "create table tb_a (guid varchar(255))";
+      using (var command = new SQLiteServerCommand(sqlMaster, server))
+      {
+        command.ExecuteNonQuery();
+      }
+
+      var guid1 = Guid.NewGuid();
+      var sql = $"insert into tb_a(guid) VALUES ('{guid1.ToString()}')";
+      using (var command = new SQLiteServerCommand(sql, server)){ command.ExecuteNonQuery();}
+
+      var guid2 = Guid.NewGuid();
+      sql = $"insert into tb_a(guid) VALUES ('{guid2.ToString()}')";
+      using (var command = new SQLiteServerCommand(sql, server)) { command.ExecuteNonQuery(); }
+
+      // select it.
+      const string sqlSelect = "SELECT guid FROM tb_a;";
+      using (var command = new SQLiteServerCommand(sqlSelect, server))
+      {
+        using (var reader = command.ExecuteReader())
+        {
+          //
+          Assert.IsTrue(reader.Read());
+          var g1 = reader.GetGuid(0);
+          Assert.AreEqual( guid1, g1 );
+
+          Assert.IsTrue(reader.Read());
+          var g2 = reader.GetGuid(0);
+          Assert.AreEqual(guid2, g2);
+
+          Assert.IsFalse(reader.Read());
+        }
+      }
+
+      server.Close();
+    }
+
+    [Test]
+    public void ClientGetGuidValidString()
+    {
+      var server = CreateConnection();
+      server.Open();
+
+      var client = CreateConnection();
+      client.Open();
+
+      const string sqlMaster = "create table tb_a (guid varchar(255))";
+      using (var command = new SQLiteServerCommand(sqlMaster, client))
+      {
+        command.ExecuteNonQuery();
+      }
+
+      var guid1 = Guid.NewGuid();
+      var sql = $"insert into tb_a(guid) VALUES ('{guid1.ToString()}')";
+      using (var command = new SQLiteServerCommand(sql, client)) { command.ExecuteNonQuery(); }
+
+      var guid2 = Guid.NewGuid();
+      sql = $"insert into tb_a(guid) VALUES ('{guid2.ToString()}')";
+      using (var command = new SQLiteServerCommand(sql, client)) { command.ExecuteNonQuery(); }
+
+      // select it.
+      const string sqlSelect = "SELECT guid FROM tb_a;";
+      using (var command = new SQLiteServerCommand(sqlSelect, client))
+      {
+        using (var reader = command.ExecuteReader())
+        {
+          //
+          Assert.IsTrue(reader.Read());
+          var g1 = reader.GetGuid(0);
+          Assert.AreEqual(guid1, g1);
+
+          Assert.IsTrue(reader.Read());
+          var g2 = reader.GetGuid(0);
+          Assert.AreEqual(guid2, g2);
+
+          Assert.IsFalse(reader.Read());
+        }
+      }
+      server.Close();
+      client.Close();
+    }
+
+    [Test]
+    public void ServerGetGuidNullValue()
+    {
+      var server = CreateConnection();
+      server.Open();
+      const string sqlMaster = "create table tb_a (guid varchar(255))";
+      using (var command = new SQLiteServerCommand(sqlMaster, server))
+      {
+        command.ExecuteNonQuery();
+      }
+
+      const string sql = "insert into tb_a(guid) VALUES (null)";
+      using (var command = new SQLiteServerCommand(sql, server)) { command.ExecuteNonQuery(); }
+
+      // select it.
+      const string sqlSelect = "SELECT guid FROM tb_a;";
+      using (var command = new SQLiteServerCommand(sqlSelect, server))
+      {
+        using (var reader = command.ExecuteReader())
+        {
+          //
+          Assert.IsTrue(reader.Read());
+          Assert.Throws<SQLiteServerException>( () =>
+          {
+            // ReSharper disable once UnusedVariable
+            var guid = reader.GetGuid(0);
+          });
+
+          Assert.IsFalse(reader.Read());
+        }
+      }
+
+      server.Close();
+    }
+
+    [Test]
+    public void ClientGetGuidNullValue()
+    {
+      var server = CreateConnection();
+      server.Open();
+      var client = CreateConnection();
+      client.Open();
+
+      const string sqlMaster = "create table tb_a (guid varchar(255))";
+      using (var command = new SQLiteServerCommand(sqlMaster, client))
+      {
+        command.ExecuteNonQuery();
+      }
+
+      const string sql = "insert into tb_a(guid) VALUES (null)";
+      using (var command = new SQLiteServerCommand(sql, client)) { command.ExecuteNonQuery(); }
+
+      // select it.
+      const string sqlSelect = "SELECT guid FROM tb_a;";
+      using (var command = new SQLiteServerCommand(sqlSelect, client))
+      {
+        using (var reader = command.ExecuteReader())
+        {
+          //
+          Assert.IsTrue(reader.Read());
+          Assert.Throws<SQLiteServerException>(() =>
+          {
+            // ReSharper disable once UnusedVariable
+            var guid = reader.GetGuid(0);
+          });
+
+          Assert.IsFalse(reader.Read());
+        }
+      }
+
+      client.Close();
+      server.Close();
+    }
+
+    [Test]
+    public void ServerGetGuidStringIsNotAGuid()
+    {
+      var server = CreateConnection();
+      server.Open();
+      const string sqlMaster = "create table tb_a (guid varchar(255))";
+      using (var command = new SQLiteServerCommand(sqlMaster, server))
+      {
+        command.ExecuteNonQuery();
+      }
+
+      const string sql = "insert into tb_a(guid) VALUES ('blah')";
+      using (var command = new SQLiteServerCommand(sql, server)) { command.ExecuteNonQuery(); }
+
+      // select it.
+      const string sqlSelect = "SELECT guid FROM tb_a;";
+      using (var command = new SQLiteServerCommand(sqlSelect, server))
+      {
+        using (var reader = command.ExecuteReader())
+        {
+          //
+          Assert.IsTrue(reader.Read());
+          Assert.Throws<InvalidCastException>(() =>
+          {
+            // ReSharper disable once ReturnValueOfPureMethodIsNotUsed
+            reader.GetGuid(0);
+          });
+
+          Assert.IsFalse(reader.Read());
+        }
+      }
+
+      server.Close();
+    }
+
+    [Test]
+    public void ClientGetGuidStringIsNotAGuid()
+    {
+      var server = CreateConnection();
+      server.Open();
+      var client = CreateConnection();
+      client.Open();
+
+      const string sqlMaster = "create table tb_a (guid varchar(255))";
+      using (var command = new SQLiteServerCommand(sqlMaster, client))
+      {
+        command.ExecuteNonQuery();
+      }
+
+      const string sql = "insert into tb_a(guid) VALUES ('blah')";
+      using (var command = new SQLiteServerCommand(sql, client)) { command.ExecuteNonQuery(); }
+
+      // select it.
+      const string sqlSelect = "SELECT guid FROM tb_a;";
+      using (var command = new SQLiteServerCommand(sqlSelect, client))
+      {
+        using (var reader = command.ExecuteReader())
+        {
+          //
+          Assert.IsTrue(reader.Read());
+          Assert.Throws<InvalidCastException>(() =>
+          {
+            // ReSharper disable once ReturnValueOfPureMethodIsNotUsed
+            reader.GetGuid(0);
+          });
+
+          Assert.IsFalse(reader.Read());
+        }
+      }
+
       client.Close();
       server.Close();
     }
