@@ -281,9 +281,16 @@ namespace SQLiteServer.Data.SQLiteServer
     }
 
     /// <inheritdoc />
-    public override byte GetByte(int ordinal)
+    public override byte GetByte(int i)
     {
-      throw new NotImplementedException();
+      // no conversion is made, the data _must_ be a byte.
+      // https://msdn.microsoft.com/en-us/library/system.data.sqlclient.sqldatareader.getbyte(v=vs.110).aspx
+      var value = GetInt32(i);
+      if (value >= byte.MinValue && value <= byte.MaxValue)
+      {
+        return unchecked((byte)( value & byte.MaxValue ));
+      }
+      throw new SQLiteServerException("Invalid cast");
     }
 
     /// <inheritdoc />
@@ -292,9 +299,10 @@ namespace SQLiteServer.Data.SQLiteServer
       throw new NotImplementedException();
     }
 
-    public override char GetChar(int ordinal)
+    /// <inheritdoc />
+    public override char GetChar(int i)
     {
-      throw new NotImplementedException();
+      return Convert.ToChar( Convert.ToUInt16( GetInt16(i) ));
     }
 
     /// <inheritdoc />
@@ -304,9 +312,30 @@ namespace SQLiteServer.Data.SQLiteServer
     }
 
     /// <inheritdoc />
-    public override Guid GetGuid(int ordinal)
+    public override Guid GetGuid(int i)
     {
-      throw new NotImplementedException();
+      try
+      {
+        // get as a string
+        var s = GetString(i);
+
+        // try and cast it to a Guid.
+        return Guid.Parse(s);
+      }
+      catch (FormatException)
+      {
+        // as per the doc, it means that this is not a 'Guid' string.
+        // https://msdn.microsoft.com/en-us/library/system.data.sqlclient.sqldatareader.getguid
+        throw new InvalidCastException();
+      }
+      catch (SQLiteServerException)
+      {
+        throw;
+      }
+      catch (Exception e)
+      {
+        throw new SQLiteServerException(e.Message);
+      }
     }
 
     /// <inheritdoc />

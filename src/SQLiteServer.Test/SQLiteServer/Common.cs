@@ -40,7 +40,24 @@ namespace SQLiteServer.Test.SQLiteServer
     [SetUp]
     public void SetUp()
     {
-      _sources.Add( Path.GetTempFileName() );
+      _sources.Add( GetTempFileName() );
+    }
+
+    private static string GetTempFileName()
+    {
+      var path = Path.GetTempFileName();
+      try
+      {
+        File.Delete(path);
+      }
+      catch
+      {
+        // ignored
+      }
+
+      path = Path.ChangeExtension(path, "sqlite");
+      File.Create(path).Close();
+      return path;
     }
 
     [TearDown]
@@ -79,7 +96,7 @@ namespace SQLiteServer.Test.SQLiteServer
     protected SQLiteServerConnection CreateConnectionNewSource(IConnectionBuilder connectionBuilder = null
       , int? defaultTimeout = null)
     {
-      var source = Path.GetTempFileName();
+      var source = GetTempFileName();
       _sources.Add(source);
       return CreateConnection(connectionBuilder, defaultTimeout, source);
     }
@@ -113,12 +130,36 @@ namespace SQLiteServer.Test.SQLiteServer
       return connection;
     }
 
+    protected string RandomString(int len)
+    {
+      var value = "";
+      for (var i = 0; i < len; i++)
+      {
+        value += RandomNumber<char>();
+      }
+      return value;
+    }
+
     protected T RandomNumber<T>()
     {
       var random = new Random();
       if (typeof(T) == typeof(double))
       {
         return (T) Convert.ChangeType(random.NextDouble(), typeof(T));
+      }
+
+      if (typeof(T) == typeof(char))
+      {
+        var buffer = new byte[2]; //  2 bytes per char.
+        random.NextBytes(buffer);
+        return (T)Convert.ChangeType(BitConverter.ToChar(buffer, 0), typeof(T));
+      }
+
+      if (typeof(T) == typeof(byte))
+      {
+        var buffer = new byte[1]; //  2 bytes per char.
+        random.NextBytes(buffer);
+        return (T)Convert.ChangeType(buffer[0], typeof(T));
       }
 
       if (typeof(T) == typeof(float))

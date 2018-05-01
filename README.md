@@ -89,8 +89,9 @@ I am using the `\performance\SQLiteServerPerformance.sln` application to run com
 
 ## A little less important, (but still need to be added)
 * <s>`GetBoolean( idx )`</s> 0.1.1.2
-* `GetByte( idx )`
-* `GetChar( idx )`
+* <s>`GetGuid( idx )`</s> 0.1.2.1
+* <s>`GetByte( idx )`</s> 0.1.2.1
+* <s>`GetChar( idx )`</s> 0.1.2.1
 * `GetDateTime( idx )`
 * <s>`GetDataTypeName( idx )`</s> 0.1.1.3
 * <s>`GetDecimal( idx )`</s> 0.1.1.2
