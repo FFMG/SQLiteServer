@@ -138,6 +138,13 @@ namespace SQLiteServer.Test.SQLiteServer
         return (T)Convert.ChangeType(BitConverter.ToChar(buffer, 0), typeof(T));
       }
 
+      if (typeof(T) == typeof(byte))
+      {
+        var buffer = new byte[1]; //  2 bytes per char.
+        random.NextBytes(buffer);
+        return (T)Convert.ChangeType(buffer[0], typeof(T));
+      }
+
       if (typeof(T) == typeof(float))
       {
         var buffer = new byte[4];

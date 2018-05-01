@@ -2547,5 +2547,152 @@ namespace SQLiteServer.Test.SQLiteServer
       client.Close();
       server.Close();
     }
+
+    [TestCase(false)]
+    [TestCase(true)]
+    public void GetByteJustOneByteLenInInteger( bool useClient )
+    {
+      var server = CreateConnection();
+      server.Open();
+
+      var current = server;
+
+      SQLiteServerConnection client = null;
+      if (useClient)
+      {
+        client = CreateConnection();
+        client.Open();
+        current = client;
+      }
+
+      const string sqlMaster = "create table t1 (byte integer)";
+      using (var command = new SQLiteServerCommand(sqlMaster, current))
+      {
+        command.ExecuteNonQuery();
+      }
+
+      var bs = new List<byte> { byte.MaxValue, byte.MinValue};
+      for (var i = 0; i < 20; ++i)
+      {
+        bs.Add( RandomNumber<byte>());
+      }
+      foreach (var b in bs)
+      {
+        var sql = $"insert into t1(byte) VALUES ('{b}')";
+        using (var command = new SQLiteServerCommand(sql, current)) { command.ExecuteNonQuery(); }
+      }
+
+      // select it.
+      const string sqlSelect = "SELECT byte FROM t1;";
+      using (var command = new SQLiteServerCommand(sqlSelect, current))
+      {
+        using (var reader = command.ExecuteReader())
+        {
+          //
+          foreach (var b in bs)
+          {
+            Assert.IsTrue(reader.Read());
+            var b1 = reader.GetByte(0);
+            Assert.AreEqual(b, b1);
+          }
+          Assert.IsFalse(reader.Read());
+        }
+      }
+      client?.Close();
+      server.Close();
+    }
+
+    [TestCase(false)]
+    [TestCase(true)]
+    public void GetByteIntegerOutOfRange(bool useClient)
+    {
+      var server = CreateConnection();
+      server.Open();
+
+      var current = server;
+
+      SQLiteServerConnection client = null;
+      if (useClient)
+      {
+        client = CreateConnection();
+        client.Open();
+        current = client;
+      }
+
+      const string sqlMaster = "create table t1 (byte integer)";
+      using (var command = new SQLiteServerCommand(sqlMaster, current))
+      {
+        command.ExecuteNonQuery();
+      }
+
+      var bs = new List<int> { int.MaxValue, int.MinValue, 256, -1 };
+      foreach (var b in bs)
+      {
+        var sql = $"insert into t1(byte) VALUES ('{b}')";
+        using (var command = new SQLiteServerCommand(sql, current)) { command.ExecuteNonQuery(); }
+      }
+
+      // select it.
+      const string sqlSelect = "SELECT byte FROM t1;";
+      using (var command = new SQLiteServerCommand(sqlSelect, current))
+      {
+        using (var reader = command.ExecuteReader())
+        {
+          //
+          foreach (var _ in bs)
+          {
+            Assert.IsTrue(reader.Read());
+            // ReSharper disable once ReturnValueOfPureMethodIsNotUsed
+            Assert.Throws<SQLiteServerException>( () => reader.GetByte(0));
+          }
+          Assert.IsFalse(reader.Read());
+        }
+      }
+      client?.Close();
+      server.Close();
+    }
+
+    [TestCase(false)]
+    [TestCase(true)]
+    public void GetByteIntegerNull(bool useClient)
+    {
+      var server = CreateConnection();
+      server.Open();
+
+      var current = server;
+
+      SQLiteServerConnection client = null;
+      if (useClient)
+      {
+        client = CreateConnection();
+        client.Open();
+        current = client;
+      }
+
+      const string sqlMaster = "create table t1 (byte integer)";
+      using (var command = new SQLiteServerCommand(sqlMaster, current))
+      {
+        command.ExecuteNonQuery();
+      }
+
+      const string sql = "insert into t1(byte) VALUES (null)";
+      using (var command = new SQLiteServerCommand(sql, current)) { command.ExecuteNonQuery(); }
+
+      // select it.
+      const string sqlSelect = "SELECT byte FROM t1;";
+      using (var command = new SQLiteServerCommand(sqlSelect, current))
+      {
+        using (var reader = command.ExecuteReader())
+        {
+          //
+          Assert.IsTrue(reader.Read());
+          // ReSharper disable once ReturnValueOfPureMethodIsNotUsed
+          Assert.Throws<SQLiteServerException>(() => reader.GetByte(0));
+          Assert.IsFalse(reader.Read());
+        }
+      }
+      client?.Close();
+      server.Close();
+    }
   }
 }

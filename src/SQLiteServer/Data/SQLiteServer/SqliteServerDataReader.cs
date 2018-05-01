@@ -281,9 +281,16 @@ namespace SQLiteServer.Data.SQLiteServer
     }
 
     /// <inheritdoc />
-    public override byte GetByte(int ordinal)
+    public override byte GetByte(int i)
     {
-      throw new NotImplementedException();
+      // no conversion is made, the data _must_ be a byte.
+      // https://msdn.microsoft.com/en-us/library/system.data.sqlclient.sqldatareader.getbyte(v=vs.110).aspx
+      var value = GetInt32(i);
+      if (value >= byte.MinValue && value <= byte.MaxValue)
+      {
+        return unchecked((byte)( value & byte.MaxValue ));
+      }
+      throw new SQLiteServerException("Invalid cast");
     }
 
     /// <inheritdoc />
