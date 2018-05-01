@@ -16,6 +16,7 @@
 using System;
 using System.Collections.Generic;
 using System.Data;
+using System.Globalization;
 using NUnit.Framework;
 using SQLiteServer.Data.Exceptions;
 using SQLiteServer.Data.SQLiteServer;
@@ -2635,7 +2636,7 @@ namespace SQLiteServer.Test.SQLiteServer
 
       foreach (var d in ds)
       {
-        var sql = $"insert into t1(value) VALUES ({d:G64})";
+        var sql = $"insert into t1(value) VALUES ({d.ToString("0." + new string('#', 339))})";
         using (var command = new SQLiteServerCommand(sql, current))
         {
           command.ExecuteNonQuery();
