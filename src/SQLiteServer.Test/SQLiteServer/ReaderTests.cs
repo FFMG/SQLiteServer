@@ -160,96 +160,6 @@ namespace SQLiteServer.Test.SQLiteServer
     }
 
     [Test]
-    public void ClientGetDoubleValue()
-    {
-      var server = CreateConnection();
-      server.Open();
-      const string sqlMaster = "create table tb_config (name varchar(20), value REAL)";
-      using (var command = new SQLiteServerCommand(sqlMaster, server))
-      {
-        command.ExecuteNonQuery();
-      }
-
-      var client = CreateConnection();
-      client.Open();
-
-      var double1 = RandomNumber<double>();
-      var sqlInsert1 = $"insert into tb_config(name, value) VALUES ('a', {double1:G64})";
-      using (var command = new SQLiteServerCommand(sqlInsert1, client))
-      {
-        command.ExecuteNonQuery();
-      }
-
-      var double2 = RandomNumber<double>();
-      var sqlInsert2 = $"insert into tb_config(name, value) VALUES ('b', {double2:G64})";
-      using (var command = new SQLiteServerCommand(sqlInsert2, client))
-      {
-        command.ExecuteNonQuery();
-      }
-
-      const string sqlSelect = "SELECT * FROM tb_config";
-      using (var command = new SQLiteServerCommand(sqlSelect, client))
-      {
-        using (var reader = command.ExecuteReader())
-        {
-          Assert.IsTrue(reader.Read());
-          Assert.AreEqual("a", reader.GetString(0));
-          Assert.AreEqual(double1, reader.GetDouble(1));
-
-          Assert.IsTrue(reader.Read());
-          Assert.AreEqual("b", reader.GetString(0));
-          Assert.AreEqual(double2, reader.GetDouble(1));
-
-          Assert.IsFalse(reader.Read());
-        }
-      }
-      client.Close();
-      server.Close();
-    }
-
-    [Test]
-    public void ServerGetDoubleValue()
-    {
-      var server = CreateConnection();
-      server.Open();
-      const string sqlMaster = "create table tb_config (name varchar(20), value REAL)";
-      using (var command = new SQLiteServerCommand(sqlMaster, server))
-      {
-        command.ExecuteNonQuery();
-      }
-
-      var double1 = RandomNumber<double>();
-      var sqlInsert1 = $"insert into tb_config(name, value) VALUES ('a', {double1:G64})";
-      using (var command = new SQLiteServerCommand(sqlInsert1, server))
-      {
-        command.ExecuteNonQuery();
-      }
-
-      var double2 = RandomNumber<double>();
-      var sqlInsert2 = $"insert into tb_config(name, value) VALUES ('b', {double2:G64})";
-      using (var command = new SQLiteServerCommand(sqlInsert2, server))
-      {
-        command.ExecuteNonQuery();
-      }
-
-      const string sqlSelect = "SELECT * FROM tb_config";
-      using (var command = new SQLiteServerCommand(sqlSelect, server))
-      {
-        using (var reader = command.ExecuteReader())
-        {
-          Assert.IsTrue(reader.Read());
-          Assert.AreEqual("a", reader.GetString(0));
-          Assert.AreEqual(double1, reader.GetDouble(1));
-
-          Assert.IsTrue(reader.Read());
-          Assert.AreEqual("b", reader.GetString(0));
-          Assert.AreEqual(double2, reader.GetDouble(1));
-        }
-      }
-      server.Close();
-    }
-
-    [Test]
     public void ServerGetFloatValue()
     {
       var server = CreateConnection();
@@ -2688,6 +2598,64 @@ namespace SQLiteServer.Test.SQLiteServer
           Assert.IsTrue(reader.Read());
           // ReSharper disable once ReturnValueOfPureMethodIsNotUsed
           Assert.Throws<SQLiteServerException>(() => reader.GetByte(0));
+          Assert.IsFalse(reader.Read());
+        }
+      }
+      client?.Close();
+      server.Close();
+    }
+
+    [TestCase(false)]
+    [TestCase(true)]
+    public void GetDoubleValue(bool useClient)
+    {
+      var server = CreateConnection();
+      server.Open();
+      const string sqlMaster = "create table t1 (value REAL)";
+      using (var command = new SQLiteServerCommand(sqlMaster, server))
+      {
+        command.ExecuteNonQuery();
+      }
+
+      var current = server;
+
+      SQLiteServerConnection client = null;
+      if (useClient)
+      {
+        client = CreateConnection();
+        client.Open();
+        current = client;
+      }
+
+      var ds = new List<double> {double.MaxValue, double.MinValue};
+      for (var i = 0; i < 20; ++i)
+      {
+        ds.Add(RandomNumber<double>());
+      }
+
+      foreach (var d in ds)
+      {
+        var sql = $"insert into t1(value) VALUES ({d:G64})";
+        using (var command = new SQLiteServerCommand(sql, current))
+        {
+          command.ExecuteNonQuery();
+        }
+      }
+      
+      const string sqlSelect = "SELECT * FROM t1";
+      using (var command = new SQLiteServerCommand(sqlSelect, current))
+      {
+        using (var reader = command.ExecuteReader())
+        {
+          foreach (var d in ds)
+          {
+            // Log10(100) = 2, so to get the manitude we add 1.
+            const int precision = 10;
+            var tolerance = 1.0 / Math.Pow(10, precision);
+
+            Assert.IsTrue(reader.Read());
+            Assert.That(reader.GetDouble(0), Is.EqualTo(d).Within(tolerance));
+          }
           Assert.IsFalse(reader.Read());
         }
       }
