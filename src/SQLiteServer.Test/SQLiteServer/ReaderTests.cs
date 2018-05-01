@@ -16,6 +16,7 @@
 using System;
 using System.Collections.Generic;
 using System.Data;
+using System.Data.SQLite;
 using System.Globalization;
 using NUnit.Framework;
 using SQLiteServer.Data.Exceptions;
@@ -2628,7 +2629,7 @@ namespace SQLiteServer.Test.SQLiteServer
         current = client;
       }
 
-      var ds = new List<double> {double.MaxValue, double.MinValue};
+      var ds = new List<double> { 1.79769e+308, -1.79769e+308 };
       for (var i = 0; i < 20; ++i)
       {
         ds.Add(RandomNumber<double>());
@@ -2642,9 +2643,66 @@ namespace SQLiteServer.Test.SQLiteServer
           command.ExecuteNonQuery();
         }
       }
-      
+
       const string sqlSelect = "SELECT * FROM t1";
       using (var command = new SQLiteServerCommand(sqlSelect, current))
+      {
+        using (var reader = command.ExecuteReader())
+        {
+          foreach (var d in ds)
+          {
+            // Log10(100) = 2, so to get the manitude we add 1.
+            const int precision = 10;
+            var tolerance = 1.0 / Math.Pow(10, precision);
+
+            Assert.IsTrue(reader.Read());
+            Assert.That(reader.GetDouble(0), Is.EqualTo(d).Within(tolerance));
+          }
+          Assert.IsFalse(reader.Read());
+        }
+      }
+      client?.Close();
+      server.Close();
+    }
+
+    [TestCase(false)]
+    [TestCase(true)]
+    [Ignore("Ignore parametters tests")]
+    public void GetDoubleValueEdgeCases(bool useClient)
+    {
+      var server = new SQLiteConnection("Data Source=:memory:");
+      server.Open();
+      const string sqlMaster = "create table t1 (value REAL)";
+      using (var command = new SQLiteCommand(sqlMaster, server))
+      {
+        command.ExecuteNonQuery();
+      }
+
+
+      var current = server;
+      SQLiteServerConnection client = null;
+//      if (useClient)
+//      {
+//        client = CreateConnection();
+//        client.Open();
+//        current = client;
+//      }
+
+      var ds = new List<double> {double.MaxValue, double.MinValue};
+      for (var i = 0; i < 20; ++i)
+      {
+        ds.Add(RandomNumber<double>());
+      }
+
+      foreach (var d in ds)
+      {
+        var command = new SQLiteCommand("INSERT INTO t1 (value) VALUES (@value)", current);
+        command.Parameters.Add( new SQLiteParameter("@value", SqlDbType.Real) { Value = d});
+        command.ExecuteNonQuery();
+      }
+      
+      const string sqlSelect = "SELECT * FROM t1";
+      using (var command = new SQLiteCommand(sqlSelect, current))
       {
         using (var reader = command.ExecuteReader())
         {

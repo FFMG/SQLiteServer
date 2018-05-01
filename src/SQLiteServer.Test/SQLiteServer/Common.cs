@@ -40,7 +40,24 @@ namespace SQLiteServer.Test.SQLiteServer
     [SetUp]
     public void SetUp()
     {
-      _sources.Add( Path.GetTempFileName() );
+      _sources.Add( GetTempFileName() );
+    }
+
+    private static string GetTempFileName()
+    {
+      var path = Path.GetTempFileName();
+      try
+      {
+        File.Delete(path);
+      }
+      catch
+      {
+        // ignored
+      }
+
+      path = Path.ChangeExtension(path, "sqlite");
+      File.Create(path).Close();
+      return path;
     }
 
     [TearDown]
@@ -79,7 +96,7 @@ namespace SQLiteServer.Test.SQLiteServer
     protected SQLiteServerConnection CreateConnectionNewSource(IConnectionBuilder connectionBuilder = null
       , int? defaultTimeout = null)
     {
-      var source = Path.GetTempFileName();
+      var source = GetTempFileName();
       _sources.Add(source);
       return CreateConnection(connectionBuilder, defaultTimeout, source);
     }
