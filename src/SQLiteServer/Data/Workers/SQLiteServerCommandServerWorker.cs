@@ -187,9 +187,9 @@ namespace SQLiteServer.Data.Workers
       totalWatch.Stop();
     }
 
-    public ISqliteServerDataReaderWorker CreateReaderWorker()
+    public ISQLiteServerDataReaderWorker CreateReaderWorker()
     {
-      return new SqliteServerDataReaderServerWorker( _command );
+      return new SQLiteServerDataReaderServerWorker( _command );
     }
 
     public void Dispose()

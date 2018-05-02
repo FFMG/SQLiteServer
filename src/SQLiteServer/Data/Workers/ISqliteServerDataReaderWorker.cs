@@ -17,7 +17,8 @@ using System.Data;
 
 namespace SQLiteServer.Data.Workers
 {
-  internal interface ISqliteServerDataReaderWorker
+  // ReSharper disable once InconsistentNaming
+  internal interface ISQLiteServerDataReaderWorker
   {
     /// <summary>
     /// Get a value at a given colum name.

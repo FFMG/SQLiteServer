@@ -41,7 +41,7 @@ namespace SQLiteServer.Data.Workers
     private struct CommandData
     {
       public ISQLiteServerCommandWorker Worker;
-      public ISqliteServerDataReaderWorker Reader;
+      public ISQLiteServerDataReaderWorker Reader;
     }
 
     #endregion
@@ -99,7 +99,7 @@ namespace SQLiteServer.Data.Workers
     /// </summary>
     /// <param name="guid"></param>
     /// <returns>return null or the command reader</returns>
-    private ISqliteServerDataReaderWorker GetCommandReader(string guid)
+    private ISQLiteServerDataReaderWorker GetCommandReader(string guid)
     {
       return !_commands.ContainsKey(guid) ? null : _commands[guid].Reader;
     }

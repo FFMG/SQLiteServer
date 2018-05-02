@@ -192,7 +192,7 @@ namespace SQLiteServer.Data.SQLiteServer
     /// Execute a read operation and return a reader that will alow us to access the data.
     /// </summary>
     /// <returns></returns>
-    public SqliteServerDataReader ExecuteReader()
+    public SQLiteServerDataReader ExecuteReader()
     {
       return ExecuteReader( CommandBehavior.Default );
     }
@@ -201,7 +201,7 @@ namespace SQLiteServer.Data.SQLiteServer
     /// Execute a read operation and return a reader that will alow us to access the data.
     /// </summary>
     /// <returns></returns>
-    public SqliteServerDataReader ExecuteReader( CommandBehavior commandBehavior)
+    public SQLiteServerDataReader ExecuteReader( CommandBehavior commandBehavior)
     {
       WaitIfConnectingAsync().Wait();
       ThrowIfAnyAndCreateWorker();
@@ -209,7 +209,7 @@ namespace SQLiteServer.Data.SQLiteServer
       try
       {
         // create the readeer
-        var reader = new SqliteServerDataReader(_worker.CreateReaderWorker(), _connection, commandBehavior);
+        var reader = new SQLiteServerDataReader(_worker.CreateReaderWorker(), _connection, commandBehavior);
 
         // execute the command
         reader.ExecuteReader();
@@ -227,7 +227,7 @@ namespace SQLiteServer.Data.SQLiteServer
     /// Execute a read operation and return a reader that will alow us to access the data.
     /// </summary>
     /// <returns></returns>
-    public Task<SqliteServerDataReader> ExecuteReaderAsync()
+    public Task<SQLiteServerDataReader> ExecuteReaderAsync()
     {
       return Task.FromResult(ExecuteReader(CommandBehavior.Default));
     }
@@ -236,7 +236,7 @@ namespace SQLiteServer.Data.SQLiteServer
     /// Execute a read operation and return a reader that will alow us to access the data.
     /// </summary>
     /// <returns></returns>
-    public Task<SqliteServerDataReader> ExecuteReaderAsync(CommandBehavior commandBehavior)
+    public Task<SQLiteServerDataReader> ExecuteReaderAsync(CommandBehavior commandBehavior)
     {
       return Task.FromResult(ExecuteReader(commandBehavior));
     }

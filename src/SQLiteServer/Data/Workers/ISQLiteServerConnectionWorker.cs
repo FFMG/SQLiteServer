@@ -14,7 +14,6 @@
 //    along with SQLiteServer.  If not, see<https://www.gnu.org/licenses/gpl-3.0.en.html>.
 
 using System.Data.SQLite;
-using SQLiteServer.Data.SQLiteServer;
 
 namespace SQLiteServer.Data.Workers
 {

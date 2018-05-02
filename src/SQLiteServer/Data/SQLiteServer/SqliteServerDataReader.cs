@@ -22,7 +22,9 @@ using SQLiteServer.Data.Workers;
 
 namespace SQLiteServer.Data.SQLiteServer
 {
-  public sealed class SqliteServerDataReader : DbDataReader
+  /// <inheritdoc />
+  // ReSharper disable once InconsistentNaming
+  public sealed class SQLiteServerDataReader : DbDataReader
   {
     #region Private Variables
     /// <summary>
@@ -48,7 +50,7 @@ namespace SQLiteServer.Data.SQLiteServer
     /// <summary>
     /// The database worker 
     /// </summary>
-    private ISqliteServerDataReaderWorker _worker;
+    private ISQLiteServerDataReaderWorker _worker;
 
     /// <summary>
     /// The connection
@@ -56,7 +58,7 @@ namespace SQLiteServer.Data.SQLiteServer
     private readonly SQLiteServerConnection _connection;
     #endregion
 
-    internal SqliteServerDataReader(ISqliteServerDataReaderWorker worker, 
+    internal SQLiteServerDataReader(ISQLiteServerDataReaderWorker worker, 
                                     SQLiteServerConnection connection,
                                     CommandBehavior commandBehavior)
     {
@@ -107,7 +109,7 @@ namespace SQLiteServer.Data.SQLiteServer
     {
       if (_disposed)
       {
-        throw new ObjectDisposedException(nameof(SqliteServerDataReader));
+        throw new ObjectDisposedException(nameof(SQLiteServerDataReader));
       }
     }
 
