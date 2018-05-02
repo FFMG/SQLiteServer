@@ -26,6 +26,11 @@ namespace SQLiteServer.Data.SQLiteServer
   {
     #region Private Variables
     /// <summary>
+    /// The paramerters 
+    /// </summary>
+    private SQLiteServerDbParameterCollection _parameterCollection;
+
+    /// <summary>
     /// The command worker.
     /// </summary>
     private ISQLiteServerCommandWorker _worker;
@@ -65,7 +70,16 @@ namespace SQLiteServer.Data.SQLiteServer
 
     protected override DbTransaction DbTransaction { get; set; }
     public override bool DesignTimeVisible { get; set; }
-    protected override DbParameterCollection DbParameterCollection { get; }
+
+    /// <inheritdoc />
+    protected override DbParameterCollection DbParameterCollection
+    {
+      get
+      {
+        ThrowIfDisposed();
+        return _parameterCollection;
+      }
+    }
 
     /// <summary>
     /// The SQLite server connection.
@@ -94,6 +108,9 @@ namespace SQLiteServer.Data.SQLiteServer
       // set the connection timeout
       var builder = new SQLiteServerConnectionStringBuilder(connection?.ConnectionString);
       CommandTimeout = builder.DefaultTimeout;
+
+      // create a blank parameter collection.
+      _parameterCollection = new SQLiteServerDbParameterCollection();
     }
 
     /// <summary>
