@@ -261,7 +261,7 @@ namespace SQLiteServer.Data.SQLiteServer
       try
       {
         // create the readeer
-        var reader = new SQLiteServerDataReader(_worker.CreateReaderWorker(), _connection, commandBehavior);
+        _reader = new SQLiteServerDataReader(_worker.CreateReaderWorker(), _connection, commandBehavior);
 
         // execute the command
         _reader.ExecuteReader();
