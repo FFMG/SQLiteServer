@@ -25,7 +25,8 @@ using SQLiteServer.Fields;
 
 namespace SQLiteServer.Data.Workers
 {
-  internal class SqliteServerDataReaderClientWorker : ISqliteServerDataReaderWorker
+  // ReSharper disable once InconsistentNaming
+  internal class SQLiteServerDataReaderClientWorker : ISQLiteServerDataReaderWorker
   {
     #region Private variables
     /// <summary>
@@ -81,7 +82,7 @@ namespace SQLiteServer.Data.Workers
     private readonly int _queryTimeouts;
     #endregion
 
-    public SqliteServerDataReaderClientWorker(ConnectionsController controller, string commandGuid, int queryTimeouts)
+    public SQLiteServerDataReaderClientWorker(ConnectionsController controller, string commandGuid, int queryTimeouts)
     {
       if (null == controller)
       {

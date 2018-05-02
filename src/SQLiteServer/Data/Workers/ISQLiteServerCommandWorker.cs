@@ -39,6 +39,6 @@ namespace SQLiteServer.Data.Workers
     /// Create the reader that will get data from the db.
     /// </summary>
     /// <returns></returns>
-    ISqliteServerDataReaderWorker CreateReaderWorker();
+    ISQLiteServerDataReaderWorker CreateReaderWorker();
   }
 }

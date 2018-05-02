@@ -89,7 +89,7 @@ namespace SQLiteServer.Data.SQLiteServer
     /// <summary>
     /// The current active reader.
     /// </summary>
-    private SqliteServerDataReader _reader;
+    private SQLiteServerDataReader _reader;
     #endregion
 
     public SQLiteServerCommand() : this( null, null )
@@ -244,7 +244,7 @@ namespace SQLiteServer.Data.SQLiteServer
     /// Execute a read operation and return a reader that will alow us to access the data.
     /// </summary>
     /// <returns></returns>
-    public new SqliteServerDataReader ExecuteReader()
+    public new SQLiteServerDataReader ExecuteReader()
     {
       // all the work/checks are done in the next ExecuteReader() function.
       return ExecuteReader( CommandBehavior.Default );
@@ -254,14 +254,14 @@ namespace SQLiteServer.Data.SQLiteServer
     /// Execute a read operation and return a reader that will alow us to access the data.
     /// </summary>
     /// <returns></returns>
-    public new SqliteServerDataReader ExecuteReader( CommandBehavior commandBehavior)
+    public new SQLiteServerDataReader ExecuteReader( CommandBehavior commandBehavior)
     {
       WaitIfConnectingAsync().Wait();
       ThrowIfAnyAndCreateWorker();
       try
       {
         // create the readeer
-        _reader = new SqliteServerDataReader(_worker.CreateReaderWorker(), _connection, commandBehavior);
+        var reader = new SQLiteServerDataReader(_worker.CreateReaderWorker(), _connection, commandBehavior);
 
         // execute the command
         _reader.ExecuteReader();
@@ -320,7 +320,7 @@ namespace SQLiteServer.Data.SQLiteServer
     /// Execute a read operation and return a reader that will alow us to access the data.
     /// </summary>
     /// <returns></returns>
-    public new Task<SqliteServerDataReader> ExecuteReaderAsync()
+    public new Task<SQLiteServerDataReader> ExecuteReaderAsync()
     {
       return Task.FromResult(ExecuteReader(CommandBehavior.Default));
     }
@@ -329,7 +329,7 @@ namespace SQLiteServer.Data.SQLiteServer
     /// Execute a read operation and return a reader that will alow us to access the data.
     /// </summary>
     /// <returns></returns>
-    public new Task<SqliteServerDataReader> ExecuteReaderAsync(CommandBehavior commandBehavior)
+    public new Task<SQLiteServerDataReader> ExecuteReaderAsync(CommandBehavior commandBehavior)
     {
       return Task.FromResult(ExecuteReader(commandBehavior));
     }

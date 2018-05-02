@@ -166,9 +166,9 @@ namespace SQLiteServer.Data.Workers
       }
     }
 
-    public ISqliteServerDataReaderWorker CreateReaderWorker()
+    public ISQLiteServerDataReaderWorker CreateReaderWorker()
     {
-      return new SqliteServerDataReaderClientWorker(_controller, _serverGuid, CommandTimeout );
+      return new SQLiteServerDataReaderClientWorker(_controller, _serverGuid, CommandTimeout );
     }
   }
 }

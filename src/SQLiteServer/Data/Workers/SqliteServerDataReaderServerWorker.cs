@@ -18,7 +18,8 @@ using System.Data.SQLite;
 
 namespace SQLiteServer.Data.Workers
 {
-  internal class SqliteServerDataReaderServerWorker : ISqliteServerDataReaderWorker
+  // ReSharper disable once InconsistentNaming
+  internal class SQLiteServerDataReaderServerWorker : ISQLiteServerDataReaderWorker
   {
     #region Private Variables
     /// <summary>
@@ -32,7 +33,7 @@ namespace SQLiteServer.Data.Workers
     private SQLiteDataReader _reader;
     #endregion
 
-    public SqliteServerDataReaderServerWorker(SQLiteCommand command)
+    public SQLiteServerDataReaderServerWorker(SQLiteCommand command)
     {
       if (null == command)
       {
