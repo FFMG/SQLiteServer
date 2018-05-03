@@ -307,7 +307,8 @@ namespace SQLiteServer.Data.SQLiteServer
     /// <inheritdoc />
     protected override DbParameter CreateDbParameter()
     {
-      throw new NotImplementedException();
+      ThrowIfDisposed();
+      return new SQLiteServerDbParameter();
     }
 
     /// <inheritdoc />

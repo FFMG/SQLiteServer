@@ -80,6 +80,7 @@
     <Compile Include="Data\SQLiteServer\SQLiteServerDataReader.cs" />
     <Compile Include="Data\Enums\SQLiteMessage.cs" />
     <Compile Include="Data\SQLiteServer\SQLiteServerDbParameterCollection.cs" />
+    <Compile Include="Data\SQLiteServer\SQLiteServerDbParameter.cs" />
     <Compile Include="Data\SQLiteServer\SQLiteServerTransaction.cs" />
     <Compile Include="Data\Workers\ISQLiteServerCommandWorker.cs" />
     <Compile Include="Data\Workers\ISQLiteServerConnectionWorker.cs" />
