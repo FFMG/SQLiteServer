@@ -14,8 +14,8 @@
 //    along with SQLiteServer.  If not, see<https://www.gnu.org/licenses/gpl-3.0.en.html>.
 namespace SQLiteServer.Data.Enums
 {
+  // ReSharper disable InconsistentNaming
   /// <inheritdoc />
-  // ReSharper disable once InconsistentNaming
   internal enum SQLiteMessage : uint
   {
     Unknown,
