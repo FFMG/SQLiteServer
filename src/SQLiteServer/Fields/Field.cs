@@ -86,6 +86,9 @@ namespace SQLiteServer.Fields
         }
         switch (Type)
         {
+          case FieldType.Null:
+            _valueLength = 0;
+            break;
           case FieldType.Int16:
             _valueLength = sizeof(short);
             break;
@@ -98,7 +101,6 @@ namespace SQLiteServer.Fields
           case FieldType.Double:
             _valueLength = sizeof(double);
             break;
-          case FieldType.StringNull:
           case FieldType.String:
             _valueLength = ((string)Value)?.Length ?? 0;
             break;
@@ -161,12 +163,11 @@ namespace SQLiteServer.Fields
         {
           if (null == v)
           {
-            ((List<Field>)Value).Add(new Field(ListTypeSimple, FieldType.StringNull, null ));
+            ((List<Field>)Value).Add(new Field(ListTypeSimple, FieldType.Null, null ));
+            continue;
           }
-          else
-          {
-            ((List<Field>) Value).Add(new Field(ListTypeSimple, v.GetType(), v));
-          }
+
+          ((List<Field>) Value).Add(new Field(ListTypeSimple, v.GetType(), v));
         }
       }
       else
@@ -191,7 +192,7 @@ namespace SQLiteServer.Fields
     }
 
     /// <inheritdoc />
-    public Field(string name, string value) : this(name, value == null ? FieldType.StringNull : FieldType.String, value)
+    public Field(string name, string value) : this(name, value == null ? FieldType.Null : FieldType.String, value)
     {
     }
 
@@ -365,7 +366,7 @@ namespace SQLiteServer.Fields
           return Convert.ToString((int)Value);
         case FieldType.Int64:
           return Convert.ToString((long)Value);
-        case FieldType.StringNull:
+        case FieldType.Null:
           return null;
         case FieldType.String:
           return (string)Value;
@@ -392,7 +393,7 @@ namespace SQLiteServer.Fields
           return (int) Value;
         case FieldType.Int64:
           return (long) Value;
-        case FieldType.StringNull:
+        case FieldType.Null:
           return 0;
         case FieldType.String:
           return Convert.ToInt64((string) Value);
@@ -419,7 +420,7 @@ namespace SQLiteServer.Fields
           return (int)Value;
         case FieldType.Int64:
           return (long)Value;
-        case FieldType.StringNull:
+        case FieldType.Null:
           return 0;
         case FieldType.String:
           return Convert.ToDouble((string)Value);
@@ -441,7 +442,7 @@ namespace SQLiteServer.Fields
           return (int?)Value;
         case FieldType.Int64:
           return (long?)Value;
-        case FieldType.StringNull:
+        case FieldType.Null:
           return null;
         case FieldType.String:
           return Convert.ToInt64((string)Value);
@@ -465,7 +466,7 @@ namespace SQLiteServer.Fields
           return (int?)Value;
         case FieldType.Int64:
           return (long?)Value;
-        case FieldType.StringNull:
+        case FieldType.Null:
           return null;
         case FieldType.String:
           return Convert.ToDouble((string)Value);
@@ -570,7 +571,7 @@ namespace SQLiteServer.Fields
           }
           return BitConverter.ToDouble(value, 0);
 
-        case FieldType.StringNull:
+        case FieldType.Null:
           return null;
 
         case FieldType.String:
@@ -745,7 +746,7 @@ namespace SQLiteServer.Fields
         case FieldType.Int32: return BitConverter.GetBytes((int)Value);
         case FieldType.Int64: return BitConverter.GetBytes((long)Value);
         case FieldType.String: return Encoding.ASCII.GetBytes((string)Value);
-        case FieldType.StringNull: return new byte[] { };
+        case FieldType.Null: return new byte[] { };
         case FieldType.Double: return BitConverter.GetBytes((double)Value);
         case FieldType.Bytes: return (byte[])Value;
         case FieldType.List:
@@ -836,12 +837,12 @@ namespace SQLiteServer.Fields
           return typeof(double);
 
         case FieldType.String:
-        case FieldType.StringNull:
           return typeof(string);
 
         case FieldType.Bytes:
           return typeof(byte[]);
 
+        case FieldType.Null:
         case FieldType.Object:
           return typeof(object);
 

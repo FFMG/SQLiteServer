@@ -32,7 +32,7 @@ namespace SQLiteServer.Test.Fields
       {
         5, 0, 0, 0, // length
         72, 101, 108, 108, 111, // "Hello"
-        1, 0, 0, 0, // Field.FieldType.Int32
+        2, 0, 0, 0, // Field.FieldType.Int32
         4, 0, 0, 0, // length
         12, 0, 0, 0, // "12"
       }));
@@ -47,7 +47,7 @@ namespace SQLiteServer.Test.Fields
       {
         5, 0, 0, 0, // length
         72, 101, 108, 108, 111, // "Hello"
-        2, 0, 0, 0, // Field.FieldType.Int64
+        3, 0, 0, 0, // Field.FieldType.Int64
         8, 0, 0, 0, // length
         12, 0, 0, 0, 0, 0, 0, 0 // "12"
       }));
@@ -62,7 +62,7 @@ namespace SQLiteServer.Test.Fields
       {
         5, 0, 0, 0, // length
         72, 101, 108, 108, 111, // "Hello"
-        1, 0, 0, 0, // Field.FieldType.Int
+        2, 0, 0, 0, // Field.FieldType.Int
         4, 0, 0, 0, // length
         18, 0, 0, 0, // "18"
       }));
@@ -77,7 +77,7 @@ namespace SQLiteServer.Test.Fields
       {
         5, 0, 0, 0, // length
         72, 101, 108, 108, 111, // "Hello"
-        3, 0, 0, 0, // Field.FieldType.String
+        4, 0, 0, 0, // Field.FieldType.String
         5, 0, 0, 0, // length
         87, 111, 114, 108, 100 // "World"
       }));
@@ -92,7 +92,7 @@ namespace SQLiteServer.Test.Fields
       {
         5, 0, 0, 0, // length
         72, 101, 108, 108, 111, // "Hello"
-        0, 0, 0, 0, // Field.FieldType.Int16
+        1, 0, 0, 0, // Field.FieldType.Int16
         2, 0, 0, 0, // length
         12, 0 // "12"
       }));
@@ -198,7 +198,7 @@ namespace SQLiteServer.Test.Fields
         {
           2, 0, 0, 0, //  len
           65, 66, //  "AB"
-          0, 0, 0, 0, //  Int      
+          1, 0, 0, 0, //  Int      
           5, 0, 0, 0, //  len
           12, 0, 0, 0, 0 //  12
         });
@@ -212,7 +212,7 @@ namespace SQLiteServer.Test.Fields
       {
         2, 0, 0, 0, //  len
         65, 66, //  "AB"
-        1, 0, 0, 0, //  Int      
+        2, 0, 0, 0, //  Int      
         4, 0, 0, 0, //  len
         12, 0, 0, 0 //  12
       });
@@ -229,7 +229,7 @@ namespace SQLiteServer.Test.Fields
       {
         2, 0, 0, 0, //  len
         65, 66, //  "AB"
-        2, 0, 0, 0, //  long
+        3, 0, 0, 0, //  long
         8, 0, 0, 0, //  len
         12, 0, 0, 0, 0, 0, 0, 0 //  12
       });
@@ -246,13 +246,28 @@ namespace SQLiteServer.Test.Fields
       {
         5, 0, 0, 0, // length
         72, 101, 108, 108, 111, // "Hello"
-        3, 0, 0, 0, // Field.FieldType.String
+        4, 0, 0, 0, // Field.FieldType.String
         5, 0, 0, 0, // length
         87, 111, 114, 108, 100 // "World"
       });
       Assert.That(field.Type == FieldType.String);
       Assert.That(field.Name == "Hello");
       Assert.That(field.Get<string>() == "World");
+    }
+
+    [Test]
+    public void UnpackNullString()
+    {
+      var field = Field.Unpack(new byte[]
+      {
+        5, 0, 0, 0, // length
+        72, 101, 108, 108, 111, // "Hello"
+        0, 0, 0, 0, // Field.FieldType.Null
+        0, 0, 0, 0 // length
+      });
+      Assert.That(field.Type == FieldType.Null);
+      Assert.That(field.Name == "Hello");
+      Assert.IsNull( field.Get<string>());
     }
 
     [Test]
