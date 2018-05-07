@@ -214,8 +214,17 @@ namespace SQLiteServer.Fields
     {
       try
       {
-        var value = GetNonEnumarableValue(typeof(T));
-        return value == null ? default(T) : (T)Convert.ChangeType(value, typeof(T));
+        var type = typeof(T);
+        var value = GetNonEnumarableValue(type);
+
+        if (type == typeof(object))
+        {
+          // certain types are not converted properly
+          // using 'Convert.ChangeType' so we just return the value.
+          // they are all objects anyway.
+          return (T) value;
+        }
+        return value == null ? default(T) : (T)Convert.ChangeType(value, type);
       }
       catch(InvalidCastException)
       {
