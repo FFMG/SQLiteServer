@@ -20,8 +20,10 @@ namespace SQLiteServer.Fields
     Int32,
     Int64,
     String,
+    StringNull,
     Double,
     Bytes,
-    Object
+    Object,
+    List
   }
 }

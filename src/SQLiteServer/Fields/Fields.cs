@@ -72,7 +72,7 @@ namespace SQLiteServer.Fields
       var typeOfT = typeof(T);
       return typeOfT.IsValueType || typeOfT.GetConstructor(Type.EmptyTypes) != null;
     }
-
+    
     /// <summary>
     /// Parse an object into all the 'Fields'
     /// </summary>
@@ -90,14 +90,14 @@ namespace SQLiteServer.Fields
       {
         throw new ArgumentException(nameof(value));
       }
-
+      
       var fields = new Fields();
 
       // add all the items.
       foreach (var field in typeof(T).GetFields(BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.Public)
         .Where(f => f.GetCustomAttribute<CompilerGeneratedAttribute>() == null))
       {
-        fields.Add(  field.Name, field.FieldType, field.GetValue(value) );
+        fields.Add(field.Name, field.FieldType, field.GetValue(value));
       }
       return fields;
     }
@@ -114,6 +114,8 @@ namespace SQLiteServer.Fields
         throw new FieldsException($"The variable type, {nameof(T)}, does not have a default constructor");
       }
 
+      // create the instance
+      // this has to be an object as required by "SetValue"
       object result = Activator.CreateInstance<T>();
 
       // add all the items.
@@ -124,7 +126,7 @@ namespace SQLiteServer.Fields
         {
           continue;
         }
-        fi.SetValue(result, field.Value );
+        fi.SetValue(result, field.Get<object>());
       }
       return (T)result;
     }

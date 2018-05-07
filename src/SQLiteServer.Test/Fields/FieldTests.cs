@@ -16,6 +16,7 @@ using System;
 using System.Linq;
 using NUnit.Framework;
 using SQLiteServer.Fields;
+using System.Collections.Generic;
 
 namespace SQLiteServer.Test.Fields
 {
@@ -106,7 +107,7 @@ namespace SQLiteServer.Test.Fields
       {
         5, 0, 0, 0, // length
         72, 101, 108, 108, 111, // "Hello"
-        4, 0, 0, 0, // Field.FieldType.Double
+        5, 0, 0, 0, // Field.FieldType.Double
         8, 0, 0, 0, // length
         31, 133, 235, 81, 184, 30, 9, 64 // "3.14"
       }));
@@ -218,7 +219,7 @@ namespace SQLiteServer.Test.Fields
 
       Assert.That(field.Type == FieldType.Int32);
       Assert.That(field.Name == "AB");
-      Assert.That((int) field.Value == 12);
+      Assert.That(field.Get<int>() == 12);
     }
 
     [Test]
@@ -235,7 +236,7 @@ namespace SQLiteServer.Test.Fields
 
       Assert.That(field.Type == FieldType.Int64);
       Assert.That(field.Name == "AB");
-      Assert.That((long) field.Value == 12);
+      Assert.That(field.Get<long>() == 12);
     }
 
     [Test]
@@ -251,7 +252,7 @@ namespace SQLiteServer.Test.Fields
       });
       Assert.That(field.Type == FieldType.String);
       Assert.That(field.Name == "Hello");
-      Assert.That((string) field.Value == "World");
+      Assert.That(field.Get<string>() == "World");
     }
 
     [Test]
@@ -337,6 +338,139 @@ namespace SQLiteServer.Test.Fields
       {
         Field.TypeToFieldType(typeof(decimal));
       });
+    }
+
+
+    [Test]
+    public void PackListOfInts()
+    {
+      var values = new List<int> {1, 2, 4, 8};
+      var f = new Field( "Hello", values);
+      var p = f.Pack();
+      var upf = Field.Unpack(p);
+
+      CollectionAssert.AreEqual(values, upf.Get<List<int>>() );
+    }
+
+    [Test]
+    public void PackListOfNullableInts()
+    {
+      var values = new List<int?> { 1, 2, null, 4, 8 };
+      var f = new Field("Hello", values);
+      var p = f.Pack();
+      var upf = Field.Unpack(p);
+
+      CollectionAssert.AreEqual(values, upf.Get<List<int?>>());
+    }
+
+    [Test]
+    public void PackListOfNullableIntsWithNoNull()
+    {
+      var values = new List<int?> { 1, 2, 4, 8 };
+      var f = new Field("Hello", values);
+      var p = f.Pack();
+      var upf = Field.Unpack(p);
+
+      CollectionAssert.AreEqual(values, upf.Get<List<int?>>());
+    }
+
+    [Test]
+    public void PackEmptyListOfInts()
+    {
+      var values = new List<int>();
+      var f = new Field("Hello", values);
+      var p = f.Pack();
+      var upf = Field.Unpack(p);
+
+      CollectionAssert.AreEqual(values, upf.Get<List<int>>());
+    }
+
+    [Test]
+    public void NullStringValue()
+    {
+      const string s = null;
+      var f = new Field("Hello", s );
+      var p = f.Pack();
+      var upf = Field.Unpack(p);
+
+      Assert.IsNull( upf.Get<string>());
+    }
+
+    [Test]
+    public void NullStringValueToInt()
+    {
+      const string s = null;
+      var f = new Field("Hello", s);
+      var p = f.Pack();
+      var upf = Field.Unpack(p);
+
+      Assert.AreEqual( 0, upf.Get<int>());
+    }
+
+    [Test]
+    public void PackAndUnpackBytes()
+    {
+      var bs = new byte[] { 1, 2, 3, 4 };
+      var f = new Field("Hello", bs);
+      var p = f.Pack();
+      var upf = Field.Unpack(p);
+
+      Assert.AreEqual(bs, upf.Get<byte[]>());
+    }
+
+    [Test]
+    public void NullStringValueToNullInt()
+    {
+      const string s = null;
+      var f = new Field("Hello", s);
+      var p = f.Pack();
+      var upf = Field.Unpack(p);
+
+      Assert.IsNull(upf.Get<int?>());
+    }
+
+    [Test]
+    public void NullStringValueToNullShort()
+    {
+      const string s = null;
+      var f = new Field("Hello", s);
+      var p = f.Pack();
+      var upf = Field.Unpack(p);
+
+      Assert.IsNull(upf.Get<short?>());
+    }
+
+    [Test]
+    public void NullStringValueToNullLong()
+    {
+      const string s = null;
+      var f = new Field("Hello", s);
+      var p = f.Pack();
+      var upf = Field.Unpack(p);
+
+      Assert.IsNull(upf.Get<long?>());
+    }
+
+    [Test]
+    public void NullStringValueToNullDouble()
+    {
+      const string s = null;
+      var f = new Field("Hello", s);
+      var p = f.Pack();
+      var upf = Field.Unpack(p);
+
+      Assert.IsNull(upf.Get<double?>());
+    }
+
+    [Test]
+    public void NullStringValueIsFalse()
+    {
+      const string s = null;
+      var f = new Field("Hello", s);
+      var p = f.Pack();
+      var upf = Field.Unpack(p);
+
+      Assert.IsFalse(upf.Get<bool>());
     }
   }
 }
