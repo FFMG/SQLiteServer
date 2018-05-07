@@ -205,6 +205,11 @@ namespace SQLiteServer.Fields
     {
     }
 
+    /// <summary>
+    /// Get a value
+    /// </summary>
+    /// <typeparam name="T"></typeparam>
+    /// <returns></returns>
     public T Get<T>()
     {
       try

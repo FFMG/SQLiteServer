@@ -115,7 +115,8 @@ namespace SQLiteServer.Fields
       }
 
       // create the instance
-      var result = Activator.CreateInstance<T>();
+      // this has to be an object as required by "SetValue"
+      object result = Activator.CreateInstance<T>();
 
       // add all the items.
       foreach (var field in _fields )
@@ -125,9 +126,9 @@ namespace SQLiteServer.Fields
         {
           continue;
         }
-        fi.SetValue(result, field.Get<object>() );
+        fi.SetValue(result, field.Get<object>());
       }
-      return result;
+      return (T)result;
     }
     
     /// <summary>
