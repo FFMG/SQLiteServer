@@ -408,6 +408,17 @@ namespace SQLiteServer.Test.Fields
     }
 
     [Test]
+    public void PackAndUnpackBytes()
+    {
+      var bs = new byte[] { 1, 2, 3, 4 };
+      var f = new Field("Hello", bs);
+      var p = f.Pack();
+      var upf = Field.Unpack(p);
+
+      Assert.AreEqual(bs, upf.Get<byte[]>());
+    }
+
+    [Test]
     public void NullStringValueToNullInt()
     {
       const string s = null;
