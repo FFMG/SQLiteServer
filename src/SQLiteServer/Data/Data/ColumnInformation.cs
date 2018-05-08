@@ -36,12 +36,23 @@ namespace SQLiteServer.Data.Data
     public string Name { get; }
 
     /// <summary>
+    /// Get a filed value.
+    /// </summary>
+    /// <typeparam name="T"></typeparam>
+    /// <returns></returns>
+    public T Get<T>()
+    {
+      return Field.Get<T>();
+    }
+
+
+    /// <summary>
     /// Constructor
     /// </summary>
     /// <param name="field"></param>
     /// <param name="ordinal"></param>
     /// <param name="name"></param>
-    public ColumnInformation(Field field, int ordinal, string name )
+      public ColumnInformation(Field field, int ordinal, string name )
     {
       if (null == field)
       {

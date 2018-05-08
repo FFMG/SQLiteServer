@@ -40,6 +40,21 @@ namespace SQLiteServer.Test.Misc
       Assert.AreEqual(42, f.Get<int>());
     }
 
+    [TestCase(0)]
+    [TestCase(1)]
+    [TestCase(int.MinValue)]
+    [TestCase(int.MaxValue)]
+    public void CheckGetValue( int value )
+    {
+      const string name = "World";
+      const int ordinal = 13;
+      var f = new Field("Hello", value);
+      var c = new ColumnInformation(f, ordinal, name);
+      Assert.AreEqual(f.Get<int>(), c.Get<int>());
+      Assert.AreEqual(f.Get<long>(), c.Get<long>());
+      Assert.AreEqual(f.Get<string>(), c.Get<string>());
+    }
+
     [Test]
     public void NameCannotBeNull()
     {

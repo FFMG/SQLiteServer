@@ -82,6 +82,37 @@ namespace SQLiteServer.Data.Workers
     private readonly int _queryTimeouts;
     #endregion
 
+    #region Row Information
+    /// <summary>
+    /// Get the current row or go and fetch it.
+    /// </summary>
+    /// <returns></returns>
+    private RowInformation GetRow()
+    {
+      return null;
+    }
+
+    /// <summary>
+    /// Get a column information or a row for it.
+    /// </summary>
+    /// <param name="i"></param>
+    /// <returns></returns>
+    private ColumnInformation GetColumn(int i)
+    {
+      // get the current row.
+      var row = GetRow();
+
+      // did we get anything?
+      if (null == row)
+      {
+        return null;
+      }
+
+      // otherwise return the data for it.
+      return row.Get(i);
+    }
+    #endregion
+
     public SQLiteServerDataReaderClientWorker(ConnectionsController controller, string commandGuid, int queryTimeouts)
     {
       if (null == controller)
@@ -363,11 +394,6 @@ namespace SQLiteServer.Data.Workers
       return systemType;
     }
 
-    private ColumnInformation GetColumn(int i)
-    {
-      return null;
-    }
-
     /// <inheritdoc />
     public object GetValue(int i)
     {
@@ -375,7 +401,8 @@ namespace SQLiteServer.Data.Workers
       var column = GetColumn(i);
       if (null != column)
       {
-        return null; //column.Get<object>();
+        // get the value for this column.
+        return column.Get<object>();
       }
 
       // get the data type
