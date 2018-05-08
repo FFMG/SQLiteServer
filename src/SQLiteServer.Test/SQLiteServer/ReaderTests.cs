@@ -2666,7 +2666,7 @@ namespace SQLiteServer.Test.SQLiteServer
 
     [TestCase(false)]
     [TestCase(true)]
-    public void GetMultipleRowsAndColumns(bool useClient)
+    public void GetMultipleRowsAndColumnsUsingGetValue(bool useClient)
     {
       var server = CreateConnection();
       server.Open();
@@ -2727,6 +2727,148 @@ namespace SQLiteServer.Test.SQLiteServer
             Assert.That( (double)reader.GetValue(0), Is.EqualTo(a[i]).Within(tolerance));
             Assert.AreEqual((long)reader.GetValue(1), b[i]);
             Assert.AreEqual((string)reader.GetValue(2), c[i]);
+          }
+          Assert.IsFalse(reader.Read());
+        }
+      }
+      client?.Close();
+      server.Close();
+    }
+
+    [TestCase(false)]
+    [TestCase(true)]
+    public void GetMultipleRowsAndColumnsUsingTypeSpecificGetsWithColumnName(bool useClient)
+    {
+      var server = CreateConnection();
+      server.Open();
+      const string sqlMaster = "create table t1 (a REAL, b INTEGER, c VARCHAR(255))";
+      using (var command = new SQLiteServerCommand(sqlMaster, server))
+      {
+        command.ExecuteNonQuery();
+      }
+
+      var current = server;
+
+      SQLiteServerConnection client = null;
+      if (useClient)
+      {
+        client = CreateConnection();
+        client.Open();
+        current = client;
+      }
+
+      const int numberOfRows = 20;
+      var a = new List<double>();
+      for (var i = 0; i < numberOfRows; ++i)
+      {
+        a.Add(RandomNumber<double>());
+      }
+      var b = new List<int>();
+      for (var i = 0; i < numberOfRows; ++i)
+      {
+        b.Add(RandomNumber<int>());
+      }
+      var c = new List<string>();
+      for (var i = 0; i < numberOfRows; ++i)
+      {
+        c.Add(RandomString(10));
+      }
+
+      for (var i = 0; i < numberOfRows; ++i)
+      {
+        var sql = $"insert into t1(a,b,c) VALUES ({a[i].ToString("0." + new string('#', 339))}, {b[i].ToString()}, '{c[i]}')";
+        using (var command = new SQLiteServerCommand(sql, current))
+        {
+          command.ExecuteNonQuery();
+        }
+      }
+
+      const string sqlSelect = "SELECT * FROM t1";
+      using (var command = new SQLiteServerCommand(sqlSelect, current))
+      {
+        using (var reader = command.ExecuteReader())
+        {
+          for (var i = 0; i < numberOfRows; ++i)
+          {
+            // Log10(100) = 2, so to get the manitude we add 1.
+            const int precision = 10;
+            var tolerance = 1.0 / Math.Pow(10, precision);
+
+            Assert.IsTrue(reader.Read());
+            Assert.That((double)reader["a"], Is.EqualTo(a[i]).Within(tolerance));
+            Assert.AreEqual((long)reader["b"], b[i]);
+            Assert.AreEqual((string)reader["c"], c[i]);
+          }
+          Assert.IsFalse(reader.Read());
+        }
+      }
+      client?.Close();
+      server.Close();
+    }
+
+    [TestCase(false)]
+    [TestCase(true)]
+    public void GetMultipleRowsAndColumnsUsingTypeSpecificGetsWithIndexes(bool useClient)
+    {
+      var server = CreateConnection();
+      server.Open();
+      const string sqlMaster = "create table t1 (a REAL, b INTEGER, c VARCHAR(255))";
+      using (var command = new SQLiteServerCommand(sqlMaster, server))
+      {
+        command.ExecuteNonQuery();
+      }
+
+      var current = server;
+
+      SQLiteServerConnection client = null;
+      if (useClient)
+      {
+        client = CreateConnection();
+        client.Open();
+        current = client;
+      }
+
+      const int numberOfRows = 20;
+      var a = new List<double>();
+      for (var i = 0; i < numberOfRows; ++i)
+      {
+        a.Add(RandomNumber<double>());
+      }
+      var b = new List<int>();
+      for (var i = 0; i < numberOfRows; ++i)
+      {
+        b.Add(RandomNumber<int>());
+      }
+      var c = new List<string>();
+      for (var i = 0; i < numberOfRows; ++i)
+      {
+        c.Add(RandomString(10));
+      }
+
+      for (var i = 0; i < numberOfRows; ++i)
+      {
+        var sql = $"insert into t1(a,b,c) VALUES ({a[i].ToString("0." + new string('#', 339))}, {b[i].ToString()}, '{c[i]}')";
+        using (var command = new SQLiteServerCommand(sql, current))
+        {
+          command.ExecuteNonQuery();
+        }
+      }
+
+      const string sqlSelect = "SELECT * FROM t1";
+      using (var command = new SQLiteServerCommand(sqlSelect, current))
+      {
+        using (var reader = command.ExecuteReader())
+        {
+          for (var i = 0; i < numberOfRows; ++i)
+          {
+            // Log10(100) = 2, so to get the manitude we add 1.
+            const int precision = 10;
+            var tolerance = 1.0 / Math.Pow(10, precision);
+
+            Assert.IsTrue(reader.Read());
+            Assert.That(reader.GetDouble(0), Is.EqualTo(a[i]).Within(tolerance));
+            Assert.AreEqual(reader.GetInt32(1), b[i]);
+            Assert.AreEqual(reader.GetString(2), c[i]);
           }
           Assert.IsFalse(reader.Read());
         }
