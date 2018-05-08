@@ -78,6 +78,8 @@
   <ItemGroup>
     <Compile Include="Fields\FieldTests.cs" />
     <Compile Include="Fields\FiledsTests.cs" />
+    <Compile Include="Misc\ColumnInformationTests.cs" />
+    <Compile Include="Misc\RowInformationTests.cs" />
     <Compile Include="Packets\PacketsTests.cs" />
     <Compile Include="Packets\PacketTests.cs" />
     <Compile Include="Packets\ResponsePacketTests.cs" />

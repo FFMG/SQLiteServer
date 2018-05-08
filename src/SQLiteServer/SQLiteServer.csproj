@@ -72,8 +72,10 @@
     <Compile Include="Data\Connections\Packets.cs" />
     <Compile Include="Data\Connections\ResponsePacketHandler.cs" />
     <Compile Include="Data\Connections\SocketConnectionBuilder.cs" />
+    <Compile Include="Data\Data\ColumnInformation.cs" />
     <Compile Include="Data\Data\IndexRequest.cs" />
     <Compile Include="Data\Data\NameRequest.cs" />
+    <Compile Include="Data\Data\RowInformation.cs" />
     <Compile Include="Data\Exceptions\SQLiteServerException.cs" />
     <Compile Include="Data\SQLiteServer\SQLiteServerBackupCallback.cs" />
     <Compile Include="Data\SQLiteServer\SQLiteServerConnectionStringBuilder.cs" />
@@ -86,7 +88,7 @@
     <Compile Include="Data\Workers\ISQLiteServerDataReaderWorker.cs" />
     <Compile Include="Data\Workers\SQLiteServerCommandClientWorker.cs" />
     <Compile Include="Data\Workers\SQLiteServerCommandServerWorker.cs" />
-    <Compile Include="Data\SQLiteServer\SQLiteServerConnection.cs"/>
+    <Compile Include="Data\SQLiteServer\SQLiteServerConnection.cs" />
     <Compile Include="Data\Workers\SQLiteServerConnectionClientWorker.cs" />
     <Compile Include="Data\Workers\SQLiteServerConnectionServerWorker.cs" />
     <Compile Include="Data\Workers\SQLiteServerDataReaderClientWorker.cs" />

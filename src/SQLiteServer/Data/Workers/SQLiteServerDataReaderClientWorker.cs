@@ -363,9 +363,21 @@ namespace SQLiteServer.Data.Workers
       return systemType;
     }
 
+    private ColumnInformation GetColumn(int i)
+    {
+      return null;
+    }
+
     /// <inheritdoc />
     public object GetValue(int i)
     {
+      // get the current row.
+      var column = GetColumn(i);
+      if (null != column)
+      {
+        return null; //column.Get<object>();
+      }
+
       // get the data type
       var type = GetFieldType(i);
 
