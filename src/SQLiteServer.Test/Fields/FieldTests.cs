@@ -32,7 +32,7 @@ namespace SQLiteServer.Test.Fields
       {
         5, 0, 0, 0, // length
         72, 101, 108, 108, 111, // "Hello"
-        2, 0, 0, 0, // Field.FieldType.Int32
+        3, 0, 0, 0, // Field.FieldType.Int32
         4, 0, 0, 0, // length
         12, 0, 0, 0, // "12"
       }));
@@ -47,7 +47,7 @@ namespace SQLiteServer.Test.Fields
       {
         5, 0, 0, 0, // length
         72, 101, 108, 108, 111, // "Hello"
-        3, 0, 0, 0, // Field.FieldType.Int64
+        4, 0, 0, 0, // Field.FieldType.Int64
         8, 0, 0, 0, // length
         12, 0, 0, 0, 0, 0, 0, 0 // "12"
       }));
@@ -62,7 +62,7 @@ namespace SQLiteServer.Test.Fields
       {
         5, 0, 0, 0, // length
         72, 101, 108, 108, 111, // "Hello"
-        2, 0, 0, 0, // Field.FieldType.Int
+        3, 0, 0, 0, // Field.FieldType.Int
         4, 0, 0, 0, // length
         18, 0, 0, 0, // "18"
       }));
@@ -77,7 +77,7 @@ namespace SQLiteServer.Test.Fields
       {
         5, 0, 0, 0, // length
         72, 101, 108, 108, 111, // "Hello"
-        4, 0, 0, 0, // Field.FieldType.String
+        5, 0, 0, 0, // Field.FieldType.String
         5, 0, 0, 0, // length
         87, 111, 114, 108, 100 // "World"
       }));
@@ -92,7 +92,7 @@ namespace SQLiteServer.Test.Fields
       {
         5, 0, 0, 0, // length
         72, 101, 108, 108, 111, // "Hello"
-        1, 0, 0, 0, // Field.FieldType.Int16
+        2, 0, 0, 0, // Field.FieldType.Int16
         2, 0, 0, 0, // length
         12, 0 // "12"
       }));
@@ -107,7 +107,7 @@ namespace SQLiteServer.Test.Fields
       {
         5, 0, 0, 0, // length
         72, 101, 108, 108, 111, // "Hello"
-        5, 0, 0, 0, // Field.FieldType.Double
+        6, 0, 0, 0, // Field.FieldType.Double
         8, 0, 0, 0, // length
         31, 133, 235, 81, 184, 30, 9, 64 // "3.14"
       }));
@@ -212,7 +212,7 @@ namespace SQLiteServer.Test.Fields
       {
         2, 0, 0, 0, //  len
         65, 66, //  "AB"
-        2, 0, 0, 0, //  Int      
+        3, 0, 0, 0, //  Int      
         4, 0, 0, 0, //  len
         12, 0, 0, 0 //  12
       });
@@ -229,7 +229,7 @@ namespace SQLiteServer.Test.Fields
       {
         2, 0, 0, 0, //  len
         65, 66, //  "AB"
-        3, 0, 0, 0, //  long
+        4, 0, 0, 0, //  long
         8, 0, 0, 0, //  len
         12, 0, 0, 0, 0, 0, 0, 0 //  12
       });
@@ -246,7 +246,7 @@ namespace SQLiteServer.Test.Fields
       {
         5, 0, 0, 0, // length
         72, 101, 108, 108, 111, // "Hello"
-        4, 0, 0, 0, // Field.FieldType.String
+        5, 0, 0, 0, // Field.FieldType.String
         5, 0, 0, 0, // length
         87, 111, 114, 108, 100 // "World"
       });
@@ -486,6 +486,67 @@ namespace SQLiteServer.Test.Fields
       var upf = Field.Unpack(p);
 
       Assert.IsFalse(upf.Get<bool>());
+    }
+
+    [TestCase(0)]
+    [TestCase(12)]
+    [TestCase(-12)]
+    [TestCase(int.MinValue)]
+    [TestCase(int.MaxValue)]
+    public void FieldOfField( int value )
+    {
+      var inner = new Field( "inner", value );
+      var outer = new Field( "outer", inner);
+      var pInner = outer.Pack();
+      var upInner = Field.Unpack(pInner);
+
+      Assert.AreEqual(value , upInner.Get<int>());
+    }
+
+    [Test]
+    public void FieldIsListOfFields()
+    {
+      var fs = new List<Field>
+      {
+        new Field("a", 0),
+        new Field("b", 1),
+        new Field("c", 2),
+        new Field("d", 4)
+      };
+
+      var outer = new Field("outer", fs);
+      var pInner = outer.Pack();
+      var upInner = Field.Unpack(pInner);
+
+      var ufs = upInner.Get<List<Field>>();
+
+      Assert.AreEqual(0, ufs[0].Get<int>());
+      Assert.AreEqual(1, ufs[1].Get<int>());
+      Assert.AreEqual(2, ufs[2].Get<int>());
+      Assert.AreEqual(4, ufs[3].Get<int>());
+    }
+
+    [Test]
+    public void FieldIsListOfFieldsWithNull()
+    {
+      var fs = new List<Field>
+      {
+        new Field("a", 0),
+        new Field("b", 1),
+        null,
+        new Field("d", 4)
+      };
+
+      var outer = new Field("outer", fs);
+      var pInner = outer.Pack();
+      var upInner = Field.Unpack(pInner);
+
+      var ufs = upInner.Get<List<Field>>();
+
+      Assert.AreEqual(0, ufs[0].Get<int>());
+      Assert.AreEqual(1, ufs[1].Get<int>());
+      Assert.IsNull(ufs[2]);
+      Assert.AreEqual(4, ufs[3].Get<int>());
     }
   }
 }

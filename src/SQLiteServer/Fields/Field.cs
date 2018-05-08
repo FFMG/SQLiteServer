@@ -86,6 +86,9 @@ namespace SQLiteServer.Fields
         }
         switch (Type)
         {
+          case FieldType.Field:
+            _valueLength = ((Field)Value)?.TotalLength ?? 0;
+            break;
           case FieldType.Null:
             _valueLength = 0;
             break;
@@ -174,6 +177,10 @@ namespace SQLiteServer.Fields
       {
         throw new NotSupportedException( "This IEnumerable is not supported." );
       }
+    }
+
+    public Field(string name, Field value) : this(name, FieldType.Field, value)
+    {
     }
 
     /// <inheritdoc />
@@ -287,6 +294,12 @@ namespace SQLiteServer.Fields
       {
         return Value;
       }
+
+      if (type == typeof(Field))
+      {
+        // this could be null...
+        return (Field) Value;
+      }
       throw new InvalidCastException("Unable to cast to this data type.");
     }
 
@@ -343,7 +356,7 @@ namespace SQLiteServer.Fields
         }
         else
         {
-          value = Convert.ChangeType(childValue, elementType);
+          value = childValue == null ? null : Convert.ChangeType(childValue, elementType);
         }
 
         // and add it to our list.
@@ -360,6 +373,8 @@ namespace SQLiteServer.Fields
     {
       switch (Type)
       {
+        case FieldType.Field:
+          return ((Field)Value).GetString();
         case FieldType.Int16:
           return Convert.ToString((short)Value);
         case FieldType.Int32:
@@ -387,6 +402,8 @@ namespace SQLiteServer.Fields
     {
       switch (Type)
       {
+        case FieldType.Field:
+          return ((Field)Value).GetLong();
         case FieldType.Int16:
           return (short) Value;
         case FieldType.Int32:
@@ -414,6 +431,8 @@ namespace SQLiteServer.Fields
     {
       switch (Type)
       {
+        case FieldType.Field:
+          return ((Field)Value).GetDouble();
         case FieldType.Int16:
           return (short)Value;
         case FieldType.Int32:
@@ -436,6 +455,8 @@ namespace SQLiteServer.Fields
     {
       switch (Type)
       {
+        case FieldType.Field:
+          return ((Field) Value).GetNullableLong();
         case FieldType.Int16:
           return (short?)Value;
         case FieldType.Int32:
@@ -460,6 +481,8 @@ namespace SQLiteServer.Fields
     {
       switch (Type)
       {
+        case FieldType.Field:
+          return ((Field) Value).GetNullableDouble();
         case FieldType.Int16:
           return (short?)Value;
         case FieldType.Int32:
@@ -543,6 +566,8 @@ namespace SQLiteServer.Fields
 
       switch (type)
       {
+        case FieldType.Field:
+          return Unpack(value);
         case FieldType.Int16:
           if (value.Length != sizeof(short))
           {
@@ -742,6 +767,8 @@ namespace SQLiteServer.Fields
     {
       switch (Type)
       {
+        case FieldType.Field:
+          return ((Field)Value).Pack();
         case FieldType.Int16: return BitConverter.GetBytes((short)Value);
         case FieldType.Int32: return BitConverter.GetBytes((int)Value);
         case FieldType.Int64: return BitConverter.GetBytes((long)Value);
@@ -811,6 +838,11 @@ namespace SQLiteServer.Fields
         return FieldType.Object;
       }
 
+      if (type == typeof(Field))
+      {
+        return FieldType.Field;
+      }
+
       // no idea what this is...
       throw new NotSupportedException( $"The given data type is not supported.");
     }
@@ -824,6 +856,9 @@ namespace SQLiteServer.Fields
     {
       switch (type)
       {
+        case FieldType.Field:
+          return typeof(Field);
+
         case FieldType.Int16:
           return typeof(short);
 

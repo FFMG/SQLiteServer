@@ -17,6 +17,7 @@ namespace SQLiteServer.Fields
   internal enum FieldType
   {
     Null,
+    Field,
     Int16,
     Int32,
     Int64,
