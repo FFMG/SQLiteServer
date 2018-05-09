@@ -52,7 +52,13 @@ namespace SQLiteServer.Test.Misc
       var g = global::SQLiteServer.Fields.Fields.Unpack(f.Pack() ).DeserializeObject<RowInformation.Row>();
 
       CollectionAssert.AreEqual(row.Names, g.Names );
-      CollectionAssert.AreEqual(row.Columns, g.Columns);
+      Assert.AreEqual(row.Columns.Count, g.Columns.Count );
+      for ( var i = 0; i < row.Columns.Count; ++i )
+      {
+        Assert.AreEqual(row.Columns[i].Name, g.Columns[i].Name);
+        Assert.AreEqual(row.Columns[i].Get<string>(), g.Columns[i].Get<string>());
+        Assert.AreEqual(row.Columns[i].Get<int>(), g.Columns[i].Get<int>());
+      }
     }
 
     [Test]

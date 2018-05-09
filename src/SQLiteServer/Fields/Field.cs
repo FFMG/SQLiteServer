@@ -29,9 +29,20 @@ namespace SQLiteServer.Fields
     private const string ListTypeCount = "c";
 
     /// <summary>
+    ///  the placeholder for the base data type.
+    /// </summary>
+    private const string ListTypeType = "t";
+
+    /// <summary>
     /// The simple list type.
     /// </summary>
     private const string ListTypeSimple = "s";
+
+    /// <summary>
+    /// Some items are 'parent' items and are not part of the 
+    /// List itself and can be ignored. 
+    /// </summary>
+    private const int ListNumberOfItemsToSkip = 2;
 
     /// <summary>
     /// Check if the given object is of type IList
@@ -40,8 +51,7 @@ namespace SQLiteServer.Fields
     /// <returns></returns>
     public static bool IsIListType(object value)
     {
-      var lvalue = value as IList;
-      return lvalue != null && lvalue.GetType().IsGenericType;
+      return value is IList lvalue && lvalue.GetType().IsGenericType;
     }
 
     /// <summary>
@@ -53,6 +63,11 @@ namespace SQLiteServer.Fields
     /// The variable data type.
     /// </summary>
     public FieldType Type { get; }
+
+    /// <summary>
+    /// Get the List element type if we have one.
+    /// </summary>
+    private FieldType ListElementType { get; }
 
     /// <summary>
     /// The actual value.
@@ -131,6 +146,11 @@ namespace SQLiteServer.Fields
     public Field(string name, Type type, object value) :
       this(name, TypeToFieldType(type), ValueIfIEnumerable(value, type))
     {
+      ListElementType = FieldType.Null;
+      if (TypeToFieldType(type) == FieldType.List)
+      {
+        ListElementType = TypeToFieldType(GetActualElementType(value.GetType().GetGenericArguments().Single()));
+      }
     }
 
     /// <summary>
@@ -139,13 +159,25 @@ namespace SQLiteServer.Fields
     /// <param name="name"></param>
     /// <param name="type"></param>
     /// <param name="value"></param>
-    private Field(string name, FieldType type, object value)
+    private Field(string name, FieldType type, object value) :
+      this( name, type, value, FieldType.Null)
+    {
+    }
+
+    /// <summary>
+    /// Field constructor
+    /// </summary>
+    /// <param name="name"></param>
+    /// <param name="type"></param>
+    /// <param name="value"></param>
+    /// <param name="elementType"></param>
+    private Field(string name, FieldType type, object value, FieldType elementType)
     {
       Name = name;
       Type = type;
       Value = value;
+      ListElementType = elementType;
     }
-
     /// <inheritdoc />
     public Field(string name, IEnumerable value)
     {
@@ -154,11 +186,23 @@ namespace SQLiteServer.Fields
       {
         Value = ValueFromIEnumerable(value);
         Type = FieldType.List;
+
+        ListElementType = TypeToFieldType(GetActualElementType(value.GetType().GetGenericArguments().Single()));
       }
       else
       {
         throw new NotSupportedException( "This IEnumerable is not supported." );
       }
+    }
+
+    private static Type GetActualElementType(Type givenType)
+    {
+      var elementType = givenType;
+      if (elementType.IsGenericType && elementType.GetGenericTypeDefinition() == typeof(Nullable<>))
+      {
+        elementType = elementType.GenericTypeArguments.FirstOrDefault();
+      }
+      return elementType;
     }
 
     /// <summary>
@@ -190,7 +234,8 @@ namespace SQLiteServer.Fields
       // create the list and add the number of items in the list
       var value = new List<Field>
       {
-        new Field(ListTypeCount, FieldType.Int32, enumerable.Length)
+        new Field(ListTypeCount, FieldType.Int32, enumerable.Length),
+        new Field(ListTypeType, FieldType.Int32, TypeToFieldType( GetActualElementType(ienumerable.GetType().GetGenericArguments().Single())))
       };
 
       // populate the list.
@@ -203,7 +248,6 @@ namespace SQLiteServer.Fields
         }
         value.Add(new Field(ListTypeSimple, v.GetType(), v));
       }
-
       return value;
     }
 
@@ -385,12 +429,13 @@ namespace SQLiteServer.Fields
       for( var i = 0; i < parent.GetLong(); ++i )
       {
         //  we skip the first item as it is the parent.
-        if ((i + 1) >= fields.Count)
+        if ((i + ListNumberOfItemsToSkip) >= fields.Count)
         {
           throw new InvalidCastException("Unable to cast to this data type, not enough items in the list.");
         }
+
         // get that child.
-        var child = fields[i + 1];
+        var child = fields[i + ListNumberOfItemsToSkip];
 
         // get the value
         object value;
@@ -609,7 +654,18 @@ namespace SQLiteServer.Fields
       var value = GetValueAsObjectFromBytes(bytes);
 
       // putting it all together.
-      return new Field(name, type, value );
+      return new Field(name, type, value, GetFieldListElementType(value, type));
+    }
+
+    private static FieldType GetFieldListElementType( object value, FieldType type )
+    {
+      if (type != FieldType.List)
+      {
+        return FieldType.Null;
+      }
+
+      // the second value in the list is the data type.
+      return (FieldType)((IList<Field>)value)[1].Get<int>();
     }
 
     private static object GetValueAsObjectFromBytes(byte[] bytes)
@@ -661,20 +717,23 @@ namespace SQLiteServer.Fields
         case FieldType.List:
           // unpack the first field item.
           var parent = Unpack(value);
-           
-          // create the list with the parent first.
-          var list = new List<Field> {parent};
-          
+
           // we can the walk the list and look for the other items.
           // the must all have the correct name
           // and there must be the correct number of them
-          if ((int) parent.Value < 0)
+          if ((int)parent.Value < 0)
           {
             throw new FieldException("The array of data is not the correct size.");
           }
 
+          // then the data type
+          var basetype = Unpack(value.Skip(parent.TotalLength).ToArray());
+
+          // create the list with the parent first.
+          var list = new List<Field> {parent, basetype };
+          
           // set the current offset, the total parent length
-          var offset = parent.TotalLength;
+          var offset = parent.TotalLength + basetype.TotalLength;
           for (var i = 0; i < (int) parent.Value; ++i)
           {
             // the next block of data if the total size
@@ -828,21 +887,60 @@ namespace SQLiteServer.Fields
         case FieldType.Null: return null;
         case FieldType.Double: return (double)Value;
         case FieldType.Bytes: return (byte[])Value;
-        case FieldType.List:
-        {
-          var value = new List<object>();
-          var parent = ((IList<Field>) Value).First();
-          for (var i = 1; i < parent.Get<int>(); ++i )
-          {
-            value.Add(((IList<Field>)Value)[i].Object() );
-          }
-          // return the object.
-          return value;
-        }
+        case FieldType.List: return ListOfObjects();
 
         default:
           throw new NotSupportedException("The given data type is not supported.");
       }
+    }
+
+    /// <summary>
+    /// Similar to Object() but return as a list.
+    /// </summary>
+    /// <returns>List&lt;object&gt;</returns>
+    private object ListOfObjects()
+    {
+      object value;
+      switch (ListElementType)
+      {
+        case FieldType.Field:
+          value = new List<Field>();
+          break;
+        case FieldType.Int16:
+          value = new List<short>();
+          break;
+        case FieldType.Int32:
+          value = new List<int>();
+          break;
+        case FieldType.Int64:
+          value = new List<long>();
+          break;
+        case FieldType.String:
+          value = new List<string>();
+          break;
+        case FieldType.Null:
+          value = new List<object>();
+          break;
+        case FieldType.Double:
+          value = new List<double>();
+          break;
+        case FieldType.Bytes:
+          value = new List<byte[]>();
+          break;
+        case FieldType.List:
+          value = new List<List<Field>>();
+          break;
+        default:
+          throw new NotSupportedException("The given data type is not supported.");
+      }
+
+      // only get the items
+      foreach (var v in ((IList<Field>)Value).Skip(ListNumberOfItemsToSkip) )
+      {
+        ((IList)value).Add( v.Object() );
+      }
+      // return the object.
+      return value;
     }
 
     /// <summary>
