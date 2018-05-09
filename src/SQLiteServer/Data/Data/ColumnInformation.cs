@@ -21,9 +21,9 @@ namespace SQLiteServer.Data.Data
   internal class ColumnInformation
   {
     /// <summary>
-    /// The column field.
+    /// The column name
     /// </summary>
-    public Field Field { get; }
+    public string Name { get; }
 
     /// <summary>
     /// The ordinal value.
@@ -31,9 +31,9 @@ namespace SQLiteServer.Data.Data
     public int Ordinal { get; }
 
     /// <summary>
-    /// The column name
+    /// The column field.
     /// </summary>
-    public string Name { get; }
+    public Field Field { get; }
 
     /// <summary>
     /// Get a filed value.
@@ -44,15 +44,14 @@ namespace SQLiteServer.Data.Data
     {
       return Field.Get<T>();
     }
-
-
+    
     /// <summary>
     /// Constructor
     /// </summary>
     /// <param name="field"></param>
     /// <param name="ordinal"></param>
     /// <param name="name"></param>
-      public ColumnInformation(Field field, int ordinal, string name )
+    public ColumnInformation(Field field, int ordinal, string name )
     {
       if (null == field)
       {

@@ -12,8 +12,8 @@
 //
 //    You should have received a copy of the GNU General Public License
 //    along with SQLiteServer.  If not, see<https://www.gnu.org/licenses/gpl-3.0.en.html>.
-
 using System;
+using System.Collections.Generic;
 using System.Data;
 using NUnit.Framework;
 using SQLiteServer.Data.Data;
@@ -28,6 +28,32 @@ namespace SQLiteServer.Test.Misc
     /// Create a valid field item
     /// </summary>
     private static Field ValidField => new Field("Hello", 42);
+
+
+    [Test]
+    public void AddRowToFields()
+    {
+      var row = new RowInformation.Row
+      {
+        Names = new List<string>
+        {
+          "colA",
+          "colB",
+          "colC"
+        },
+        Columns = new List<Field>
+        {
+          ValidField,
+          ValidField,
+          ValidField
+        }
+      };
+      var f = global::SQLiteServer.Fields.Fields.SerializeObject(row);
+      var g = global::SQLiteServer.Fields.Fields.Unpack(f.Pack() ).DeserializeObject<RowInformation.Row>();
+
+      CollectionAssert.AreEqual(row.Names, g.Names );
+      CollectionAssert.AreEqual(row.Columns, g.Columns);
+    }
 
     [Test]
     public void CannotAddNullColumn()

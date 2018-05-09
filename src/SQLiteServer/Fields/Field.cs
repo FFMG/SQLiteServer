@@ -143,7 +143,9 @@ namespace SQLiteServer.Fields
     {
       Name = name;
       Type = type;
-      Value = value;
+
+      // if it is a list we need to convert it to a List<Field>
+      Value = type == FieldType.List ? ValueFromIEnumerable((IEnumerable)value) : value;
     }
 
     /// <inheritdoc />
@@ -152,31 +154,37 @@ namespace SQLiteServer.Fields
       Name = name;
       if (IsIListType(value))
       {
+        Value = ValueFromIEnumerable(value);
         Type = FieldType.List;
-        var enumerable = value as object[] ?? value.Cast<object>().ToArray();
-
-        // the list
-        Value = new List<Field>();
-
-        // the number of items in the list
-        ((List<Field>)Value).Add(new Field(ListTypeCount, FieldType.Int32, enumerable.Length));
-
-        // populate the list.
-        foreach (var v in enumerable)
-        {
-          if (null == v)
-          {
-            ((List<Field>)Value).Add(new Field(ListTypeSimple, FieldType.Null, null ));
-            continue;
-          }
-
-          ((List<Field>) Value).Add(new Field(ListTypeSimple, v.GetType(), v));
-        }
       }
       else
       {
         throw new NotSupportedException( "This IEnumerable is not supported." );
       }
+    }
+
+    private static object ValueFromIEnumerable(IEnumerable ienumerable)
+    {
+      var enumerable = ienumerable as object[] ?? ienumerable.Cast<object>().ToArray();
+
+      // create the list and add the number of items in the list
+      var value = new List<Field>
+      {
+        new Field(ListTypeCount, FieldType.Int32, enumerable.Length)
+      };
+
+      // populate the list.
+      foreach (var v in enumerable)
+      {
+        if (null == v)
+        {
+          value.Add(new Field(ListTypeSimple, FieldType.Null, null));
+          continue;
+        }
+        value.Add(new Field(ListTypeSimple, v.GetType(), v));
+      }
+
+      return value;
     }
 
     public Field(string name, Field value) : this(name, FieldType.Field, value)
@@ -292,13 +300,31 @@ namespace SQLiteServer.Fields
 
       if (type == typeof(object))
       {
-        return Value;
+        return Object();
       }
 
       if (type == typeof(Field))
       {
-        // this could be null...
-        return (Field) Value;
+        if (Type == FieldType.List)
+        {
+          if (((List<Field>) Value).Count > 0)
+          {
+            //  the first items is the parent.
+            return ((List<Field>) Value)[1];
+          }
+
+          // we have noting
+          return null;
+        }
+
+        if (Type == FieldType.Field)
+        {
+          // this could be null...
+          return (Field)Value;
+        }
+
+        // return whatever value we are.
+        return this;
       }
       throw new InvalidCastException("Unable to cast to this data type.");
     }
@@ -760,15 +786,47 @@ namespace SQLiteServer.Fields
     }
 
     /// <summary>
-    /// Convert the current obekect to bytes.
+    /// Convert the current object or recreate it.
+    /// </summary>
+    /// <returns></returns>
+    private object Object()
+    {
+      switch (Type)
+      {
+        case FieldType.Field: return (Field)Value;
+        case FieldType.Int16: return (short)Value;
+        case FieldType.Int32: return (int)Value;
+        case FieldType.Int64: return (long)Value;
+        case FieldType.String: return (string)Value;
+        case FieldType.Null: return null;
+        case FieldType.Double: return (double)Value;
+        case FieldType.Bytes: return (byte[])Value;
+        case FieldType.List:
+        {
+          var value = new List<object>();
+          var parent = ((IList<Field>) Value).First();
+          for (var i = 1; i < parent.Get<int>(); ++i )
+          {
+            value.Add(((IList<Field>)Value)[i].Object() );
+          }
+          // return the object.
+          return value;
+        }
+
+        default:
+          throw new NotSupportedException("The given data type is not supported.");
+      }
+    }
+
+    /// <summary>
+    /// Convert the current object to bytes.
     /// </summary>
     /// <returns></returns>
     private byte[] ObjectToBytes()
     {
       switch (Type)
       {
-        case FieldType.Field:
-          return ((Field)Value).Pack();
+        case FieldType.Field: return ((Field)Value).Pack();
         case FieldType.Int16: return BitConverter.GetBytes((short)Value);
         case FieldType.Int32: return BitConverter.GetBytes((int)Value);
         case FieldType.Int64: return BitConverter.GetBytes((long)Value);
@@ -843,8 +901,13 @@ namespace SQLiteServer.Fields
         return FieldType.Field;
       }
 
+      if (typeof(IList).IsAssignableFrom(type))
+      {
+        return FieldType.List;
+      }
+
       // no idea what this is...
-      throw new NotSupportedException( $"The given data type is not supported.");
+      throw new NotSupportedException( "The given data type is not supported.");
     }
     
     /// <summary>

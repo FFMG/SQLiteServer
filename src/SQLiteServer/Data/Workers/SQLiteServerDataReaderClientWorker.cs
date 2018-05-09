@@ -84,11 +84,24 @@ namespace SQLiteServer.Data.Workers
 
     #region Row Information
     /// <summary>
+    /// The current row... or null if we do no yet have it.
+    /// </summary>
+    private RowInformation _currentRowInformation;
+
+    /// <summary>
     /// Get the current row or go and fetch it.
     /// </summary>
     /// <returns></returns>
     private RowInformation GetRow()
     {
+      // do we already have the information?
+      if (null != _currentRowInformation)
+      {
+        return _currentRowInformation;
+      }
+      
+      var colInformation = GetGuiOnlyValue<List<ColumnInformation>>(SQLiteMessage.ExecuteReaderGetRow );
+
       return null;
     }
 
