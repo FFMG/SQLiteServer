@@ -307,10 +307,11 @@ namespace SQLiteServer.Fields
       {
         if (Type == FieldType.List)
         {
-          if (((List<Field>) Value).Count > 0)
+          var list = (List<Field>)TryGetList<List<Field>>();
+          if( list?.Count > 0 )
           {
             //  the first items is the parent.
-            return ((List<Field>) Value)[1];
+            return (Field)list[1].Value;
           }
 
           // we have noting

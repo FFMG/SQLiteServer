@@ -368,6 +368,17 @@ namespace SQLiteServer.Test.Fields
     }
 
     [Test]
+    public void PackListOfStrings()
+    {
+      var values = new List<string> { "H", "e", "l", "l", "o" };
+      var f = new Field("Hello", values);
+      var p = f.Pack();
+      var upf = Field.Unpack(p);
+
+      CollectionAssert.AreEqual(values, upf.Get<List<string>>());
+    }
+
+    [Test]
     public void PackListOfNullableInts()
     {
       var values = new List<int?> { 1, 2, null, 4, 8 };
@@ -547,6 +558,46 @@ namespace SQLiteServer.Test.Fields
       Assert.AreEqual(1, ufs[1].Get<int>());
       Assert.IsNull(ufs[2]);
       Assert.AreEqual(4, ufs[3].Get<int>());
+    }
+
+    [Test]
+    public void FieldIsListOfIntFieldsButWeJustWantToGetOneValue()
+    {
+      var fs = new List<Field>
+      {
+        new Field("a", 0),
+        new Field("b", 1),
+        null,
+        new Field("d", 4)
+      };
+
+      var outer = new Field("outer", fs);
+      var pInner = outer.Pack();
+      var upInner = Field.Unpack(pInner);
+
+      var uf = upInner.Get<Field>();
+
+      Assert.AreEqual(0, uf.Get<int>());
+    }
+
+    [Test]
+    public void FieldIsListOfStringFieldsButWeJustWantToGetOneValue()
+    {
+      var fs = new List<Field>
+      {
+        new Field("a", "A"),
+        new Field("b", "B"),
+        null,
+        new Field("d", "C")
+      };
+
+      var outer = new Field("outer", fs);
+      var pInner = outer.Pack();
+      var upInner = Field.Unpack(pInner);
+
+      var uf = upInner.Get<Field>();
+
+      Assert.AreEqual("A", uf.Get<string>());
     }
   }
 }
