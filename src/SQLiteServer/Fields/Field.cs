@@ -143,9 +143,7 @@ namespace SQLiteServer.Fields
     {
       Name = name;
       Type = type;
-
-      // if it is a list we need to convert it to a List<Field>
-      Value = type == FieldType.List ? ValueFromIEnumerable((IEnumerable)value) : value;
+      Value = value;
     }
 
     /// <inheritdoc />
@@ -310,8 +308,8 @@ namespace SQLiteServer.Fields
           var list = (List<Field>)TryGetList<List<Field>>();
           if( list?.Count > 0 )
           {
-            //  the first items is the parent.
-            return (Field)list[1].Value;
+            // get the first item in our list.
+            return list[0];
           }
 
           // we have noting
@@ -322,6 +320,12 @@ namespace SQLiteServer.Fields
         {
           // this could be null...
           return (Field)Value;
+        }
+
+        if (Type == FieldType.Null)
+        {
+          // this could be null...
+          return null;
         }
 
         // return whatever value we are.
