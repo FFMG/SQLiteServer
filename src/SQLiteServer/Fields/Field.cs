@@ -129,7 +129,7 @@ namespace SQLiteServer.Fields
     /// <param name="type"></param>
     /// <param name="value"></param>
     public Field(string name, Type type, object value) :
-      this(name, TypeToFieldType(type), value)
+      this(name, TypeToFieldType(type), ValueIfIEnumerable(value, type))
     {
     }
 
@@ -161,6 +161,28 @@ namespace SQLiteServer.Fields
       }
     }
 
+    /// <summary>
+    /// This function convert the object to a List&lt;Field&gt; if the type is of kind IEnumrable.
+    /// If the value is not of kind IEnumrable we simply return the value as given to us.
+    /// </summary>
+    /// <param name="value"></param>
+    /// <param name="type"></param>
+    /// <returns></returns>
+    private static object ValueIfIEnumerable(object value, Type type)
+    {
+      if (TypeToFieldType(type) != FieldType.List)
+      {
+        return value;
+      }
+      return ValueFromIEnumerable((IEnumerable) value);
+    }
+
+    /// <summary>
+    /// Given an IEnumerable we will try and convert it to a list of Field
+    /// This makes it easier to package it.
+    /// </summary>
+    /// <param name="ienumerable"></param>
+    /// <returns></returns>
     private static object ValueFromIEnumerable(IEnumerable ienumerable)
     {
       var enumerable = ienumerable as object[] ?? ienumerable.Cast<object>().ToArray();
