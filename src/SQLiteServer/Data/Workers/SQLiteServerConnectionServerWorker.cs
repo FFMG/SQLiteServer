@@ -136,6 +136,7 @@ namespace SQLiteServer.Data.Workers
         case SQLiteMessage.ExecuteNonQueryRequest:
         case SQLiteMessage.CreateCommandRequest:
         case SQLiteMessage.DisposeCommand:
+        case SQLiteMessage.ExecuteReaderGetRowRequest:
           guid = packet.Get<string>();
           break;
 
@@ -435,6 +436,40 @@ namespace SQLiteServer.Data.Workers
       }
     }
 
+    /// <summary>
+    /// Send all column names as well as row data.
+    /// </summary>
+    /// <param name="packet"></param>
+    /// <param name="response"></param>
+    private void HandleExecuteReaderGetRowRequest(Packet packet, Action<Packet> response)
+    {
+      // get the guid so we can look for that command
+      var guid = packet.Get<string>();
+      lock (_commandsLock)
+      {
+        // get the reader
+        var reader = GetCommandReader(guid);
+        if (reader == null)
+        {
+          response(new Packet(SQLiteMessage.ExecuteReaderException, $"Invalid Command id sent to server for reader : {guid}."));
+          return;
+        }
+
+        // create the return structure.
+        var row = new List<Field>();
+
+        // add the names
+        for (var i = 0; i < reader.FieldCount; ++i)
+        {
+          var name = reader.GetName(i);
+          row.Add( new Field( name, reader.GetFieldType(i), reader.GetValue(i) ));
+        }
+
+        var field = new Field( "rows", row);
+        response(new Packet(SQLiteMessage.ExecuteReaderGetRowResponse, field.Pack()));
+      }
+    }
+
     private void HandleLockConnectionRequest(Packet packet, Action<Packet> response)
     {
       switch (packet.Message)
@@ -576,6 +611,10 @@ namespace SQLiteServer.Data.Workers
     {
       switch ( packet.Message)
       {
+        case SQLiteMessage.ExecuteReaderGetRowRequest:
+          HandleExecuteReaderGetRowRequest( packet, response);
+          break;
+
         case SQLiteMessage.ExecuteReaderGetInt16Request:
         case SQLiteMessage.ExecuteReaderGetInt32Request:
         case SQLiteMessage.ExecuteReaderGetInt64Request:

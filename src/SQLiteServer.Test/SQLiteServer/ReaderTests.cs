@@ -2883,7 +2883,7 @@ namespace SQLiteServer.Test.SQLiteServer
     {
       var server = CreateConnection();
       server.Open();
-      const string sqlMaster = "create table t1 (a VARCHAR(255))";
+      const string sqlMaster = "create table t1 (a INTERGER, b VARCHAR(255))";
       using (var command = new SQLiteServerCommand(sqlMaster, server))
       {
         command.ExecuteNonQuery();
@@ -2899,23 +2899,23 @@ namespace SQLiteServer.Test.SQLiteServer
         current = client;
       }
 
-      const int numberOfRows = 20;
-      var a = new List<string>();
+      const int numberOfRows = 5;
+      var b = new List<string>();
       for (var i = 0; i < numberOfRows; ++i)
       {
-        a.Add(RandomString(10));
+        b.Add(RandomString(10));
       }
 
       for (var i = 0; i < numberOfRows; ++i)
       {
-        var sql = $"insert into t1(a) VALUES ('{a[i]}')";
+        var sql = $"insert into t1(a, b) VALUES ({i}, '{b[i]}')";
         using (var command = new SQLiteServerCommand(sql, current))
         {
           command.ExecuteNonQuery();
         }
       }
 
-      const string sqlSelect = "SELECT * FROM t1";
+      const string sqlSelect = "SELECT * FROM t1 ORDER BY a ASC";
       using (var command = new SQLiteServerCommand(sqlSelect, current))
       {
         using (var reader = command.ExecuteReader())
@@ -2924,7 +2924,9 @@ namespace SQLiteServer.Test.SQLiteServer
           {
             Assert.IsTrue(reader.Read());
             var aa = reader.GetValue(0);
-            Assert.AreEqual((string)aa, a[i]);
+            var bb = reader.GetValue(1);
+            Assert.AreEqual((long)aa, (long)i);
+            Assert.AreEqual((string)bb, b[i]);
           }
           Assert.IsFalse(reader.Read());
         }

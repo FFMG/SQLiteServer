@@ -100,9 +100,15 @@ namespace SQLiteServer.Data.Workers
         return _currentRowInformation;
       }
       
-      var colInformation = GetGuiOnlyValue<List<ColumnInformation>>(SQLiteMessage.ExecuteReaderGetRow );
-
-      return null;
+      // get the row.
+      var row = GetGuiOnlyValue<List<Field>>(SQLiteMessage.ExecuteReaderGetRowRequest );
+      _currentRowInformation = new RowInformation();
+      var ordinal = 0;
+      foreach (var column in row)
+      {
+        _currentRowInformation.Add( new ColumnInformation(column, ordinal++, column.Name));
+      }
+      return _currentRowInformation;
     }
 
     /// <summary>
@@ -181,6 +187,7 @@ namespace SQLiteServer.Data.Workers
       // we need to reset some field now.
       _dataTypeName.Clear();
       _fieldTypes.Clear();
+      _currentRowInformation = null;
       return true;
     }
 
@@ -254,6 +261,10 @@ namespace SQLiteServer.Data.Workers
       {
         case SQLiteMessage.SendAndWaitTimeOut:
           throw new TimeoutException("There was a timeout error executing the read request from the reader.");
+
+        case SQLiteMessage.ExecuteReaderGetRowResponse:
+          var bytes = response.Payload;
+          return Field.Unpack(bytes).Get<T>();
 
         case SQLiteMessage.ExecuteReaderResponse:
           return response.Get<T>();

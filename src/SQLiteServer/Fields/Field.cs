@@ -51,7 +51,8 @@ namespace SQLiteServer.Fields
     /// <returns></returns>
     public static bool IsIListType(object value)
     {
-      return value is IList lvalue && lvalue.GetType().IsGenericType;
+      var lvalue = value as IList;
+      return lvalue != null && lvalue.GetType().IsGenericType;
     }
 
     /// <summary>
