@@ -37,12 +37,6 @@ namespace SQLiteServer.Test.Misc
     }
 
     [Test]
-    public void TheListOfColumnsCannotBeNull()
-    {
-      Assert.Throws<ArgumentException>(() => new RowInformation(new List<string> { "cola", "colb" }));
-    }
-
-    [Test]
     public void TheListOfColumnsCannotContainNulls()
     {
       Assert.Throws<ArgumentNullException>(() => new RowInformation(new List<string> { "cola", null }));
@@ -55,7 +49,7 @@ namespace SQLiteServer.Test.Misc
     }
 
     [Test]
-    public void TheListOfColumnsCannotBeEmpty()
+    public void NamesOfColumnsCannotBeEmpty()
     {
       Assert.Throws<ArgumentException>(() => new RowInformation(new List<string> { "cola", "" }));
     }

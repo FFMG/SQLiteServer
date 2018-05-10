@@ -49,6 +49,14 @@ namespace SQLiteServer.Data.Data
     /// <param name="columnNames"></param>
     public RowInformation(List<string> columnNames)
     {
+      if (null == columnNames)
+      {
+        throw new ArgumentNullException( nameof(columnNames) );
+      }
+      if (columnNames.Count == 0)
+      {
+        throw new ArgumentException(nameof(columnNames));
+      }
       ColumnNames = columnNames;
     }
 
