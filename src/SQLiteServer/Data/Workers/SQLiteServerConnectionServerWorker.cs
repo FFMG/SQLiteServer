@@ -114,10 +114,6 @@ namespace SQLiteServer.Data.Workers
       string guid;
       switch (packet.Message)
       {
-        case SQLiteMessage.ExecuteReaderGetInt16Request:
-        case SQLiteMessage.ExecuteReaderGetInt32Request:
-        case SQLiteMessage.ExecuteReaderGetInt64Request:
-        case SQLiteMessage.ExecuteReaderGetDoubleRequest:
         case SQLiteMessage.ExecuteReaderGetStringRequest:
         case SQLiteMessage.ExecuteReaderGetFieldTypeRequest:
         case SQLiteMessage.ExecuteReaderGetDataTypeNameRequest:
@@ -178,22 +174,6 @@ namespace SQLiteServer.Data.Workers
           var index = indexRequest.Index;
           switch (packet.Message)
           {
-            case SQLiteMessage.ExecuteReaderGetInt16Request:
-              response(new Packet(SQLiteMessage.ExecuteReaderResponse, reader.GetInt16(index)));
-              break;
-
-            case SQLiteMessage.ExecuteReaderGetInt32Request:
-              response(new Packet(SQLiteMessage.ExecuteReaderResponse, reader.GetInt32(index)));
-              break;
-
-            case SQLiteMessage.ExecuteReaderGetInt64Request:
-              response(new Packet(SQLiteMessage.ExecuteReaderResponse, reader.GetInt64(index)));
-              break;
-
-            case SQLiteMessage.ExecuteReaderGetDoubleRequest:
-              response(new Packet(SQLiteMessage.ExecuteReaderResponse, reader.GetDouble(index)));
-              break;
-              
             case SQLiteMessage.ExecuteReaderGetStringRequest:
               response(new Packet(SQLiteMessage.ExecuteReaderResponse, reader.GetString(index)));
               break;
@@ -421,7 +401,14 @@ namespace SQLiteServer.Data.Workers
         {
           for (var i = 0; i < reader.FieldCount; ++i)
           {
-            row.Columns.Add(new Field(row.Names[i], reader.GetFieldType(i), reader.GetValue(i)));
+            if (reader.IsDBNull(i))
+            {
+              row.Columns.Add(null);
+            }
+            else
+            {
+              row.Columns.Add(new Field(row.Names[i], reader.GetFieldType(i), reader.GetValue(i)));
+            }
           }
         }
 
@@ -575,10 +562,6 @@ namespace SQLiteServer.Data.Workers
           HandleExecuteReaderGetRowRequest( packet, response);
           break;
 
-        case SQLiteMessage.ExecuteReaderGetInt16Request:
-        case SQLiteMessage.ExecuteReaderGetInt32Request:
-        case SQLiteMessage.ExecuteReaderGetInt64Request:
-        case SQLiteMessage.ExecuteReaderGetDoubleRequest:
         case SQLiteMessage.ExecuteReaderGetStringRequest:
         case SQLiteMessage.ExecuteReaderGetFieldTypeRequest:
         case SQLiteMessage.ExecuteReaderGetDataTypeNameRequest:
