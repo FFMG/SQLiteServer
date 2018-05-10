@@ -140,11 +140,6 @@ namespace SQLiteServer.Data.Workers
           guid = packet.Get<string>();
           break;
 
-        case SQLiteMessage.ExecuteReaderGetOrdinalRequest:
-          var nameRequest = Fields.Fields.Unpack(packet.Payload).DeserializeObject<NameRequest>();
-          guid = nameRequest.Guid;
-          break;
-
         default:
           throw new ArgumentOutOfRangeException();
       }
@@ -222,51 +217,6 @@ namespace SQLiteServer.Data.Workers
             case SQLiteMessage.ExecuteReaderGetFieldTypeRequest:
               var iType = Field.TypeToFieldType(reader.GetFieldType(index));
               response(new Packet(SQLiteMessage.ExecuteReaderResponse, (int)iType));
-              break;
-
-            default:
-              response(new Packet(SQLiteMessage.ExecuteReaderException, $"The requested data type {packet.Message} is not supported."));
-              break;
-          }
-        }
-      }
-      catch (Exception e)
-      {
-        response(new Packet(SQLiteMessage.ExecuteReaderException, e.Message));
-      }
-    }
-
-    /// <summary>
-    /// Handle a client request for a specific value type.
-    /// </summary>
-    /// <param name="packet"></param>
-    /// <param name="response"></param>
-    private void HandleExecuteReaderNameRequest(Packet packet, Action<Packet> response)
-    {
-      //  get the guid
-      try
-      {
-        // Get the index request.
-        var nameRequest = Fields.Fields.Unpack(packet.Payload).DeserializeObject<NameRequest>();
-
-        // get the guid so we can look for that command
-        var guid = nameRequest.Guid;
-        lock (_commandsLock)
-        {
-          var reader = GetCommandReader(guid);
-          if (reader == null)
-          {
-            response(new Packet(SQLiteMessage.ExecuteReaderException, $"Invalid Command id sent to server for reader : {guid}."));
-            return;
-          }
-
-          // we know that the command exists
-          // so we can get the index
-          var name = nameRequest.Name;
-          switch (packet.Message)
-          {
-            case SQLiteMessage.ExecuteReaderGetOrdinalRequest:
-              response(new Packet(SQLiteMessage.ExecuteReaderResponse, reader.GetOrdinal(name)));
               break;
 
             default:
@@ -455,17 +405,27 @@ namespace SQLiteServer.Data.Workers
           return;
         }
 
-        // create the return structure.
-        var row = new List<Field>();
-
         // add the names
+        var row = new RowInformation.RowData
+        {
+          Names = new List<string>(),
+          Columns = new List<Field>()
+        };
         for (var i = 0; i < reader.FieldCount; ++i)
         {
           var name = reader.GetName(i);
-          row.Add( new Field( name, reader.GetFieldType(i), reader.GetValue(i) ));
+          row.Names.Add(name);
         }
 
-        var field = new Field( "rows", row);
+        if (reader.HasRows)
+        {
+          for (var i = 0; i < reader.FieldCount; ++i)
+          {
+            row.Columns.Add(new Field(row.Names[i], reader.GetFieldType(i), reader.GetValue(i)));
+          }
+        }
+
+        var field = Fields.Fields.SerializeObject( row);
         response(new Packet(SQLiteMessage.ExecuteReaderGetRowResponse, field.Pack()));
       }
     }
@@ -638,11 +598,6 @@ namespace SQLiteServer.Data.Workers
 
         case SQLiteMessage.CancelCommand:
           HandleCancelRequest(packet, response);
-          break;
-
-
-        case SQLiteMessage.ExecuteReaderGetOrdinalRequest:
-          HandleExecuteReaderNameRequest(packet, response);
           break;
 
         case SQLiteMessage.ExecuteReaderRequest:

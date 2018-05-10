@@ -15,6 +15,7 @@
 using System;
 using System.Collections.Generic;
 using System.Data;
+using System.Diagnostics;
 using System.Text;
 using System.Threading.Tasks;
 using SQLiteServer.Data.Connections;
@@ -29,11 +30,6 @@ namespace SQLiteServer.Data.Workers
   internal class SQLiteServerDataReaderClientWorker : ISQLiteServerDataReaderWorker
   {
     #region Private variables
-    /// <summary>
-    /// Save the ordinal values.
-    /// </summary>
-    private readonly Dictionary<string, int> _ordinals = new Dictionary<string, int>();
-
     /// <summary>
     /// Save the column name.
     /// </summary>
@@ -101,10 +97,10 @@ namespace SQLiteServer.Data.Workers
       }
       
       // get the row.
-      var row = GetGuiOnlyValue<List<Field>>(SQLiteMessage.ExecuteReaderGetRowRequest );
-      _currentRowInformation = new RowInformation();
+      var row = GetGuiOnlyValue<RowInformation.RowData>(SQLiteMessage.ExecuteReaderGetRowRequest );
+      _currentRowInformation = new RowInformation( row.Names );
       var ordinal = 0;
-      foreach (var column in row)
+      foreach (var column in row.Columns )
       {
         _currentRowInformation.Add( new ColumnInformation(column, ordinal++, column.Name));
       }
@@ -129,6 +125,27 @@ namespace SQLiteServer.Data.Workers
 
       // otherwise return the data for it.
       return row.Get(i);
+    }
+
+    /// <summary>
+    /// Get a column information or a row for it.
+    /// </summary>
+    /// <param name="name"></param>
+    /// <returns></returns>
+    private ColumnInformation GetColumn(string name )
+    {
+      // get the current row.
+      var row = GetRow();
+
+      // did we get anything?
+      if (null == row)
+      {
+        // https://msdn.microsoft.com/en-us/library/system.data.common.dbdatareader.getordinal(v=vs.110).aspx
+        throw new IndexOutOfRangeException($"Could not find column {name}!");
+      }
+
+      // otherwise return the data for it.
+      return row.Get(name);
     }
     #endregion
 
@@ -234,19 +251,7 @@ namespace SQLiteServer.Data.Workers
     /// <inheritdoc />
     public int GetOrdinal(string name)
     {
-      var lname = name.ToLower();
-      if (_ordinals.ContainsKey(lname))
-      {
-        return _ordinals[lname];
-      }
-      // get the value
-      var value = GetNamedValueAsync<int>(SQLiteMessage.ExecuteReaderGetOrdinalRequest, lname).Result;
-
-      // save it.
-      _ordinals[lname] = value;
-
-      // return it.
-      return value;
+      return GetRow().GetOrGetOrdinal(name);
     }
 
     /// <summary>
@@ -263,8 +268,8 @@ namespace SQLiteServer.Data.Workers
           throw new TimeoutException("There was a timeout error executing the read request from the reader.");
 
         case SQLiteMessage.ExecuteReaderGetRowResponse:
-          var bytes = response.Payload;
-          return Field.Unpack(bytes).Get<T>();
+          var fields = Fields.Fields.Unpack(response.Payload);
+          return Fields.Fields.DeserializeObject<T>(fields);
 
         case SQLiteMessage.ExecuteReaderResponse:
           return response.Get<T>();

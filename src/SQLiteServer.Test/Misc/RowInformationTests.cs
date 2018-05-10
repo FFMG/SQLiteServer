@@ -13,6 +13,7 @@
 //    You should have received a copy of the GNU General Public License
 //    along with SQLiteServer.  If not, see<https://www.gnu.org/licenses/gpl-3.0.en.html>.
 using System;
+using System.Collections.Generic;
 using System.Data;
 using NUnit.Framework;
 using SQLiteServer.Data.Data;
@@ -31,14 +32,44 @@ namespace SQLiteServer.Test.Misc
     [Test]
     public void CannotAddNullColumn()
     {
-      var r = new RowInformation();
+      var r = new RowInformation(new List<string> { "cola", "colb" });
       Assert.Throws<ArgumentNullException>(() => r.Add(null));
+    }
+
+    [Test]
+    public void TheListOfColumnsCannotBeNull()
+    {
+      Assert.Throws<ArgumentException>(() => new RowInformation(new List<string> { "cola", "colb" }));
+    }
+
+    [Test]
+    public void TheListOfColumnsCannotContainNulls()
+    {
+      Assert.Throws<ArgumentNullException>(() => new RowInformation(new List<string> { "cola", null }));
+    }
+
+    [Test]
+    public void TheListOfColumnsCannotContainSpaces()
+    {
+      Assert.Throws<ArgumentException>(() => new RowInformation(new List<string> { "cola", "    " }));
+    }
+
+    [Test]
+    public void TheListOfColumnsCannotBeEmpty()
+    {
+      Assert.Throws<ArgumentException>(() => new RowInformation(new List<string> { "cola", "" }));
+    }
+
+    [Test]
+    public void TheListOfColumnsGivenCannotBeEmpty()
+    {
+      Assert.Throws<ArgumentException>(() => new RowInformation(new List<string>()));
     }
 
     [Test]
     public void CannotAddSameOrdinal()
     {
-      var r = new RowInformation();
+      var r = new RowInformation( new List<string>{"cola", "colb"});
       r.Add(new ColumnInformation(ValidField, 0, "cola"));
       r.Add(new ColumnInformation(ValidField, 1, "colb"));
       Assert.Throws<DuplicateNameException>( () => r.Add( new ColumnInformation( ValidField, 0, "colc")));
@@ -47,7 +78,7 @@ namespace SQLiteServer.Test.Misc
     [Test]
     public void CannotAddSameName()
     {
-      var r = new RowInformation();
+      var r = new RowInformation(new List<string> { "cola", "colb" });
       r.Add(new ColumnInformation(ValidField, 0, "cola"));
       r.Add(new ColumnInformation(ValidField, 1, "colb"));
       Assert.Throws<DuplicateNameException>(() => r.Add(new ColumnInformation(ValidField, 2, "cola")));
@@ -56,28 +87,28 @@ namespace SQLiteServer.Test.Misc
     [Test]
     public void TryingToGetByNameThatDoesNotExist()
     {
-      var r = new RowInformation();
+      var r = new RowInformation(new List<string> { "cola", "colb" });
       r.Add(new ColumnInformation(ValidField, 0, "cola"));
       r.Add(new ColumnInformation(ValidField, 1, "colb"));
 
-      Assert.Throws<ArgumentOutOfRangeException>( () => r.Get("colc"));
+      Assert.Throws<IndexOutOfRangeException>( () => r.Get("colc"));
     }
 
     [Test]
     public void TryingToGetByOrdinalThatDoesNotExist()
     {
-      var r = new RowInformation();
+      var r = new RowInformation(new List<string> { "cola", "colb" });
       r.Add(new ColumnInformation(ValidField, 0, "cola"));
       r.Add(new ColumnInformation(ValidField, 1, "colb"));
 
-      Assert.Throws<ArgumentOutOfRangeException>( () => r.Get(2));
+      Assert.Throws<IndexOutOfRangeException>( () => r.Get(2));
     }
 
     [Test]
     public void GetByName()
     {
       var f = ValidField;
-      var r = new RowInformation();
+      var r = new RowInformation(new List<string> { "cola", "colb" });
       r.Add(new ColumnInformation(f, 0, "cola"));
       r.Add(new ColumnInformation(ValidField, 1, "colb"));
 
@@ -92,7 +123,7 @@ namespace SQLiteServer.Test.Misc
     public void GetByNameCaseInsensitive()
     {
       var f = ValidField;
-      var r = new RowInformation();
+      var r = new RowInformation(new List<string> { "cola", "colb" });
       r.Add(new ColumnInformation(f, 0, "cola"));
       r.Add(new ColumnInformation(ValidField, 1, "colb"));
 
@@ -105,7 +136,7 @@ namespace SQLiteServer.Test.Misc
     public void GetByOrdinal()
     {
       var f = ValidField;
-      var r = new RowInformation();
+      var r = new RowInformation(new List<string> { "cola", "colb" });
       r.Add(new ColumnInformation(f, 0, "cola"));
       r.Add(new ColumnInformation(ValidField, 1, "colb"));
 

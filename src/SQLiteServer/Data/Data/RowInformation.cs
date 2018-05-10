@@ -16,11 +16,18 @@ using System;
 using System.Collections.Generic;
 using System.Data;
 using System.Linq;
+using SQLiteServer.Fields;
 
 namespace SQLiteServer.Data.Data
 {
   internal class RowInformation
   {
+    public struct RowData
+    {
+      public List<string> Names;
+
+      public List<Field> Columns;
+    }
     /// <summary>
     /// The list of colums
     /// </summary>
@@ -30,6 +37,20 @@ namespace SQLiteServer.Data.Data
     /// The number of items in the list.
     /// </summary>
     public int Count => _columns.Count;
+
+    /// <summary>
+    /// The list of columns in case we have no data in the row.
+    /// </summary>
+    private List<string> ColumnNames { get; }
+
+    /// <summary>
+    /// The contructor, pass the column names.
+    /// </summary>
+    /// <param name="columnNames"></param>
+    public RowInformation(List<string> columnNames)
+    {
+      ColumnNames = columnNames;
+    }
 
     /// <summary>
     /// Add a column/name to the list.
@@ -96,7 +117,7 @@ namespace SQLiteServer.Data.Data
       var col = GetOrDefault(ordinal);
       if (null == col )
       {
-        throw new ArgumentOutOfRangeException(nameof(ordinal), "The ordinal given does not exist.");
+        throw new IndexOutOfRangeException( "The ordinal given does not exist.");
       }
 
       // return the column
@@ -113,11 +134,25 @@ namespace SQLiteServer.Data.Data
       var col = GetOrDefault(name);
       if (null == col)
       {
-        throw new ArgumentOutOfRangeException(nameof(name), "The name given does not exist.");
+        throw new IndexOutOfRangeException($"Could not find column {name}!"); 
       }
 
       // return the column
       return col;
+    }
+
+    /// <summary>
+    /// Get the ordinal of a certain item.
+    /// </summary>
+    /// <param name="name"></param>
+    /// <returns></returns>
+    public int GetOrGetOrdinal(string name)
+    {
+      if (string.IsNullOrWhiteSpace(name))
+      {
+        throw new ArgumentException("The name cannot be empty or null");
+      }
+      return ColumnNames.FindIndex( n => n.Equals(name, StringComparison.OrdinalIgnoreCase ));
     }
   }
 }
