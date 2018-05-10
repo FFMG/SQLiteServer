@@ -57,6 +57,15 @@ namespace SQLiteServer.Data.Data
       {
         throw new ArgumentException(nameof(columnNames));
       }
+
+      if (columnNames.Any(s => s == null))
+      {
+        throw new ArgumentNullException( nameof(columnNames), "The colum name cannot be null!");
+      }
+      if (columnNames.Any(string.IsNullOrWhiteSpace))
+      {
+        throw new ArgumentException("The colum name empty be null!");
+      }
       ColumnNames = columnNames;
     }
 
@@ -79,6 +88,12 @@ namespace SQLiteServer.Data.Data
       if (GetOrDefault(column.Name) != null)
       {
         throw new DuplicateNameException();
+      }
+
+      // check that the ordinal match
+      if (column.Ordinal != GetOrdinal(column.Name))
+      {
+        throw new ArgumentException( "The column name does not exist or the ordinal does not match.");
       }
 
       // add it to the list.
@@ -154,7 +169,7 @@ namespace SQLiteServer.Data.Data
     /// </summary>
     /// <param name="name"></param>
     /// <returns></returns>
-    public int GetOrGetOrdinal(string name)
+    public int GetOrdinal(string name)
     {
       if (string.IsNullOrWhiteSpace(name))
       {

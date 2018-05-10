@@ -39,34 +39,61 @@ namespace SQLiteServer.Test.Misc
     [Test]
     public void TheListOfColumnsCannotContainNulls()
     {
+      // ReSharper disable once ObjectCreationAsStatement
       Assert.Throws<ArgumentNullException>(() => new RowInformation(new List<string> { "cola", null }));
     }
 
     [Test]
     public void TheListOfColumnsCannotContainSpaces()
     {
+      // ReSharper disable once ObjectCreationAsStatement
       Assert.Throws<ArgumentException>(() => new RowInformation(new List<string> { "cola", "    " }));
     }
 
     [Test]
     public void NamesOfColumnsCannotBeEmpty()
     {
+      // ReSharper disable once ObjectCreationAsStatement
       Assert.Throws<ArgumentException>(() => new RowInformation(new List<string> { "cola", "" }));
     }
 
     [Test]
     public void TheListOfColumnsGivenCannotBeEmpty()
     {
+      // ReSharper disable once ObjectCreationAsStatement
       Assert.Throws<ArgumentException>(() => new RowInformation(new List<string>()));
     }
 
     [Test]
     public void CannotAddSameOrdinal()
     {
-      var r = new RowInformation( new List<string>{"cola", "colb"});
+      var r = new RowInformation( new List<string>{"cola", "colb", "colc" });
       r.Add(new ColumnInformation(ValidField, 0, "cola"));
       r.Add(new ColumnInformation(ValidField, 1, "colb"));
       Assert.Throws<DuplicateNameException>( () => r.Add( new ColumnInformation( ValidField, 0, "colc")));
+    }
+
+    [Test]
+    public void AddingAColumnNameThatDoesNotExist()
+    {
+      var r = new RowInformation(new List<string> { "cola", "colb" });
+      r.Add(new ColumnInformation(ValidField, 0, "cola"));
+      Assert.Throws<ArgumentException>(() => r.Add(new ColumnInformation(ValidField, 1, "colc")));
+    }
+
+    [Test]
+    public void AddingAColumnOrdinalThatDoesNotExist()
+    {
+      var r = new RowInformation(new List<string> { "cola", "colb" });
+      r.Add(new ColumnInformation(ValidField, 0, "cola"));
+      Assert.Throws<ArgumentException>(() => r.Add(new ColumnInformation(ValidField, 3, "colb")));
+    }
+
+    [Test]
+    public void OrdinalDoesNotMatchTheNsmr()
+    {
+      var r = new RowInformation(new List<string> { "cola", "colb" });
+      Assert.Throws<ArgumentException>(() => r.Add(new ColumnInformation(ValidField, 0, "colb")));
     }
 
     [Test]

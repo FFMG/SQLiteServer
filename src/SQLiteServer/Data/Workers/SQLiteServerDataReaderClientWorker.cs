@@ -251,7 +251,7 @@ namespace SQLiteServer.Data.Workers
     /// <inheritdoc />
     public int GetOrdinal(string name)
     {
-      return GetRow().GetOrGetOrdinal(name);
+      return GetRow().GetOrdinal(name);
     }
 
     /// <summary>
