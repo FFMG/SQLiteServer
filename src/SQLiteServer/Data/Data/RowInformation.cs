@@ -24,9 +24,20 @@ namespace SQLiteServer.Data.Data
   {
     public struct RowData
     {
+      /// <summary>
+      /// All the column names
+      /// </summary>
       public List<string> Names;
 
+      /// <summary>
+      /// The actual values/types
+      /// </summary>
       public List<Field> Columns;
+
+      /// <summary>
+      /// If the columns are null or not.
+      /// </summary>
+      public List<bool> Nulls;
     }
     /// <summary>
     /// The list of colums

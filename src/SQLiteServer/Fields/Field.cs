@@ -108,6 +108,9 @@ namespace SQLiteServer.Fields
           case FieldType.Null:
             _valueLength = 0;
             break;
+          case FieldType.Bool:
+            _valueLength = sizeof(bool);
+            break;
           case FieldType.Int16:
             _valueLength = sizeof(short);
             break;
@@ -160,19 +163,8 @@ namespace SQLiteServer.Fields
     /// <param name="name"></param>
     /// <param name="type"></param>
     /// <param name="value"></param>
-    private Field(string name, FieldType type, object value) :
-      this( name, type, value, FieldType.Null)
-    {
-    }
-
-    /// <summary>
-    /// Field constructor
-    /// </summary>
-    /// <param name="name"></param>
-    /// <param name="type"></param>
-    /// <param name="value"></param>
     /// <param name="elementType"></param>
-    private Field(string name, FieldType type, object value, FieldType elementType)
+    private Field(string name, FieldType type, object value, FieldType elementType = FieldType.Null)
     {
       Name = name;
       Type = type;
@@ -258,6 +250,11 @@ namespace SQLiteServer.Fields
 
     /// <inheritdoc />
     public Field(string name, short value) : this( name, FieldType.Int16, value )
+    {
+    }
+
+    /// <inheritdoc />
+    public Field(string name, bool value) : this(name, FieldType.Bool, value)
     {
     }
 
@@ -474,6 +471,8 @@ namespace SQLiteServer.Fields
       {
         case FieldType.Field:
           return ((Field)Value).GetString();
+        case FieldType.Bool:
+          return Convert.ToString((bool)Value);
         case FieldType.Int16:
           return Convert.ToString((short)Value);
         case FieldType.Int32:
@@ -503,6 +502,8 @@ namespace SQLiteServer.Fields
       {
         case FieldType.Field:
           return ((Field)Value).GetLong();
+        case FieldType.Bool:
+          return (bool)Value ? 1: 0;
         case FieldType.Int16:
           return (short) Value;
         case FieldType.Int32:
@@ -532,6 +533,8 @@ namespace SQLiteServer.Fields
       {
         case FieldType.Field:
           return ((Field)Value).GetDouble();
+        case FieldType.Bool:
+          return (bool)Value ? 1.0 : 0.0;
         case FieldType.Int16:
           return (short)Value;
         case FieldType.Int32:
@@ -556,6 +559,8 @@ namespace SQLiteServer.Fields
       {
         case FieldType.Field:
           return ((Field) Value).GetNullableLong();
+        case FieldType.Bool:
+          return (bool)Value ? 1 : 0;
         case FieldType.Int16:
           return (short?)Value;
         case FieldType.Int32:
@@ -582,6 +587,8 @@ namespace SQLiteServer.Fields
       {
         case FieldType.Field:
           return ((Field) Value).GetNullableDouble();
+        case FieldType.Bool:
+          return (bool)Value ? 1.0 : 0.0;
         case FieldType.Int16:
           return (short?)Value;
         case FieldType.Int32:
@@ -633,8 +640,11 @@ namespace SQLiteServer.Fields
       Buffer.BlockCopy(bValueLength, 0, bytes, offset, sizeof(int));
       offset += sizeof(int);
 
-      Buffer.BlockCopy(ObjectToBytes(), 0, bytes, offset, ValueLength);
-      //offset += ValueLength;
+      if (ValueLength != 0)
+      {
+        Buffer.BlockCopy(ObjectToBytes(), 0, bytes, offset, ValueLength);
+        //offset += ValueLength;
+      }
 
       return bytes;
     }
@@ -678,6 +688,13 @@ namespace SQLiteServer.Fields
       {
         case FieldType.Field:
           return Unpack(value);
+        case FieldType.Bool:
+          if (value.Length != sizeof(bool))
+          {
+            throw new FieldException("The array of data is not the correct size.");
+          }
+          return BitConverter.ToBoolean(value, 0);
+
         case FieldType.Int16:
           if (value.Length != sizeof(short))
           {
@@ -880,14 +897,15 @@ namespace SQLiteServer.Fields
     {
       switch (Type)
       {
-        case FieldType.Field: return (Field)Value;
-        case FieldType.Int16: return (short)Value;
-        case FieldType.Int32: return (int)Value;
-        case FieldType.Int64: return (long)Value;
-        case FieldType.String: return (string)Value;
+        case FieldType.Field: return (Field) Value;
+        case FieldType.Int16: return (short) Value;
+        case FieldType.Bool: return (bool) Value;
+        case FieldType.Int32: return (int) Value;
+        case FieldType.Int64: return (long) Value;
+        case FieldType.String: return (string) Value;
         case FieldType.Null: return null;
-        case FieldType.Double: return (double)Value;
-        case FieldType.Bytes: return (byte[])Value;
+        case FieldType.Double: return (double) Value;
+        case FieldType.Bytes: return (byte[]) Value;
         case FieldType.List: return ListOfObjects();
 
         default:
@@ -906,6 +924,9 @@ namespace SQLiteServer.Fields
       {
         case FieldType.Field:
           value = new List<Field>();
+          break;
+        case FieldType.Bool:
+          value = new List<bool>();
           break;
         case FieldType.Int16:
           value = new List<short>();
@@ -953,6 +974,7 @@ namespace SQLiteServer.Fields
       switch (Type)
       {
         case FieldType.Field: return ((Field)Value).Pack();
+        case FieldType.Bool: return BitConverter.GetBytes((bool)Value);
         case FieldType.Int16: return BitConverter.GetBytes((short)Value);
         case FieldType.Int32: return BitConverter.GetBytes((int)Value);
         case FieldType.Int64: return BitConverter.GetBytes((long)Value);
@@ -987,6 +1009,11 @@ namespace SQLiteServer.Fields
     /// <returns></returns>
     public static FieldType TypeToFieldType(Type type)
     {
+      if (type == typeof(bool))
+      {
+        return FieldType.Bool;
+      }
+
       if (type == typeof(short))
       {
         return FieldType.Int16;
@@ -1047,6 +1074,9 @@ namespace SQLiteServer.Fields
       {
         case FieldType.Field:
           return typeof(Field);
+
+        case FieldType.Bool:
+          return typeof(bool);
 
         case FieldType.Int16:
           return typeof(short);

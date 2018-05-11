@@ -2300,7 +2300,7 @@ namespace SQLiteServer.Test.SQLiteServer
           {
             Assert.IsTrue(reader.Read());
             // ReSharper disable once ReturnValueOfPureMethodIsNotUsed
-            Assert.Throws< SQLiteServerException>( () => reader.GetChar(0));
+            Assert.Throws<InvalidCastException>( () => reader.GetChar(0));
           }
           Assert.IsFalse(reader.Read());
         }
@@ -2416,7 +2416,7 @@ namespace SQLiteServer.Test.SQLiteServer
           //
           Assert.IsTrue(reader.Read());
           // ReSharper disable once ReturnValueOfPureMethodIsNotUsed
-          Assert.Throws<SQLiteServerException>(() => reader.GetChar(0));
+          Assert.Throws<InvalidCastException>(() => reader.GetChar(0));
           Assert.IsFalse(reader.Read());
         }
       }
@@ -2450,7 +2450,7 @@ namespace SQLiteServer.Test.SQLiteServer
           //
           Assert.IsTrue(reader.Read());
           // ReSharper disable once ReturnValueOfPureMethodIsNotUsed
-          Assert.Throws<SQLiteServerException>(() => reader.GetChar(0));
+          Assert.Throws<InvalidCastException>(() => reader.GetChar(0));
           Assert.IsFalse(reader.Read());
         }
       }
@@ -2598,7 +2598,7 @@ namespace SQLiteServer.Test.SQLiteServer
           //
           Assert.IsTrue(reader.Read());
           // ReSharper disable once ReturnValueOfPureMethodIsNotUsed
-          Assert.Throws<SQLiteServerException>(() => reader.GetByte(0));
+          Assert.Throws<InvalidCastException>(() => reader.GetByte(0));
           Assert.IsFalse(reader.Read());
         }
       }
@@ -2883,7 +2883,7 @@ namespace SQLiteServer.Test.SQLiteServer
     {
       var server = CreateConnection();
       server.Open();
-      const string sqlMaster = "create table t1 (a INTERGER, b VARCHAR(255))";
+      const string sqlMaster = "create table t1 (a INTEGER, b VARCHAR(255))";
       using (var command = new SQLiteServerCommand(sqlMaster, server))
       {
         command.ExecuteNonQuery();
@@ -2985,6 +2985,178 @@ namespace SQLiteServer.Test.SQLiteServer
             Assert.IsTrue(reader.Read());
             Assert.That(reader.GetDouble(0), Is.EqualTo(d).Within(tolerance));
           }
+          Assert.IsFalse(reader.Read());
+        }
+      }
+      client?.Close();
+      server.Close();
+    }
+
+    [TestCase(true)]
+    [TestCase(false)]
+    public void IfTheIntValueIsNullWeShouldGetAnError(bool useClient)
+    {
+      var server = CreateConnection();
+      server.Open();
+      const string sqlMaster = "create table t1 (a INTEGER)";
+      using (var command = new SQLiteServerCommand(sqlMaster, server))
+      {
+        command.ExecuteNonQuery();
+      }
+
+      var current = server;
+
+      SQLiteServerConnection client = null;
+      if (useClient)
+      {
+        client = CreateConnection();
+        client.Open();
+        current = client;
+      }
+
+      var sql = $"insert into t1(a) VALUES (NULL)";
+      using (var command = new SQLiteServerCommand(sql, current))
+      {
+        command.ExecuteNonQuery();
+      }
+
+      const string sqlSelect = "SELECT a FROM t1 ORDER BY a ASC";
+      using (var command = new SQLiteServerCommand(sqlSelect, current))
+      {
+        using (var reader = command.ExecuteReader())
+        {
+          Assert.IsTrue(reader.Read());
+          // ReSharper disable once ReturnValueOfPureMethodIsNotUsed
+          Assert.Throws< InvalidCastException>(() => reader.GetInt32(0) );
+          Assert.IsFalse(reader.Read());
+        }
+      }
+      client?.Close();
+      server.Close();
+    }
+
+    [TestCase(true)]
+    [TestCase(false)]
+    public void IfTheLongValueIsNullWeShouldGetAnError(bool useClient)
+    {
+      var server = CreateConnection();
+      server.Open();
+      const string sqlMaster = "create table t1 (a INTEGER)";
+      using (var command = new SQLiteServerCommand(sqlMaster, server))
+      {
+        command.ExecuteNonQuery();
+      }
+
+      var current = server;
+
+      SQLiteServerConnection client = null;
+      if (useClient)
+      {
+        client = CreateConnection();
+        client.Open();
+        current = client;
+      }
+
+      var sql = $"insert into t1(a) VALUES (NULL)";
+      using (var command = new SQLiteServerCommand(sql, current))
+      {
+        command.ExecuteNonQuery();
+      }
+
+      const string sqlSelect = "SELECT a FROM t1 ORDER BY a ASC";
+      using (var command = new SQLiteServerCommand(sqlSelect, current))
+      {
+        using (var reader = command.ExecuteReader())
+        {
+          Assert.IsTrue(reader.Read());
+          // ReSharper disable once ReturnValueOfPureMethodIsNotUsed
+          Assert.Throws<InvalidCastException>(() => reader.GetInt64(0));
+          Assert.IsFalse(reader.Read());
+        }
+      }
+      client?.Close();
+      server.Close();
+    }
+
+    [TestCase(false)]
+    [TestCase(true)]
+    public void IfTheDoubleValueIsNullWeShouldGetAnError(bool useClient)
+    {
+      var server = CreateConnection();
+      server.Open();
+      const string sqlMaster = "create table t1 (a REAL)";
+      using (var command = new SQLiteServerCommand(sqlMaster, server))
+      {
+        command.ExecuteNonQuery();
+      }
+
+      var current = server;
+
+      SQLiteServerConnection client = null;
+      if (useClient)
+      {
+        client = CreateConnection();
+        client.Open();
+        current = client;
+      }
+
+      var sql = "insert into t1(a) VALUES (NULL)";
+      using (var command = new SQLiteServerCommand(sql, current))
+      {
+        command.ExecuteNonQuery();
+      }
+
+      const string sqlSelect = "SELECT a FROM t1 ORDER BY a ASC";
+      using (var command = new SQLiteServerCommand(sqlSelect, current))
+      {
+        using (var reader = command.ExecuteReader())
+        {
+          Assert.IsTrue(reader.Read());
+          // ReSharper disable once ReturnValueOfPureMethodIsNotUsed
+          Assert.Throws<InvalidCastException>(() => reader.GetDouble(0));
+          Assert.IsFalse(reader.Read());
+        }
+      }
+      client?.Close();
+      server.Close();
+    }
+
+    [TestCase(false)]
+    [TestCase(true)]
+    public void IfTheStringValueIsNullWeShouldGetAnError(bool useClient)
+    {
+      var server = CreateConnection();
+      server.Open();
+      const string sqlMaster = "create table t1 (a VARCHAR(255))";
+      using (var command = new SQLiteServerCommand(sqlMaster, server))
+      {
+        command.ExecuteNonQuery();
+      }
+
+      var current = server;
+
+      SQLiteServerConnection client = null;
+      if (useClient)
+      {
+        client = CreateConnection();
+        client.Open();
+        current = client;
+      }
+
+      var sql = "insert into t1(a) VALUES (NULL)";
+      using (var command = new SQLiteServerCommand(sql, current))
+      {
+        command.ExecuteNonQuery();
+      }
+
+      const string sqlSelect = "SELECT a FROM t1 ORDER BY a ASC";
+      using (var command = new SQLiteServerCommand(sqlSelect, current))
+      {
+        using (var reader = command.ExecuteReader())
+        {
+          Assert.IsTrue(reader.Read());
+          // ReSharper disable once ReturnValueOfPureMethodIsNotUsed
+          Assert.Throws<InvalidCastException>(() => reader.GetString(0));
           Assert.IsFalse(reader.Read());
         }
       }

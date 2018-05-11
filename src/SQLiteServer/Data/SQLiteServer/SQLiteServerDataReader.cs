@@ -349,6 +349,10 @@ namespace SQLiteServer.Data.SQLiteServer
       {
         return _worker.GetString(i);
       }
+      catch (InvalidCastException)
+      {
+        throw;
+      }
       catch (Exception e)
       {
         throw new SQLiteServerException( e.Message );
@@ -370,6 +374,10 @@ namespace SQLiteServer.Data.SQLiteServer
       {
         return _worker.GetInt16(i);
       }
+      catch (InvalidCastException )
+      {
+        throw;
+      }
       catch (Exception e)
       {
         throw new SQLiteServerException(e.Message);
@@ -385,6 +393,10 @@ namespace SQLiteServer.Data.SQLiteServer
       {
         return _worker.GetInt32(i);
       }
+      catch (InvalidCastException )
+      {
+        throw;
+      }
       catch (Exception e)
       {
         throw new SQLiteServerException(e.Message);
@@ -399,6 +411,10 @@ namespace SQLiteServer.Data.SQLiteServer
       try
       {
         return _worker.GetInt64(i);
+      }
+      catch (InvalidCastException)
+      {
+        throw;
       }
       catch (Exception e)
       {
@@ -426,6 +442,10 @@ namespace SQLiteServer.Data.SQLiteServer
       try
       {
         return _worker.GetDouble(i);
+      }
+      catch (InvalidCastException)
+      {
+        throw;
       }
       catch (Exception e)
       {

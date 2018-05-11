@@ -114,7 +114,6 @@ namespace SQLiteServer.Data.Workers
       string guid;
       switch (packet.Message)
       {
-        case SQLiteMessage.ExecuteReaderGetStringRequest:
         case SQLiteMessage.ExecuteReaderGetFieldTypeRequest:
         case SQLiteMessage.ExecuteReaderGetDataTypeNameRequest:
         case SQLiteMessage.ExecuteReaderGetNameRequest:
@@ -173,10 +172,6 @@ namespace SQLiteServer.Data.Workers
           var index = indexRequest.Index;
           switch (packet.Message)
           {
-            case SQLiteMessage.ExecuteReaderGetStringRequest:
-              response(new Packet(SQLiteMessage.ExecuteReaderResponse, reader.GetString(index)));
-              break;
-
             case SQLiteMessage.ExecuteReaderGetDataTypeNameRequest:
               response(new Packet(SQLiteMessage.ExecuteReaderResponse, reader.GetDataTypeName(index)));
               break;
@@ -384,8 +379,10 @@ namespace SQLiteServer.Data.Workers
         var row = new RowInformation.RowData
         {
           Names = new List<string>(),
-          Columns = new List<Field>()
+          Columns = new List<Field>(),
+          Nulls = new List<bool>()
         };
+
         for (var i = 0; i < reader.FieldCount; ++i)
         {
           var name = reader.GetName(i);
@@ -396,14 +393,26 @@ namespace SQLiteServer.Data.Workers
         {
           for (var i = 0; i < reader.FieldCount; ++i)
           {
-            if (reader.IsDBNull(i))
+            var isNull = reader.IsDBNull(i);
+            var type = reader.GetFieldType(i);
+            object value = null;
+            if (isNull)
             {
-              row.Columns.Add(null);
+              if( type == typeof(string) )
+              {
+                value = null;
+              }
+              else
+              {
+                value = Activator.CreateInstance(type);
+              }
             }
             else
             {
-              row.Columns.Add(new Field(row.Names[i], reader.GetFieldType(i), reader.GetValue(i)));
+              value = reader.GetValue(i);
             }
+            row.Columns.Add(new Field(row.Names[i], type, value ));
+            row.Nulls.Add(isNull);
           }
         }
 
@@ -557,7 +566,6 @@ namespace SQLiteServer.Data.Workers
           HandleExecuteReaderGetRowRequest( packet, response);
           break;
 
-        case SQLiteMessage.ExecuteReaderGetStringRequest:
         case SQLiteMessage.ExecuteReaderGetFieldTypeRequest:
         case SQLiteMessage.ExecuteReaderGetDataTypeNameRequest:
         case SQLiteMessage.ExecuteReaderGetNameRequest:

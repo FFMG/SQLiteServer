@@ -68,49 +68,49 @@ namespace SQLiteServer.Test.Misc
     public void CannotAddSameOrdinal()
     {
       var r = new RowInformation( new List<string>{"cola", "colb", "colc" });
-      r.Add(new ColumnInformation(ValidField, 0, "cola"));
-      r.Add(new ColumnInformation(ValidField, 1, "colb"));
-      Assert.Throws<DuplicateNameException>( () => r.Add( new ColumnInformation( ValidField, 0, "colc")));
+      r.Add(new ColumnInformation(ValidField, 0, "cola", false));
+      r.Add(new ColumnInformation(ValidField, 1, "colb", false));
+      Assert.Throws<DuplicateNameException>( () => r.Add( new ColumnInformation( ValidField, 0, "colc", false)));
     }
 
     [Test]
     public void AddingAColumnNameThatDoesNotExist()
     {
       var r = new RowInformation(new List<string> { "cola", "colb" });
-      r.Add(new ColumnInformation(ValidField, 0, "cola"));
-      Assert.Throws<ArgumentException>(() => r.Add(new ColumnInformation(ValidField, 1, "colc")));
+      r.Add(new ColumnInformation(ValidField, 0, "cola", false));
+      Assert.Throws<ArgumentException>(() => r.Add(new ColumnInformation(ValidField, 1, "colc", false)));
     }
 
     [Test]
     public void AddingAColumnOrdinalThatDoesNotExist()
     {
       var r = new RowInformation(new List<string> { "cola", "colb" });
-      r.Add(new ColumnInformation(ValidField, 0, "cola"));
-      Assert.Throws<ArgumentException>(() => r.Add(new ColumnInformation(ValidField, 3, "colb")));
+      r.Add(new ColumnInformation(ValidField, 0, "cola", false));
+      Assert.Throws<ArgumentException>(() => r.Add(new ColumnInformation(ValidField, 3, "colb", false)));
     }
 
     [Test]
     public void OrdinalDoesNotMatchTheNsmr()
     {
       var r = new RowInformation(new List<string> { "cola", "colb" });
-      Assert.Throws<ArgumentException>(() => r.Add(new ColumnInformation(ValidField, 0, "colb")));
+      Assert.Throws<ArgumentException>(() => r.Add(new ColumnInformation(ValidField, 0, "colb", false)));
     }
 
     [Test]
     public void CannotAddSameName()
     {
       var r = new RowInformation(new List<string> { "cola", "colb" });
-      r.Add(new ColumnInformation(ValidField, 0, "cola"));
-      r.Add(new ColumnInformation(ValidField, 1, "colb"));
-      Assert.Throws<DuplicateNameException>(() => r.Add(new ColumnInformation(ValidField, 2, "cola")));
+      r.Add(new ColumnInformation(ValidField, 0, "cola", false));
+      r.Add(new ColumnInformation(ValidField, 1, "colb", false));
+      Assert.Throws<DuplicateNameException>(() => r.Add(new ColumnInformation(ValidField, 2, "cola", false)));
     }
 
     [Test]
     public void TryingToGetByNameThatDoesNotExist()
     {
       var r = new RowInformation(new List<string> { "cola", "colb" });
-      r.Add(new ColumnInformation(ValidField, 0, "cola"));
-      r.Add(new ColumnInformation(ValidField, 1, "colb"));
+      r.Add(new ColumnInformation(ValidField, 0, "cola", false));
+      r.Add(new ColumnInformation(ValidField, 1, "colb", false));
 
       Assert.Throws<IndexOutOfRangeException>( () => r.Get("colc"));
     }
@@ -119,8 +119,8 @@ namespace SQLiteServer.Test.Misc
     public void TryingToGetByOrdinalThatDoesNotExist()
     {
       var r = new RowInformation(new List<string> { "cola", "colb" });
-      r.Add(new ColumnInformation(ValidField, 0, "cola"));
-      r.Add(new ColumnInformation(ValidField, 1, "colb"));
+      r.Add(new ColumnInformation(ValidField, 0, "cola", false));
+      r.Add(new ColumnInformation(ValidField, 1, "colb", false));
 
       Assert.Throws<IndexOutOfRangeException>( () => r.Get(2));
     }
@@ -130,8 +130,8 @@ namespace SQLiteServer.Test.Misc
     {
       var f = ValidField;
       var r = new RowInformation(new List<string> { "cola", "colb" });
-      r.Add(new ColumnInformation(f, 0, "cola"));
-      r.Add(new ColumnInformation(ValidField, 1, "colb"));
+      r.Add(new ColumnInformation(f, 0, "cola", false));
+      r.Add(new ColumnInformation(ValidField, 1, "colb", false));
 
       var c = r.Get("cola");
       Assert.AreEqual(c.Ordinal, 0);
@@ -145,8 +145,8 @@ namespace SQLiteServer.Test.Misc
     {
       var f = ValidField;
       var r = new RowInformation(new List<string> { "cola", "colb" });
-      r.Add(new ColumnInformation(f, 0, "cola"));
-      r.Add(new ColumnInformation(ValidField, 1, "colb"));
+      r.Add(new ColumnInformation(f, 0, "cola", false));
+      r.Add(new ColumnInformation(ValidField, 1, "colb", false));
 
       Assert.IsNotNull( r.Get("cola"));
       Assert.IsNotNull(r.Get("COLA"));
@@ -158,8 +158,8 @@ namespace SQLiteServer.Test.Misc
     {
       var f = ValidField;
       var r = new RowInformation(new List<string> { "cola", "colb" });
-      r.Add(new ColumnInformation(f, 0, "cola"));
-      r.Add(new ColumnInformation(ValidField, 1, "colb"));
+      r.Add(new ColumnInformation(f, 0, "cola", false));
+      r.Add(new ColumnInformation(ValidField, 1, "colb", false));
 
       var c = r.Get(0);
       Assert.AreEqual(c.Ordinal, 0 );

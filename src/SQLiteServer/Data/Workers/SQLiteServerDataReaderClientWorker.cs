@@ -100,9 +100,11 @@ namespace SQLiteServer.Data.Workers
       var row = GetGuiOnlyValue<RowInformation.RowData>(SQLiteMessage.ExecuteReaderGetRowRequest );
       _currentRowInformation = new RowInformation( row.Names );
       var ordinal = 0;
-      foreach (var column in row.Columns )
+      for(var i =0; i < row.Columns.Count;++i )
       {
-        _currentRowInformation.Add( new ColumnInformation(column, ordinal++, column.Name));
+        var column = row.Columns[i];
+        var isNull = row.Nulls[i];
+        _currentRowInformation.Add( new ColumnInformation(column, ordinal++, column.Name, isNull ));
       }
       return _currentRowInformation;
     }
@@ -320,31 +322,56 @@ namespace SQLiteServer.Data.Workers
     /// <inheritdoc />
     public short GetInt16(int i)
     {
-      return GetColumn(i).Get<short>();
+      var column = GetColumn(i);
+      if (column.IsNull)
+      {
+        throw new InvalidCastException();
+      }
+      return column.Get<short>();
     }
 
     /// <inheritdoc />
     public int GetInt32(int i)
     {
-      return GetColumn(i).Get<int>();
+      var column = GetColumn(i);
+      if (column.IsNull)
+      {
+        throw new InvalidCastException();
+      }
+      return column.Get<int>();
     }
 
     /// <inheritdoc />
     public long GetInt64(int i)
     {
-      return GetColumn(i).Get<long>();
+      var column = GetColumn(i);
+      if (column.IsNull)
+      {
+        throw new InvalidCastException();
+      }
+      return column.Get<long>();
     }
 
     /// <inheritdoc />
     public double GetDouble(int i)
     {
-      return GetColumn(i).Get<double>();
+      var column = GetColumn(i);
+      if (column.IsNull)
+      {
+        throw new InvalidCastException();
+      }
+      return column.Get<double>();
     }
 
     /// <inheritdoc />
     public string GetString(int i)
     {
-      return GetIndexedValue<string>(SQLiteMessage.ExecuteReaderGetStringRequest, i);
+      var column = GetColumn(i);
+      if (column.IsNull)
+      {
+        throw new InvalidCastException();
+      }
+      return column.Get<string>();
     }
 
     /// <inheritdoc />
@@ -436,7 +463,7 @@ namespace SQLiteServer.Data.Workers
     /// <inheritdoc />
     public bool IsDBNull(int i)
     {
-      return GetValue(i) == null;
+      return GetColumn(i).IsNull;
     }
 
     /// <inheritdoc />

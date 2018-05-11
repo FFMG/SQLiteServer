@@ -31,6 +31,11 @@ namespace SQLiteServer.Data.Data
     public int Ordinal { get; }
 
     /// <summary>
+    /// If the data is null or not
+    /// </summary>
+    public bool IsNull { get; }
+
+    /// <summary>
     /// The column field.
     /// </summary>
     public Field Field { get; }
@@ -44,31 +49,34 @@ namespace SQLiteServer.Data.Data
     {
       return Field.Get<T>();
     }
-    
+
     /// <summary>
     /// Constructor
     /// </summary>
     /// <param name="field"></param>
     /// <param name="ordinal"></param>
     /// <param name="name"></param>
-    public ColumnInformation(Field field, int ordinal, string name )
+    /// <param name="isNull"></param>
+    public ColumnInformation(Field field, int ordinal, string name, bool isNull )
     {
       if (null == field)
       {
         throw new ArgumentNullException( nameof(field));
       }
+      Field = field;
 
       if (string.IsNullOrWhiteSpace(name))
       {
         throw new ArgumentException("The name cannot be empty or null");
       }
+      Name = name;
+
       if (ordinal < 0)
       {
         throw new ArgumentException("The ordinal cannot be negative or zero.");
       }
       Ordinal = ordinal;
-      Name = name;
-      Field = field;
+      IsNull = isNull;
     }
   }
 }

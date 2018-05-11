@@ -25,6 +25,7 @@ namespace SQLiteServer.Fields
     Double,
     Bytes,
     Object,
+    Bool,
     List
   }
 }

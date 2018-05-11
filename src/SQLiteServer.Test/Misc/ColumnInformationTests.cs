@@ -33,7 +33,7 @@ namespace SQLiteServer.Test.Misc
       const string name = "World";
       const int ordinal = 13;
       var f = new Field("Hello", 42);
-      var c = new ColumnInformation(f, ordinal, name );
+      var c = new ColumnInformation(f, ordinal, name, false );
       Assert.AreEqual( name, c.Name );
       Assert.AreEqual(ordinal, c.Ordinal);
       Assert.AreEqual("Hello", f.Name);
@@ -49,7 +49,7 @@ namespace SQLiteServer.Test.Misc
       const string name = "World";
       const int ordinal = 13;
       var f = new Field("Hello", value);
-      var c = new ColumnInformation(f, ordinal, name);
+      var c = new ColumnInformation(f, ordinal, name, false);
       Assert.AreEqual(f.Get<int>(), c.Get<int>());
       Assert.AreEqual(f.Get<long>(), c.Get<long>());
       Assert.AreEqual(f.Get<string>(), c.Get<string>());
@@ -59,28 +59,28 @@ namespace SQLiteServer.Test.Misc
     public void NameCannotBeNull()
     {
       // ReSharper disable once ObjectCreationAsStatement
-      Assert.Throws<ArgumentException>(() => new ColumnInformation(ValidField, 12, null));
+      Assert.Throws<ArgumentException>(() => new ColumnInformation(ValidField, 12, null, false));
     }
 
     [Test]
     public void NameCannotBeEmpty()
     {
       // ReSharper disable once ObjectCreationAsStatement
-      Assert.Throws<ArgumentException>(() => new ColumnInformation(ValidField, 12, ""));
+      Assert.Throws<ArgumentException>(() => new ColumnInformation(ValidField, 12, "", false));
     }
 
     [Test]
     public void NameCannotBeEmptyWithSpaces()
     {
       // ReSharper disable once ObjectCreationAsStatement
-      Assert.Throws<ArgumentException>(() => new ColumnInformation(ValidField, 12, "           "));
+      Assert.Throws<ArgumentException>(() => new ColumnInformation(ValidField, 12, "           ", false));
     }
 
     [Test]
     public void FieldCannotBeNull()
     {
       // ReSharper disable once ObjectCreationAsStatement
-      Assert.Throws<ArgumentNullException>(() => new ColumnInformation(null, 12, "Hello"));
+      Assert.Throws<ArgumentNullException>(() => new ColumnInformation(null, 12, "Hello", false));
     }
 
     [TestCase(-1)]
@@ -90,7 +90,7 @@ namespace SQLiteServer.Test.Misc
     public void OrdinalCannotBeNegative( int value )
     {
       // ReSharper disable once ObjectCreationAsStatement
-      Assert.Throws<ArgumentException>(() => new ColumnInformation(ValidField, value, "Hello"));
+      Assert.Throws<ArgumentException>(() => new ColumnInformation(ValidField, value, "Hello", false));
     }
   }
 }
