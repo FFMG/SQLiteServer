@@ -436,7 +436,7 @@ namespace SQLiteServer.Data.Workers
     /// <inheritdoc />
     public bool IsDBNull(int i)
     {
-      return GetIndexedValue<bool>(SQLiteMessage.ExecuteReaderGetIsDBNullRequest, i);
+      return GetValue(i) == null;
     }
 
     /// <inheritdoc />
