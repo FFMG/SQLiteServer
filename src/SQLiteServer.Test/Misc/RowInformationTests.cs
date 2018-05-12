@@ -154,6 +154,18 @@ namespace SQLiteServer.Test.Misc
     }
 
     [Test]
+    public void CheckNullValue()
+    {
+      var f = ValidField;
+      var r = new RowInformation(new List<string> { "cola", "colb" }, new List<int> { (int)FieldType.String, (int)FieldType.String });
+      r.Add(new ColumnInformation(f, 0, "cola", true));
+      r.Add(new ColumnInformation(ValidField, 1, "colb", false));
+
+      Assert.IsTrue( r.Get(0).IsNull );
+      Assert.IsFalse( r.Get(1).IsNull);
+    }
+
+    [Test]
     public void GetByOrdinal()
     {
       var f = ValidField;
@@ -166,6 +178,25 @@ namespace SQLiteServer.Test.Misc
       Assert.AreEqual(c.Name, "cola");
       Assert.AreEqual(f.Name, c.Field.Name);
       Assert.AreEqual(f.Type, c.Field.Type);
+    }
+
+    [Test]
+    public void FieldTypeWithNoValue()
+    {
+      var f = ValidField;
+      var r = new RowInformation(new List<string> { "cola", "colb" }, new List<int> { (int)FieldType.String, (int)FieldType.Int64 });
+
+      Assert.AreEqual(r.GetType(0), typeof(string));
+      Assert.AreEqual(r.GetType(1), typeof(long));
+    }
+
+    [Test]
+    public void FieldTypeObjectWithNoValue()
+    {
+      var f = ValidField;
+      var r = new RowInformation(new List<string> { "cola" }, new List<int> { (int)FieldType.Object });
+
+      Assert.AreEqual(r.GetType(0), typeof(object));
     }
 
     [Test]
