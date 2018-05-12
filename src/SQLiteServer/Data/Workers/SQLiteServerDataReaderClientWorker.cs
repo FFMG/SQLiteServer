@@ -15,9 +15,7 @@
 using System;
 using System.Collections.Generic;
 using System.Data;
-using System.Diagnostics;
 using System.Text;
-using System.Threading.Tasks;
 using SQLiteServer.Data.Connections;
 using SQLiteServer.Data.Data;
 using SQLiteServer.Data.Enums;
@@ -217,18 +215,7 @@ namespace SQLiteServer.Data.Workers
     }
     
     /// <inheritdoc />
-    public int FieldCount
-    {
-      get
-      {
-        if (_fieldCount != null)
-        {
-          return (int) _fieldCount;
-        }
-        _fieldCount = GetGuiOnlyValue<int>(SQLiteMessage.ExecuteReaderFieldCountRequest);
-        return (int)_fieldCount;
-      }
-    }
+    public int FieldCount => GetRow().FieldCount;
 
     /// <inheritdoc />
     public bool HasRows

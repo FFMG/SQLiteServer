@@ -123,7 +123,6 @@ namespace SQLiteServer.Data.Workers
           guid = indexRequest.Guid;
           break;
 
-        case SQLiteMessage.ExecuteReaderFieldCountRequest:
         case SQLiteMessage.ExecuteReaderHasRowsRequest:
         case SQLiteMessage.ExecuteReaderNextResultRequest:
         case SQLiteMessage.ExecuteReaderReadRequest:
@@ -241,10 +240,6 @@ namespace SQLiteServer.Data.Workers
 
             case SQLiteMessage.ExecuteReaderHasRowsRequest:
               response(new Packet(SQLiteMessage.ExecuteReaderResponse, reader.HasRows ? 1 : 0));
-              break;
-
-            case SQLiteMessage.ExecuteReaderFieldCountRequest:
-              response(new Packet(SQLiteMessage.ExecuteReaderResponse, reader.FieldCount));
               break;
           }
         }
@@ -395,7 +390,7 @@ namespace SQLiteServer.Data.Workers
           {
             var isNull = reader.IsDBNull(i);
             var type = reader.GetFieldType(i);
-            object value = null;
+            object value;
             if (isNull)
             {
               if( type == typeof(string) )
@@ -573,7 +568,6 @@ namespace SQLiteServer.Data.Workers
           HandleExecuteReaderIndexRequest(packet, response );
           break;
 
-        case SQLiteMessage.ExecuteReaderFieldCountRequest:
         case SQLiteMessage.ExecuteReaderHasRowsRequest:
         case SQLiteMessage.ExecuteReaderNextResultRequest:
         case SQLiteMessage.ExecuteReaderReadRequest:

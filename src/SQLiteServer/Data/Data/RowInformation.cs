@@ -39,6 +39,7 @@ namespace SQLiteServer.Data.Data
       /// </summary>
       public List<bool> Nulls;
     }
+    
     /// <summary>
     /// The list of colums
     /// </summary>
@@ -48,6 +49,11 @@ namespace SQLiteServer.Data.Data
     /// The number of items in the list.
     /// </summary>
     public int Count => _columns.Count;
+
+    /// <summary>
+    /// The number of fields
+    /// </summary>
+    public int FieldCount => ColumnNames.Count;
 
     /// <summary>
     /// The list of columns in case we have no data in the row.
