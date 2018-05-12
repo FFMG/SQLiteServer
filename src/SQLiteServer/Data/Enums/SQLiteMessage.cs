@@ -45,7 +45,6 @@ namespace SQLiteServer.Data.Enums
     ExecuteReaderHasRowsRequest,
     ExecuteReaderGetRowRequest,
     ExecuteReaderGetRowResponse,
-    ExecuteReaderGetFieldTypeRequest,
     ExecuteReaderGetDataTypeNameRequest,
     ExecuteReaderGetNameRequest,
     ExecuteReaderGetTableNameRequest,

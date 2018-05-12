@@ -38,6 +38,11 @@ namespace SQLiteServer.Data.Data
       /// If the columns are null or not.
       /// </summary>
       public List<bool> Nulls;
+
+      /// <summary>
+      /// The field types
+      /// </summary>
+      public List<int> Types;
     }
     
     /// <summary>
@@ -61,10 +66,16 @@ namespace SQLiteServer.Data.Data
     private List<string> ColumnNames { get; }
 
     /// <summary>
+    /// All the field types
+    /// </summary>
+    private List<int> FieldTypes { get; }
+
+    /// <summary>
     /// The contructor, pass the column names.
     /// </summary>
     /// <param name="columnNames"></param>
-    public RowInformation(List<string> columnNames)
+    /// <param name="types"></param>
+    public RowInformation(List<string> columnNames, List<int> types )
     {
       if (null == columnNames)
       {
@@ -84,6 +95,7 @@ namespace SQLiteServer.Data.Data
         throw new ArgumentException("The colum name empty be null!");
       }
       ColumnNames = columnNames;
+      FieldTypes = types;
     }
 
     /// <summary>
@@ -193,6 +205,20 @@ namespace SQLiteServer.Data.Data
         throw new ArgumentException("The name cannot be empty or null");
       }
       return ColumnNames.FindIndex( n => n.Equals(name, StringComparison.OrdinalIgnoreCase ));
+    }
+
+    /// <summary>
+    /// Get the column field type.
+    /// </summary>
+    /// <param name="ordinal"></param>
+    /// <returns></returns>
+    public Type GetType(int ordinal)
+    {
+      if ( ordinal < 0 || ordinal >= FieldTypes.Count)
+      {
+        throw new IndexOutOfRangeException($"Could not find column {ordinal}!");
+      }
+      return Field.FieldTypeToType((FieldType) FieldTypes[ordinal]);
     }
   }
 }

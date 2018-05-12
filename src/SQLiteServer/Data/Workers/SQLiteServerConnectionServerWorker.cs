@@ -114,7 +114,6 @@ namespace SQLiteServer.Data.Workers
       string guid;
       switch (packet.Message)
       {
-        case SQLiteMessage.ExecuteReaderGetFieldTypeRequest:
         case SQLiteMessage.ExecuteReaderGetDataTypeNameRequest:
         case SQLiteMessage.ExecuteReaderGetNameRequest:
         case SQLiteMessage.ExecuteReaderGetTableNameRequest:
@@ -181,11 +180,6 @@ namespace SQLiteServer.Data.Workers
 
             case SQLiteMessage.ExecuteReaderGetTableNameRequest:
               response(new Packet(SQLiteMessage.ExecuteReaderResponse, reader.GetTableName(index)));
-              break;
-              
-            case SQLiteMessage.ExecuteReaderGetFieldTypeRequest:
-              var iType = Field.TypeToFieldType(reader.GetFieldType(index));
-              response(new Packet(SQLiteMessage.ExecuteReaderResponse, (int)iType));
               break;
 
             default:
@@ -374,6 +368,7 @@ namespace SQLiteServer.Data.Workers
         var row = new RowInformation.RowData
         {
           Names = new List<string>(),
+          Types = new List<int>(),
           Columns = new List<Field>(),
           Nulls = new List<bool>()
         };
@@ -382,6 +377,7 @@ namespace SQLiteServer.Data.Workers
         {
           var name = reader.GetName(i);
           row.Names.Add(name);
+          row.Types.Add( (int)Field.TypeToFieldType(reader.GetFieldType(i)));
         }
 
         if (reader.HasRows)
@@ -561,7 +557,6 @@ namespace SQLiteServer.Data.Workers
           HandleExecuteReaderGetRowRequest( packet, response);
           break;
 
-        case SQLiteMessage.ExecuteReaderGetFieldTypeRequest:
         case SQLiteMessage.ExecuteReaderGetDataTypeNameRequest:
         case SQLiteMessage.ExecuteReaderGetNameRequest:
         case SQLiteMessage.ExecuteReaderGetTableNameRequest:

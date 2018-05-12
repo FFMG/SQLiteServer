@@ -20,7 +20,6 @@ using SQLiteServer.Data.Connections;
 using SQLiteServer.Data.Data;
 using SQLiteServer.Data.Enums;
 using SQLiteServer.Data.Exceptions;
-using SQLiteServer.Fields;
 
 namespace SQLiteServer.Data.Workers
 {
@@ -38,11 +37,6 @@ namespace SQLiteServer.Data.Workers
     /// </summary>
     private readonly Dictionary<int, string> _columnTableName = new Dictionary<int, string>();
     
-    /// <summary>
-    /// Save the field types.
-    /// </summary>
-    private readonly Dictionary<int, Type> _fieldTypes = new Dictionary<int, Type>();
-
     /// <summary>
     /// Save the field names.
     /// </summary>
@@ -90,7 +84,7 @@ namespace SQLiteServer.Data.Workers
       
       // get the row.
       var row = GetGuiOnlyValue<RowInformation.RowData>(SQLiteMessage.ExecuteReaderGetRowRequest );
-      _currentRowInformation = new RowInformation( row.Names );
+      _currentRowInformation = new RowInformation( row.Names, row.Types );
       var ordinal = 0;
       for(var i =0; i < row.Columns.Count;++i )
       {
@@ -197,7 +191,6 @@ namespace SQLiteServer.Data.Workers
 
       // we need to reset some field now.
       _dataTypeName.Clear();
-      _fieldTypes.Clear();
       _currentRowInformation = null;
       return true;
     }
@@ -381,20 +374,7 @@ namespace SQLiteServer.Data.Workers
     /// <inheritdoc />
     public Type GetFieldType(int i)
     {
-      if (_fieldTypes.ContainsKey(i))
-      {
-        return _fieldTypes[i];
-      }
-
-      // get the value
-      var fieldType = (FieldType)GetIndexedValue<int>(SQLiteMessage.ExecuteReaderGetFieldTypeRequest, i);
-      var systemType = Field.FieldTypeToType(fieldType);
-
-      // save it
-      _fieldTypes[i] = systemType;
-
-      // return it.
-      return systemType;
+      return GetRow().GetType(i);
     }
 
     /// <inheritdoc />
