@@ -167,5 +167,19 @@ namespace SQLiteServer.Test.Misc
       Assert.AreEqual(f.Name, c.Field.Name);
       Assert.AreEqual(f.Type, c.Field.Type);
     }
+
+    [Test]
+    public void TheNumberOfFieldTypesDoesNotMatchTheNumberOfColumnNames()
+    {
+      // ReSharper disable once ObjectCreationAsStatement
+      Assert.Throws<ArgumentException>( () => new RowInformation(new List<string> { "cola", "colb" }, new List<int> { (int)FieldType.String}));
+    }
+
+    [Test]
+    public void FieldTypesCannotBeNull()
+    {
+      // ReSharper disable once ObjectCreationAsStatement
+      Assert.Throws<ArgumentNullException>(() => new RowInformation(new List<string> { "cola", "colb" }, null ));
+    }
   }
 }

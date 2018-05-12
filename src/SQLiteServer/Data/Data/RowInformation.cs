@@ -95,6 +95,16 @@ namespace SQLiteServer.Data.Data
         throw new ArgumentException("The colum name empty be null!");
       }
       ColumnNames = columnNames;
+
+      if (null == types)
+      {
+        throw new ArgumentNullException( nameof(types));
+      }
+
+      if (ColumnNames.Count != types.Count)
+      {
+        throw new ArgumentException("The number of column types does not match the number of columns!");
+      }
       FieldTypes = types;
     }
 
