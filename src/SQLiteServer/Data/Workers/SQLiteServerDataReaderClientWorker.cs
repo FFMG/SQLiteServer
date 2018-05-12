@@ -49,12 +49,6 @@ namespace SQLiteServer.Data.Workers
     private readonly Dictionary<int, string> _dataTypeName = new Dictionary<int, string>();
 
     /// <summary>
-    /// Get the number of fields.
-    /// If the value is null, we will ask the server, otherwise it is cached.
-    /// </summary>
-    private int? _fieldCount;
-
-    /// <summary>
     /// Check if we have any rows.
     /// If the value is null, we will ask the server, otherwise it is cached.
     /// </summary>
@@ -406,45 +400,8 @@ namespace SQLiteServer.Data.Workers
     /// <inheritdoc />
     public object GetValue(int i)
     {
-      // get the current row.
-      var column = GetColumn(i);
-      if (null != column)
-      {
-        // get the value for this column.
-        return column.Get<object>();
-      }
-
-      // get the data type
-      var type = GetFieldType(i);
-
-      if (type == typeof(short))
-      {
-        return GetInt16(i);
-      }
-
-      if (type == typeof(int))
-      {
-        return GetInt32(i);
-      }
-
-      if (type == typeof(long))
-      {
-        return GetInt64(i);
-      }
-
-      if (type == typeof(double))
-      {
-        return GetDouble(i);
-      }
-      
-      if (type == typeof(string))
-      {
-        return GetString(i);
-      }
-
-      // not yet supported
-      // we need byte[], short as well as double
-      throw new NotImplementedException();
+      // get the current colum, if we do not have one, we will throw.
+      return GetColumn(i).Get<object>();
     }
 
     /// <inheritdoc />
