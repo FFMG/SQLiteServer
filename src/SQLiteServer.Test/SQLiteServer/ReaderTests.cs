@@ -240,7 +240,7 @@ namespace SQLiteServer.Test.SQLiteServer
     }
 
     [Test]
-    public void ServerHasRows()
+    public void ServerHasRowsButReadHasNotBeenCalled()
     {
       var server = CreateConnection();
       server.Open();
@@ -1685,7 +1685,7 @@ namespace SQLiteServer.Test.SQLiteServer
     }
 
     [Test]
-    public void ClientHasRows()
+    public void ClientHasRowsButReadHasNotBeenCalled()
     {
       var server = CreateConnection();
       server.Open();

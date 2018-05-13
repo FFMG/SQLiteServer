@@ -13,6 +13,7 @@
 //    You should have received a copy of the GNU General Public License
 //    along with SQLiteServer.  If not, see<https://www.gnu.org/licenses/gpl-3.0.en.html>.
 using System;
+using System.CodeDom;
 using System.Collections.Generic;
 using System.Data;
 using System.Text;
@@ -43,12 +44,6 @@ namespace SQLiteServer.Data.Workers
     private readonly Dictionary<int, string> _dataTypeName = new Dictionary<int, string>();
 
     /// <summary>
-    /// Check if we have any rows.
-    /// If the value is null, we will ask the server, otherwise it is cached.
-    /// </summary>
-    private bool? _hasRows;
-
-    /// <summary>
     /// The SQLite Connection
     /// </summary>
     private readonly ConnectionsController _controller;
@@ -71,6 +66,11 @@ namespace SQLiteServer.Data.Workers
     private RowInformation _currentRowInformation;
 
     /// <summary>
+    /// The current row header.
+    /// </summary>
+    private RowHeader _currentRowHeader;
+
+    /// <summary>
     /// Get the current row or go and fetch it.
     /// </summary>
     /// <returns></returns>
@@ -81,10 +81,15 @@ namespace SQLiteServer.Data.Workers
       {
         return _currentRowInformation;
       }
+
+      if ( null == _currentRowHeader )
+      {
+        throw new SQLiteServerException( "Missing row headers.");
+      }
       
       // get the row.
       var row = GetGuiOnlyValue<RowInformation.RowData>(SQLiteMessage.ExecuteReaderGetRowRequest );
-      _currentRowInformation = new RowInformation( row.Names, row.Types );
+      _currentRowInformation = new RowInformation(  _currentRowHeader );
       var ordinal = 0;
       for(var i =0; i < row.Columns.Count;++i )
       {
@@ -156,21 +161,23 @@ namespace SQLiteServer.Data.Workers
         Guid = _commandGuid,
         Index = (int)commandBehavior
       };
-      var fields = Fields.Fields.SerializeObject(getValue);
+      var request = Fields.Fields.SerializeObject(getValue);
 
-      var response = _controller.SendAndWaitAsync(SQLiteMessage.ExecuteReaderRequest, fields.Pack(), _queryTimeouts).Result;
+      var response = _controller.SendAndWaitAsync(SQLiteMessage.ExecuteReaderRequest, request.Pack(), _queryTimeouts).Result;
       switch (response.Message)
       {
         case SQLiteMessage.SendAndWaitTimeOut:
           throw new TimeoutException("There was a timeout error creating the Command.");
 
         case SQLiteMessage.ExecuteReaderResponse:
-          var result = response.Get<int>();
-          if( 1 != result )
-          {
-            throw new SQLiteServerException($"Received an unexpected error {result} from the server.");
-          }
+          var fields = Fields.Fields.Unpack(response.Payload);
+          _currentRowHeader = Fields.Fields.DeserializeObject<RowHeader>(fields);
           return;
+//          if ( 1 != result )
+//          {
+//            throw new SQLiteServerException($"Received an unexpected error {result} from the server.");
+//          }
+//          return;
 
         case SQLiteMessage.ExecuteReaderException:
           var error = response.Get<string>();
@@ -202,21 +209,10 @@ namespace SQLiteServer.Data.Workers
     }
     
     /// <inheritdoc />
-    public int FieldCount => GetRow().FieldCount;
+    public int FieldCount => _currentRowHeader.FieldCount;
 
     /// <inheritdoc />
-    public bool HasRows
-    {
-      get
-      {
-        if (_hasRows != null)
-        {
-          return (bool)_hasRows;
-        }
-        _hasRows = GetGuiOnlyValue<bool>(SQLiteMessage.ExecuteReaderHasRowsRequest);
-        return (bool)_hasRows;
-      }
-    }
+    public bool HasRows => _currentRowHeader.HasRows;
 
     /// <inheritdoc />
     public object this[int ordinal] => GetValue(ordinal);
@@ -227,7 +223,11 @@ namespace SQLiteServer.Data.Workers
     /// <inheritdoc />
     public int GetOrdinal(string name)
     {
-      return GetRow().GetOrdinal(name);
+      if (null == _currentRowHeader)
+      {
+        throw new IndexOutOfRangeException();
+      }
+      return _currentRowHeader.GetOrdinal(name);
     }
 
     /// <summary>
@@ -247,7 +247,7 @@ namespace SQLiteServer.Data.Workers
           var fields = Fields.Fields.Unpack(response.Payload);
           return Fields.Fields.DeserializeObject<T>(fields);
 
-        case SQLiteMessage.ExecuteReaderResponse:
+        case SQLiteMessage.ExecuteRequestResponse:
           return response.Get<T>();
 
         case SQLiteMessage.ExecuteReaderException:
@@ -281,7 +281,7 @@ namespace SQLiteServer.Data.Workers
         case SQLiteMessage.SendAndWaitTimeOut:
           throw new TimeoutException("There was a timeout error executing the read request from the reader.");
 
-        case SQLiteMessage.ExecuteReaderResponse:
+        case SQLiteMessage.ExecuteRequestResponse:
           return response.Get<T>();
 
         case SQLiteMessage.ExecuteReaderException:
@@ -374,7 +374,11 @@ namespace SQLiteServer.Data.Workers
     /// <inheritdoc />
     public Type GetFieldType(int i)
     {
-      return GetRow().GetType(i);
+      if (null == _currentRowHeader)
+      {
+        throw new InvalidOperationException();
+      }
+      return _currentRowHeader.GetType(i);
     }
 
     /// <inheritdoc />

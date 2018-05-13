@@ -122,7 +122,6 @@ namespace SQLiteServer.Data.Workers
           guid = indexRequest.Guid;
           break;
 
-        case SQLiteMessage.ExecuteReaderHasRowsRequest:
         case SQLiteMessage.ExecuteReaderNextResultRequest:
         case SQLiteMessage.ExecuteReaderReadRequest:
         case SQLiteMessage.ExecuteNonQueryRequest:
@@ -171,15 +170,15 @@ namespace SQLiteServer.Data.Workers
           switch (packet.Message)
           {
             case SQLiteMessage.ExecuteReaderGetDataTypeNameRequest:
-              response(new Packet(SQLiteMessage.ExecuteReaderResponse, reader.GetDataTypeName(index)));
+              response(new Packet(SQLiteMessage.ExecuteRequestResponse, reader.GetDataTypeName(index)));
               break;
 
             case SQLiteMessage.ExecuteReaderGetNameRequest:
-              response(new Packet(SQLiteMessage.ExecuteReaderResponse, reader.GetName(index)));
+              response(new Packet(SQLiteMessage.ExecuteRequestResponse, reader.GetName(index)));
               break;
 
             case SQLiteMessage.ExecuteReaderGetTableNameRequest:
-              response(new Packet(SQLiteMessage.ExecuteReaderResponse, reader.GetTableName(index)));
+              response(new Packet(SQLiteMessage.ExecuteRequestResponse, reader.GetTableName(index)));
               break;
 
             default:
@@ -221,19 +220,15 @@ namespace SQLiteServer.Data.Workers
               {
                 _commands.Remove(guid);
               }
-              response(new Packet(SQLiteMessage.ExecuteReaderResponse, 1));
+              response(new Packet(SQLiteMessage.ExecuteRequestResponse, 1));
               break;
 
             case SQLiteMessage.ExecuteReaderReadRequest:
-              response(new Packet(SQLiteMessage.ExecuteReaderResponse, reader.Read() ? 1 : 0));
+              response(new Packet(SQLiteMessage.ExecuteRequestResponse, reader.Read() ? 1 : 0));
               break;
 
             case SQLiteMessage.ExecuteReaderNextResultRequest:
-              response(new Packet(SQLiteMessage.ExecuteReaderResponse, reader.NextResult() ? 1 : 0));
-              break;
-
-            case SQLiteMessage.ExecuteReaderHasRowsRequest:
-              response(new Packet(SQLiteMessage.ExecuteReaderResponse, reader.HasRows ? 1 : 0));
+              response(new Packet(SQLiteMessage.ExecuteRequestResponse, reader.NextResult() ? 1 : 0));
               break;
           }
         }
@@ -276,7 +271,10 @@ namespace SQLiteServer.Data.Workers
             Worker = command,
             Reader = reader
           };
-          response(new Packet(SQLiteMessage.ExecuteReaderResponse, 1 ));
+
+          var header = BuildRowHeader( reader );
+          var field = Fields.Fields.SerializeObject(header);
+          response(new Packet(SQLiteMessage.ExecuteReaderResponse, field.Pack() ));
         }
       }
       catch (Exception e)
@@ -346,6 +344,33 @@ namespace SQLiteServer.Data.Workers
     }
 
     /// <summary>
+    /// Create a row header given the reader.
+    /// Header data is data that can be used before we call Read
+    /// </summary>
+    /// <param name="reader"></param>
+    /// <returns></returns>
+    private static RowHeader BuildRowHeader(ISQLiteServerDataReaderWorker reader )
+    {
+      var header = new RowHeader
+      {
+        Names = new List<string>(),
+        Types = new List<int>(),
+        HasRows = reader.HasRows
+      };
+
+
+      // get the headers.
+      for (var i = 0; i < reader.FieldCount; ++i)
+      {
+        var name = reader.GetName(i);
+        header.Names.Add(name);
+        header.Types.Add((int)Field.TypeToFieldType( reader.GetFieldType(i)) );
+      }
+
+      return header;
+    }
+
+    /// <summary>
     /// Send all column names as well as row data.
     /// </summary>
     /// <param name="packet"></param>
@@ -364,22 +389,14 @@ namespace SQLiteServer.Data.Workers
           return;
         }
 
-        // add the names
+        // create the row data
         var row = new RowInformation.RowData
         {
-          Names = new List<string>(),
-          Types = new List<int>(),
           Columns = new List<Field>(),
           Nulls = new List<bool>()
         };
 
-        for (var i = 0; i < reader.FieldCount; ++i)
-        {
-          var name = reader.GetName(i);
-          row.Names.Add(name);
-          row.Types.Add( (int)Field.TypeToFieldType(reader.GetFieldType(i)));
-        }
-
+        // get the column if the data has been read
         if (reader.HasRows)
         {
           for (var i = 0; i < reader.FieldCount; ++i)
@@ -402,7 +419,7 @@ namespace SQLiteServer.Data.Workers
             {
               value = reader.GetValue(i);
             }
-            row.Columns.Add(new Field(row.Names[i], type, value ));
+            row.Columns.Add(new Field(reader.GetName(i), type, value ));
             row.Nulls.Add(isNull);
           }
         }
@@ -563,7 +580,6 @@ namespace SQLiteServer.Data.Workers
           HandleExecuteReaderIndexRequest(packet, response );
           break;
 
-        case SQLiteMessage.ExecuteReaderHasRowsRequest:
         case SQLiteMessage.ExecuteReaderNextResultRequest:
         case SQLiteMessage.ExecuteReaderReadRequest:
         case SQLiteMessage.DisposeCommand:

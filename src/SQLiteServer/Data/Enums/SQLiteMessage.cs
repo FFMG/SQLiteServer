@@ -40,15 +40,16 @@ namespace SQLiteServer.Data.Enums
     ExecuteNonQueryException,
 
     ExecuteReaderRequest,
+    ExecuteReaderResponse,
     ExecuteReaderReadRequest,
     ExecuteReaderNextResultRequest,
-    ExecuteReaderHasRowsRequest,
     ExecuteReaderGetRowRequest,
     ExecuteReaderGetRowResponse,
     ExecuteReaderGetDataTypeNameRequest,
     ExecuteReaderGetNameRequest,
     ExecuteReaderGetTableNameRequest,
-    ExecuteReaderResponse,
+    ExecuteRequestResponse,
+
     ExecuteReaderException,
   }
 }

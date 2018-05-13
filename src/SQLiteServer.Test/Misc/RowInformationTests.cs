@@ -32,42 +32,83 @@ namespace SQLiteServer.Test.Misc
     [Test]
     public void CannotAddNullColumn()
     {
-      var r = new RowInformation(new List<string> { "cola", "colb" }, new List<int> {(int)FieldType.String, (int)FieldType.String});
+      var header = new RowHeader
+      {
+        HasRows = true,
+        Names = new List<string> { "cola" },
+        Types = new List<int> { (int)FieldType.Object }
+      };
+
+      var r = new RowInformation( header);
       Assert.Throws<ArgumentNullException>(() => r.Add(null));
     }
 
     [Test]
     public void TheListOfColumnsCannotContainNulls()
     {
+      var header = new RowHeader
+      {
+        HasRows = true,
+        Names = new List<string> { "cola", null },
+        Types = new List<int> { (int)FieldType.Object, (int)FieldType.String }
+      };
       // ReSharper disable once ObjectCreationAsStatement
-      Assert.Throws<ArgumentNullException>(() => new RowInformation(new List<string> { "cola", null }, new List<int> { (int)FieldType.String, (int)FieldType.String }));
+      Assert.Throws<ArgumentNullException>(() => new RowInformation(header));
     }
 
     [Test]
     public void TheListOfColumnsCannotContainSpaces()
     {
+      var header = new RowHeader
+      {
+        HasRows = true,
+        Names = new List<string> { "cola", "     " },
+        Types = new List<int> { (int)FieldType.Object, (int)FieldType.String }
+      };
+
       // ReSharper disable once ObjectCreationAsStatement
-      Assert.Throws<ArgumentException>(() => new RowInformation(new List<string> { "cola", "    " }, new List<int> { (int)FieldType.String, (int)FieldType.String }));
+      Assert.Throws<ArgumentException>(() => new RowInformation(header));
     }
 
     [Test]
     public void NamesOfColumnsCannotBeEmpty()
     {
+      var header = new RowHeader
+      {
+        HasRows = true,
+        Names = new List<string> { "cola", "" },
+        Types = new List<int> { (int)FieldType.Object, (int)FieldType.String }
+      };
+
       // ReSharper disable once ObjectCreationAsStatement
-      Assert.Throws<ArgumentException>(() => new RowInformation(new List<string> { "cola", "" }, new List<int> { (int)FieldType.String, (int)FieldType.String }));
+      Assert.Throws<ArgumentException>(() => new RowInformation(header));
     }
 
     [Test]
     public void TheListOfColumnsGivenCannotBeEmpty()
     {
+      var header = new RowHeader
+      {
+        HasRows = true,
+        Names = new List<string>(),
+        Types = new List<int>()
+      };
+
       // ReSharper disable once ObjectCreationAsStatement
-      Assert.Throws<ArgumentException>(() => new RowInformation(new List<string>(), new List<int>()));
+      Assert.Throws<ArgumentException>(() => new RowInformation(header));
     }
 
     [Test]
     public void CannotAddSameOrdinal()
     {
-      var r = new RowInformation( new List<string>{"cola", "colb", "colc" }, new List<int> { (int)FieldType.String, (int)FieldType.String, (int)FieldType.String });
+      var header = new RowHeader
+      {
+        HasRows = true,
+        Names = new List<string> { "cola", "colb", "colc" },
+        Types = new List<int> { (int)FieldType.Object, (int)FieldType.String, (int)FieldType.Double }
+      };
+
+      var r = new RowInformation( header);
       r.Add(new ColumnInformation(ValidField, 0, "cola", false));
       r.Add(new ColumnInformation(ValidField, 1, "colb", false));
       Assert.Throws<DuplicateNameException>( () => r.Add( new ColumnInformation( ValidField, 0, "colc", false)));
@@ -76,7 +117,14 @@ namespace SQLiteServer.Test.Misc
     [Test]
     public void AddingAColumnNameThatDoesNotExist()
     {
-      var r = new RowInformation(new List<string> { "cola", "colb" }, new List<int> { (int)FieldType.String, (int)FieldType.String});
+      var header = new RowHeader
+      {
+        HasRows = true,
+        Names = new List<string> { "cola", "colb" },
+        Types = new List<int> { (int)FieldType.Object, (int)FieldType.String }
+      };
+
+      var r = new RowInformation(header);
       r.Add(new ColumnInformation(ValidField, 0, "cola", false));
       Assert.Throws<ArgumentException>(() => r.Add(new ColumnInformation(ValidField, 1, "colc", false)));
     }
@@ -84,22 +132,43 @@ namespace SQLiteServer.Test.Misc
     [Test]
     public void AddingAColumnOrdinalThatDoesNotExist()
     {
-      var r = new RowInformation(new List<string> { "cola", "colb" }, new List<int> { (int)FieldType.String, (int)FieldType.String });
+      var header = new RowHeader
+      {
+        HasRows = true,
+        Names = new List<string> { "cola", "colb" },
+        Types = new List<int> { (int)FieldType.Object, (int)FieldType.String }
+      };
+
+      var r = new RowInformation( header);
       r.Add(new ColumnInformation(ValidField, 0, "cola", false));
       Assert.Throws<ArgumentException>(() => r.Add(new ColumnInformation(ValidField, 3, "colb", false)));
     }
 
     [Test]
-    public void OrdinalDoesNotMatchTheNsmr()
+    public void OrdinalDoesNotMatchTheName()
     {
-      var r = new RowInformation(new List<string> { "cola", "colb" }, new List<int> { (int)FieldType.String, (int)FieldType.String});
+      var header = new RowHeader
+      {
+        HasRows = true,
+        Names = new List<string> { "cola", "colb", "colc" },
+        Types = new List<int> { (int)FieldType.Object, (int)FieldType.String, (int)FieldType.Double }
+      };
+
+      var r = new RowInformation(header);
       Assert.Throws<ArgumentException>(() => r.Add(new ColumnInformation(ValidField, 0, "colb", false)));
     }
 
     [Test]
     public void CannotAddSameName()
     {
-      var r = new RowInformation(new List<string> { "cola", "colb" }, new List<int> { (int)FieldType.String, (int)FieldType.String });
+      var header = new RowHeader
+      {
+        HasRows = true,
+        Names = new List<string> { "cola", "colb", "colc" },
+        Types = new List<int> { (int)FieldType.Object, (int)FieldType.String, (int)FieldType.Double }
+      };
+
+      var r = new RowInformation(header);
       r.Add(new ColumnInformation(ValidField, 0, "cola", false));
       r.Add(new ColumnInformation(ValidField, 1, "colb", false));
       Assert.Throws<DuplicateNameException>(() => r.Add(new ColumnInformation(ValidField, 2, "cola", false)));
@@ -108,7 +177,14 @@ namespace SQLiteServer.Test.Misc
     [Test]
     public void TryingToGetByNameThatDoesNotExist()
     {
-      var r = new RowInformation(new List<string> { "cola", "colb" }, new List<int> { (int)FieldType.String, (int)FieldType.String});
+      var header = new RowHeader
+      {
+        HasRows = true,
+        Names = new List<string> { "cola", "colb" },
+        Types = new List<int> { (int)FieldType.Object, (int)FieldType.String }
+      };
+
+      var r = new RowInformation(header);
       r.Add(new ColumnInformation(ValidField, 0, "cola", false));
       r.Add(new ColumnInformation(ValidField, 1, "colb", false));
 
@@ -118,7 +194,14 @@ namespace SQLiteServer.Test.Misc
     [Test]
     public void TryingToGetByOrdinalThatDoesNotExist()
     {
-      var r = new RowInformation(new List<string> { "cola", "colb" }, new List<int> { (int)FieldType.String, (int)FieldType.String });
+      var header = new RowHeader
+      {
+        HasRows = true,
+        Names = new List<string> { "cola", "colb"},
+        Types = new List<int> { (int)FieldType.Object, (int)FieldType.String }
+      };
+
+      var r = new RowInformation(header);
       r.Add(new ColumnInformation(ValidField, 0, "cola", false));
       r.Add(new ColumnInformation(ValidField, 1, "colb", false));
 
@@ -128,8 +211,15 @@ namespace SQLiteServer.Test.Misc
     [Test]
     public void GetByName()
     {
+      var header = new RowHeader
+      {
+        HasRows = true,
+        Names = new List<string> { "cola", "colb", "colc" },
+        Types = new List<int> { (int)FieldType.Object, (int)FieldType.String, (int)FieldType.Double }
+      };
+
       var f = ValidField;
-      var r = new RowInformation(new List<string> { "cola", "colb" }, new List<int> { (int)FieldType.String, (int)FieldType.String});
+      var r = new RowInformation(header);
       r.Add(new ColumnInformation(f, 0, "cola", false));
       r.Add(new ColumnInformation(ValidField, 1, "colb", false));
 
@@ -143,8 +233,15 @@ namespace SQLiteServer.Test.Misc
     [Test]
     public void GetByNameCaseInsensitive()
     {
+      var header = new RowHeader
+      {
+        HasRows = true,
+        Names = new List<string> { "cola", "colb", "colc" },
+        Types = new List<int> { (int)FieldType.Object, (int)FieldType.String, (int)FieldType.Double }
+      };
+
       var f = ValidField;
-      var r = new RowInformation(new List<string> { "cola", "colb" }, new List<int> { (int)FieldType.String, (int)FieldType.String });
+      var r = new RowInformation(header);
       r.Add(new ColumnInformation(f, 0, "cola", false));
       r.Add(new ColumnInformation(ValidField, 1, "colb", false));
 
@@ -156,8 +253,15 @@ namespace SQLiteServer.Test.Misc
     [Test]
     public void CheckNullValue()
     {
+      var header = new RowHeader
+      {
+        HasRows = true,
+        Names = new List<string> { "cola", "colb" },
+        Types = new List<int> { (int)FieldType.Object, (int)FieldType.String }
+      };
+
       var f = ValidField;
-      var r = new RowInformation(new List<string> { "cola", "colb" }, new List<int> { (int)FieldType.String, (int)FieldType.String });
+      var r = new RowInformation(header);
       r.Add(new ColumnInformation(f, 0, "cola", true));
       r.Add(new ColumnInformation(ValidField, 1, "colb", false));
 
@@ -168,8 +272,15 @@ namespace SQLiteServer.Test.Misc
     [Test]
     public void GetByOrdinal()
     {
+      var header = new RowHeader
+      {
+        HasRows = true,
+        Names = new List<string> { "cola", "colb" },
+        Types = new List<int> { (int)FieldType.Object, (int)FieldType.String }
+      };
+
       var f = ValidField;
-      var r = new RowInformation(new List<string> { "cola", "colb" }, new List<int> { (int)FieldType.String, (int)FieldType.String });
+      var r = new RowInformation(header);
       r.Add(new ColumnInformation(f, 0, "cola", false));
       r.Add(new ColumnInformation(ValidField, 1, "colb", false));
 
@@ -183,18 +294,23 @@ namespace SQLiteServer.Test.Misc
     [Test]
     public void FieldTypeWithNoValue()
     {
-      var f = ValidField;
-      var r = new RowInformation(new List<string> { "cola", "colb" }, new List<int> { (int)FieldType.String, (int)FieldType.Int64 });
-
-      Assert.AreEqual(r.GetType(0), typeof(string));
-      Assert.AreEqual(r.GetType(1), typeof(long));
+      var row = new RowHeader
+      {
+        HasRows = true,
+        Names = new List<string> { "cola" },
+        Types = new List<int> { (int)FieldType.Object }
+      };
+      Assert.AreEqual(row.GetType(0), typeof(string));
+      Assert.AreEqual(row.GetType(1), typeof(long));
     }
 
     [Test]
     public void FieldTypeObjectWithNoValue()
     {
-      var f = ValidField;
-      var r = new RowInformation(new List<string> { "cola" }, new List<int> { (int)FieldType.Object });
+      var r = new RowHeader { HasRows = true,
+          Names = new List<string> { "cola" },
+          Types = new List<int> { (int)FieldType.Object } 
+          };
 
       Assert.AreEqual(r.GetType(0), typeof(object));
     }
@@ -202,15 +318,27 @@ namespace SQLiteServer.Test.Misc
     [Test]
     public void TheNumberOfFieldTypesDoesNotMatchTheNumberOfColumnNames()
     {
+      var row = new RowHeader
+      {
+        HasRows = true,
+        Names = new List<string> { "cola" },
+        Types = new List<int> { (int)FieldType.Object }
+      };
       // ReSharper disable once ObjectCreationAsStatement
-      Assert.Throws<ArgumentException>( () => new RowInformation(new List<string> { "cola", "colb" }, new List<int> { (int)FieldType.String}));
+      Assert.Throws<ArgumentException>( () => new RowInformation( row ));
     }
 
     [Test]
     public void FieldTypesCannotBeNull()
     {
+      var row = new RowHeader
+      {
+        HasRows = true,
+        Names = new List<string> {"cola"},
+        Types = null
+      };
       // ReSharper disable once ObjectCreationAsStatement
-      Assert.Throws<ArgumentNullException>(() => new RowInformation(new List<string> { "cola", "colb" }, null ));
+      Assert.Throws<ArgumentNullException>(() => new RowInformation( row ));
     }
   }
 }

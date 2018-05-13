@@ -25,11 +25,6 @@ namespace SQLiteServer.Data.Data
     public struct RowData
     {
       /// <summary>
-      /// All the column names
-      /// </summary>
-      public List<string> Names;
-
-      /// <summary>
       /// The actual values/types
       /// </summary>
       public List<Field> Columns;
@@ -38,74 +33,52 @@ namespace SQLiteServer.Data.Data
       /// If the columns are null or not.
       /// </summary>
       public List<bool> Nulls;
-
-      /// <summary>
-      /// The field types
-      /// </summary>
-      public List<int> Types;
     }
-    
+
     /// <summary>
     /// The list of colums
     /// </summary>
     private readonly List<ColumnInformation> _columns = new List<ColumnInformation>();
-
+    
     /// <summary>
-    /// The number of items in the list.
+    /// The row header
     /// </summary>
-    public int Count => _columns.Count;
-
-    /// <summary>
-    /// The number of fields
-    /// </summary>
-    public int FieldCount => ColumnNames.Count;
-
-    /// <summary>
-    /// The list of columns in case we have no data in the row.
-    /// </summary>
-    private List<string> ColumnNames { get; }
-
-    /// <summary>
-    /// All the field types
-    /// </summary>
-    private List<int> FieldTypes { get; }
+    private RowHeader Header { get; }
 
     /// <summary>
     /// The contructor, pass the column names.
     /// </summary>
-    /// <param name="columnNames"></param>
-    /// <param name="types"></param>
-    public RowInformation(List<string> columnNames, List<int> types )
+    /// <param name="header"></param>
+    public RowInformation( RowHeader header )
     {
-      if (null == columnNames)
+      if (null == header.Names)
       {
-        throw new ArgumentNullException( nameof(columnNames) );
+        throw new ArgumentNullException( nameof(header.Names) );
       }
-      if (columnNames.Count == 0)
+      if (header.Names.Count == 0)
       {
-        throw new ArgumentException(nameof(columnNames));
+        throw new ArgumentException(nameof(header.Names));
       }
 
-      if (columnNames.Any(s => s == null))
+      if (header.Names.Any(s => s == null))
       {
-        throw new ArgumentNullException( nameof(columnNames), "The colum name cannot be null!");
+        throw new ArgumentNullException( nameof(header.Names), "The colum name cannot be null!");
       }
-      if (columnNames.Any(string.IsNullOrWhiteSpace))
+      if (header.Names.Any(string.IsNullOrWhiteSpace))
       {
         throw new ArgumentException("The colum name empty be null!");
       }
-      ColumnNames = columnNames;
-
-      if (null == types)
+      if (null == header.Types)
       {
-        throw new ArgumentNullException( nameof(types));
+        throw new ArgumentNullException( nameof(header.Types));
       }
 
-      if (ColumnNames.Count != types.Count)
+      if (header.Names.Count != header.Types.Count)
       {
         throw new ArgumentException("The number of column types does not match the number of columns!");
       }
-      FieldTypes = types;
+
+      Header = header;
     }
 
     /// <summary>
@@ -130,7 +103,7 @@ namespace SQLiteServer.Data.Data
       }
 
       // check that the ordinal match
-      if (column.Ordinal != GetOrdinal(column.Name))
+      if (column.Ordinal != Header.GetOrdinal(column.Name))
       {
         throw new ArgumentException( "The column name does not exist or the ordinal does not match.");
       }
@@ -201,34 +174,6 @@ namespace SQLiteServer.Data.Data
 
       // return the column
       return col;
-    }
-
-    /// <summary>
-    /// Get the ordinal of a certain item.
-    /// </summary>
-    /// <param name="name"></param>
-    /// <returns></returns>
-    public int GetOrdinal(string name)
-    {
-      if (string.IsNullOrWhiteSpace(name))
-      {
-        throw new ArgumentException("The name cannot be empty or null");
-      }
-      return ColumnNames.FindIndex( n => n.Equals(name, StringComparison.OrdinalIgnoreCase ));
-    }
-
-    /// <summary>
-    /// Get the column field type.
-    /// </summary>
-    /// <param name="ordinal"></param>
-    /// <returns></returns>
-    public Type GetType(int ordinal)
-    {
-      if ( ordinal < 0 || ordinal >= FieldTypes.Count)
-      {
-        throw new IndexOutOfRangeException($"Could not find column {ordinal}!");
-      }
-      return Field.FieldTypeToType((FieldType) FieldTypes[ordinal]);
     }
   }
 }
