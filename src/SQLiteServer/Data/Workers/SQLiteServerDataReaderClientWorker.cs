@@ -173,11 +173,6 @@ namespace SQLiteServer.Data.Workers
           var fields = Fields.Fields.Unpack(response.Payload);
           _currentRowHeader = Fields.Fields.DeserializeObject<RowHeader>(fields);
           return;
-//          if ( 1 != result )
-//          {
-//            throw new SQLiteServerException($"Received an unexpected error {result} from the server.");
-//          }
-//          return;
 
         case SQLiteMessage.ExecuteReaderException:
           var error = response.Get<string>();

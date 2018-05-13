@@ -118,6 +118,7 @@ namespace SQLiteServer.Data.Workers
       }
     }
     
+    /// <inheritdoc />
     public int ExecuteNonQuery()
     {
       ThrowIfAny();
