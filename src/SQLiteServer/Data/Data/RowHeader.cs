@@ -57,6 +57,21 @@ namespace SQLiteServer.Data.Data
 
 
     /// <summary>
+    /// Get a column name
+    /// https://msdn.microsoft.com/en-us/library/system.data.sqlclient.sqldatareader.getname
+    /// </summary>
+    /// <param name="ordinal"></param>
+    /// <returns></returns>
+    public string GetName(int ordinal)
+    {
+      if (ordinal < 0 || ordinal >= Types.Count)
+      {
+        throw new IndexOutOfRangeException($"Could not find column {ordinal}!");
+      }
+      return Names[ordinal];
+    }
+
+    /// <summary>
     /// Get the column field type.
     /// </summary>
     /// <param name="ordinal"></param>

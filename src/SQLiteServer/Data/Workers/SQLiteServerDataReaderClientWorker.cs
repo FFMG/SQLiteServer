@@ -13,7 +13,6 @@
 //    You should have received a copy of the GNU General Public License
 //    along with SQLiteServer.  If not, see<https://www.gnu.org/licenses/gpl-3.0.en.html>.
 using System;
-using System.CodeDom;
 using System.Collections.Generic;
 using System.Data;
 using System.Text;
@@ -28,11 +27,6 @@ namespace SQLiteServer.Data.Workers
   internal class SQLiteServerDataReaderClientWorker : ISQLiteServerDataReaderWorker
   {
     #region Private variables
-    /// <summary>
-    /// Save the column name.
-    /// </summary>
-    private readonly Dictionary<int, string> _columnName = new Dictionary<int, string>();
-
     /// <summary>
     /// Save the table name for that column.
     /// </summary>
@@ -392,18 +386,11 @@ namespace SQLiteServer.Data.Workers
     /// <inheritdoc />
     public string GetName(int i)
     {
-      if (_columnName.ContainsKey(i))
+      if (null == _currentRowHeader)
       {
-        return _columnName[i];
+        throw new IndexOutOfRangeException();
       }
-      // get the name
-      var name = GetIndexedValue<string>(SQLiteMessage.ExecuteReaderGetNameRequest, i);
-
-      // set the value
-      _columnName[i] = name;
-
-      // return it.
-      return name;
+      return _currentRowHeader.GetName( i );
     }
 
     /// <inheritdoc />

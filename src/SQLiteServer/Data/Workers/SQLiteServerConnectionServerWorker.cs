@@ -115,7 +115,6 @@ namespace SQLiteServer.Data.Workers
       switch (packet.Message)
       {
         case SQLiteMessage.ExecuteReaderGetDataTypeNameRequest:
-        case SQLiteMessage.ExecuteReaderGetNameRequest:
         case SQLiteMessage.ExecuteReaderGetTableNameRequest:
         case SQLiteMessage.ExecuteReaderRequest:
           var indexRequest = Fields.Fields.Unpack(packet.Payload).DeserializeObject<IndexRequest>();
@@ -171,10 +170,6 @@ namespace SQLiteServer.Data.Workers
           {
             case SQLiteMessage.ExecuteReaderGetDataTypeNameRequest:
               response(new Packet(SQLiteMessage.ExecuteRequestResponse, reader.GetDataTypeName(index)));
-              break;
-
-            case SQLiteMessage.ExecuteReaderGetNameRequest:
-              response(new Packet(SQLiteMessage.ExecuteRequestResponse, reader.GetName(index)));
               break;
 
             case SQLiteMessage.ExecuteReaderGetTableNameRequest:
@@ -575,7 +570,6 @@ namespace SQLiteServer.Data.Workers
           break;
 
         case SQLiteMessage.ExecuteReaderGetDataTypeNameRequest:
-        case SQLiteMessage.ExecuteReaderGetNameRequest:
         case SQLiteMessage.ExecuteReaderGetTableNameRequest:
           HandleExecuteReaderIndexRequest(packet, response );
           break;
