@@ -27,6 +27,11 @@ namespace SQLiteServer.Data.Data
     public List<string> Names;
 
     /// <summary>
+    /// The tables/columns names.
+    /// </summary>
+    public List<string> TableNames;
+
+    /// <summary>
     /// The field types
     /// </summary>
     public List<int> Types;
@@ -55,7 +60,6 @@ namespace SQLiteServer.Data.Data
       return Names.FindIndex(n => n.Equals(name, StringComparison.OrdinalIgnoreCase));
     }
 
-
     /// <summary>
     /// Get a column name
     /// https://msdn.microsoft.com/en-us/library/system.data.sqlclient.sqldatareader.getname
@@ -64,11 +68,27 @@ namespace SQLiteServer.Data.Data
     /// <returns></returns>
     public string GetName(int ordinal)
     {
-      if (ordinal < 0 || ordinal >= Types.Count)
+      if (ordinal < 0 || ordinal >= Names.Count)
       {
         throw new IndexOutOfRangeException($"Could not find column {ordinal}!");
       }
       return Names[ordinal];
+    }
+
+    /// <summary>
+    /// Get the name of a table for a given column
+    /// </summary>
+    /// <param name="ordinal"></param>
+    /// <returns></returns>
+    public string GetTableName(int ordinal)
+    {
+      if (ordinal < 0 || ordinal >= TableNames.Count)
+      {
+        // throw new IndexOutOfRangeException($"Could not find column {ordinal}!");
+        // the SQLiteDataReader does not throw an error.
+        return string.Empty;
+      }
+      return TableNames[ordinal];
     }
 
     /// <summary>

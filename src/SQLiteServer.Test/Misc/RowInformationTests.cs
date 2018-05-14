@@ -297,11 +297,11 @@ namespace SQLiteServer.Test.Misc
       var row = new RowHeader
       {
         HasRows = true,
-        Names = new List<string> { "cola" },
-        Types = new List<int> { (int)FieldType.Object }
+        Names = new List<string> { "cola", "colb" },
+        Types = new List<int> { (int)FieldType.String, (int)FieldType.Object }
       };
       Assert.AreEqual(row.GetType(0), typeof(string));
-      Assert.AreEqual(row.GetType(1), typeof(long));
+      Assert.AreEqual(row.GetType(1), typeof(object));
     }
 
     [Test]
@@ -321,7 +321,7 @@ namespace SQLiteServer.Test.Misc
       var row = new RowHeader
       {
         HasRows = true,
-        Names = new List<string> { "cola" },
+        Names = new List<string> { "cola", "colb" },
         Types = new List<int> { (int)FieldType.Object }
       };
       // ReSharper disable once ObjectCreationAsStatement

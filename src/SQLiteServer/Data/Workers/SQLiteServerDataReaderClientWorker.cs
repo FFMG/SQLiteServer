@@ -26,12 +26,7 @@ namespace SQLiteServer.Data.Workers
   // ReSharper disable once InconsistentNaming
   internal class SQLiteServerDataReaderClientWorker : ISQLiteServerDataReaderWorker
   {
-    #region Private variables
-    /// <summary>
-    /// Save the table name for that column.
-    /// </summary>
-    private readonly Dictionary<int, string> _columnTableName = new Dictionary<int, string>();
-    
+    #region Private variables   
     /// <summary>
     /// Save the field names.
     /// </summary>
@@ -396,21 +391,11 @@ namespace SQLiteServer.Data.Workers
     /// <inheritdoc />
     public string GetTableName(int i)
     {
-      if (_columnTableName.ContainsKey(i))
+      if (null == _currentRowHeader)
       {
-        return _columnTableName[i];
+        throw new IndexOutOfRangeException();
       }
-      // get the name
-      var name = GetIndexedValue<string>(SQLiteMessage.ExecuteReaderGetTableNameRequest, i);
-
-      // the name cannot be null
-      name = name ?? string.Empty;
-
-      // set the value
-      _columnTableName[i] = name;
-
-      // return it.
-      return name;
+      return _currentRowHeader.GetTableName(i);
     }
   }
 }

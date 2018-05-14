@@ -3162,5 +3162,45 @@ namespace SQLiteServer.Test.SQLiteServer
       client?.Close();
       server.Close();
     }
+
+    [TestCase(false)]
+    [TestCase(true)]
+    public void GetTableNameMultipleTablesUsingAlias(bool useClient)
+    {
+      var server = CreateConnection();
+      server.Open();
+
+      var current = server;
+
+      SQLiteServerConnection client = null;
+      if (useClient)
+      {
+        client = CreateConnection();
+        client.Open();
+        current = client;
+      }
+
+      var sql = "create table tb_A (name varchar(20), value INTEGER)";
+      using (var command = new SQLiteServerCommand(sql, current)) { command.ExecuteNonQuery(); }
+
+      sql = "create table tb_B (name varchar(20), value INTEGER)";
+      using (var command = new SQLiteServerCommand(sql, current)) { command.ExecuteNonQuery(); }
+
+      const string sqlSelect = "SELECT * FROM tb_A as y, tb_B as z where y.name = z.name;";
+      using (var command = new SQLiteServerCommand(sqlSelect, current))
+      {
+        using (var reader = command.ExecuteReader())
+        {
+          Assert.AreEqual("tb_A", reader.GetTableName(0));  // A.Name
+          Assert.AreEqual("tb_A", reader.GetTableName(1));  // A.Value
+
+          Assert.AreEqual("tb_B", reader.GetTableName(2));  // B.Name
+          Assert.AreEqual("tb_B", reader.GetTableName(3));  // B.Value
+        }
+      }
+
+      client?.Close();
+      server.Close();
+    }
   }
 }

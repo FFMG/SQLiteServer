@@ -115,7 +115,6 @@ namespace SQLiteServer.Data.Workers
       switch (packet.Message)
       {
         case SQLiteMessage.ExecuteReaderGetDataTypeNameRequest:
-        case SQLiteMessage.ExecuteReaderGetTableNameRequest:
         case SQLiteMessage.ExecuteReaderRequest:
           var indexRequest = Fields.Fields.Unpack(packet.Payload).DeserializeObject<IndexRequest>();
           guid = indexRequest.Guid;
@@ -170,10 +169,6 @@ namespace SQLiteServer.Data.Workers
           {
             case SQLiteMessage.ExecuteReaderGetDataTypeNameRequest:
               response(new Packet(SQLiteMessage.ExecuteRequestResponse, reader.GetDataTypeName(index)));
-              break;
-
-            case SQLiteMessage.ExecuteReaderGetTableNameRequest:
-              response(new Packet(SQLiteMessage.ExecuteRequestResponse, reader.GetTableName(index)));
               break;
 
             default:
@@ -348,17 +343,17 @@ namespace SQLiteServer.Data.Workers
     {
       var header = new RowHeader
       {
+        TableNames = new List<string>(),
         Names = new List<string>(),
         Types = new List<int>(),
         HasRows = reader.HasRows
       };
 
-
       // get the headers.
       for (var i = 0; i < reader.FieldCount; ++i)
       {
-        var name = reader.GetName(i);
-        header.Names.Add(name);
+        header.Names.Add(reader.GetName(i));
+        header.TableNames.Add(reader.GetTableName(i));
         header.Types.Add((int)Field.TypeToFieldType( reader.GetFieldType(i)) );
       }
 
@@ -570,7 +565,6 @@ namespace SQLiteServer.Data.Workers
           break;
 
         case SQLiteMessage.ExecuteReaderGetDataTypeNameRequest:
-        case SQLiteMessage.ExecuteReaderGetTableNameRequest:
           HandleExecuteReaderIndexRequest(packet, response );
           break;
 
