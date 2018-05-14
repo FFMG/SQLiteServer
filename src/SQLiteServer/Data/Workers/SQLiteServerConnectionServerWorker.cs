@@ -334,6 +334,52 @@ namespace SQLiteServer.Data.Workers
     }
 
     /// <summary>
+    /// Build the row data, this assumes that read has been called already.
+    /// </summary>
+    /// <param name="reader"></param>
+    /// <returns></returns>
+    private static RowInformation.RowData BuildRowData(ISQLiteServerDataReaderWorker reader)
+    {
+      // create the row data
+      var row = new RowInformation.RowData
+      {
+        Columns = new List<Field>(),
+        Nulls = new List<bool>()
+      };
+
+      // get the column if the data has been read
+      if (!reader.HasRows)
+      {
+        return row;
+      }
+
+      for (var i = 0; i < reader.FieldCount; ++i)
+      {
+        var isNull = reader.IsDBNull(i);
+        var type = reader.GetFieldType(i);
+        object value;
+        if (isNull)
+        {
+          if (type == typeof(string))
+          {
+            value = null;
+          }
+          else
+          {
+            value = Activator.CreateInstance(type);
+          }
+        }
+        else
+        {
+          value = reader.GetValue(i);
+        }
+        row.Columns.Add(new Field(reader.GetName(i), type, value));
+        row.Nulls.Add(isNull);
+      }
+      return row;
+    }
+
+    /// <summary>
     /// Create a row header given the reader.
     /// Header data is data that can be used before we call Read
     /// </summary>
@@ -379,41 +425,7 @@ namespace SQLiteServer.Data.Workers
           return;
         }
 
-        // create the row data
-        var row = new RowInformation.RowData
-        {
-          Columns = new List<Field>(),
-          Nulls = new List<bool>()
-        };
-
-        // get the column if the data has been read
-        if (reader.HasRows)
-        {
-          for (var i = 0; i < reader.FieldCount; ++i)
-          {
-            var isNull = reader.IsDBNull(i);
-            var type = reader.GetFieldType(i);
-            object value;
-            if (isNull)
-            {
-              if( type == typeof(string) )
-              {
-                value = null;
-              }
-              else
-              {
-                value = Activator.CreateInstance(type);
-              }
-            }
-            else
-            {
-              value = reader.GetValue(i);
-            }
-            row.Columns.Add(new Field(reader.GetName(i), type, value ));
-            row.Nulls.Add(isNull);
-          }
-        }
-
+        var row = BuildRowData( reader );
         var field = Fields.Fields.SerializeObject( row);
         response(new Packet(SQLiteMessage.ExecuteReaderGetRowResponse, field.Pack()));
       }
