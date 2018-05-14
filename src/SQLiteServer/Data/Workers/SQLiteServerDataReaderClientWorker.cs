@@ -77,7 +77,7 @@ namespace SQLiteServer.Data.Workers
       }
       
       // get the row.
-      var row = GetGuiOnlyValue<RowInformation.RowData>(SQLiteMessage.ExecuteReaderGetRowRequest );
+      var row = GetGuiOnlyValue<RowData>(SQLiteMessage.ExecuteReaderGetRowRequest );
       _currentRowInformation = new RowInformation(  _currentRowHeader );
       var ordinal = 0;
       for(var i =0; i < row.Columns.Count;++i )

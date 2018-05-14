@@ -75,6 +75,7 @@
     <Compile Include="Data\Data\ColumnInformation.cs" />
     <Compile Include="Data\Data\IndexRequest.cs" />
     <Compile Include="Data\Data\NameRequest.cs" />
+    <Compile Include="Data\Data\RowData.cs" />
     <Compile Include="Data\Data\RowHeader.cs" />
     <Compile Include="Data\Data\RowInformation.cs" />
     <Compile Include="Data\Exceptions\SQLiteServerException.cs" />

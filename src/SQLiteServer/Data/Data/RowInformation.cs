@@ -16,25 +16,11 @@ using System;
 using System.Collections.Generic;
 using System.Data;
 using System.Linq;
-using SQLiteServer.Fields;
 
 namespace SQLiteServer.Data.Data
 {
   internal class RowInformation
   {
-    public struct RowData
-    {
-      /// <summary>
-      /// The actual values/types
-      /// </summary>
-      public List<Field> Columns;
-
-      /// <summary>
-      /// If the columns are null or not.
-      /// </summary>
-      public List<bool> Nulls;
-    }
-
     /// <summary>
     /// The list of colums
     /// </summary>

@@ -338,10 +338,10 @@ namespace SQLiteServer.Data.Workers
     /// </summary>
     /// <param name="reader"></param>
     /// <returns></returns>
-    private static RowInformation.RowData BuildRowData(ISQLiteServerDataReaderWorker reader)
+    private static RowData BuildRowData(ISQLiteServerDataReaderWorker reader)
     {
       // create the row data
-      var row = new RowInformation.RowData
+      var row = new RowData
       {
         Columns = new List<Field>(),
         Nulls = new List<bool>()
