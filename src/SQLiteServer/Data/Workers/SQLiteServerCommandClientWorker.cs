@@ -47,31 +47,37 @@ namespace SQLiteServer.Data.Workers
     /// <summary>
     /// This is the server Guid
     /// </summary>
-    private readonly string _serverGuid;
+    private string _serverGuid;
     #endregion
 
     public SQLiteServerCommandClientWorker(string commandText, ConnectionsController controller, int commandTimeout)
     {
       if (null == controller)
       {
-        throw new ArgumentNullException( nameof(controller));
+        throw new ArgumentNullException(nameof(controller));
       }
 
       CommandTimeout = commandTimeout;
 
       _commandText = commandText;
       _controller = controller;
-      _serverGuid = null;
+      _serverGuid = CreateGuid();
+    }
 
-      var response = _controller.SendAndWaitAsync( SQLiteMessage.CreateCommandRequest, Encoding.ASCII.GetBytes(commandText), CommandTimeout).Result;
+    /// <summary>
+    /// Get the server guid
+    /// </summary>
+    /// <returns></returns>
+    private string CreateGuid()
+    { 
+      var response = _controller.SendAndWaitAsync( SQLiteMessage.CreateCommandRequest, Encoding.ASCII.GetBytes(_commandText), CommandTimeout).Result;
       switch (response.Message)
       {
         case SQLiteMessage.SendAndWaitTimeOut:
           throw new TimeoutException("There was a timeout error creating the Command.");
 
         case SQLiteMessage.CreateCommandResponse:
-          _serverGuid = response.Get<string>();
-          break;
+          return response.Get<string>();
 
         case SQLiteMessage.CreateCommandException:
           var error = response.Get<string>();
@@ -142,7 +148,6 @@ namespace SQLiteServer.Data.Workers
 
     public void Cancel()
     {
-      ThrowIfAny();
       ThrowIfAny();
       _controller.Send(SQLiteMessage.CancelCommand, Encoding.ASCII.GetBytes(_serverGuid));
     }
