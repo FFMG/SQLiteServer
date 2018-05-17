@@ -27,7 +27,8 @@ namespace SQLiteServer.Data.Enums
     CreateCommandRequest,
     CreateCommandResponse,
     DisposeCommand,
-    CancelCommand,
+    CancelCommandRequest,
+    CancelCommandResponse,
     CreateCommandException,
 
     LockConnectionRequest,
@@ -36,7 +37,8 @@ namespace SQLiteServer.Data.Enums
     LockConnectionException,
 
     ExecuteNonQueryRequest,
-    ExecuteNonQueryResponse,
+    ExecuteNonQueryResponseError,
+    ExecuteNonQueryResponseSuccess,
     ExecuteNonQueryException,
 
     ExecuteReaderRequest,

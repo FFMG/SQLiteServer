@@ -95,9 +95,6 @@ namespace SQLiteServer.Data.Workers
     {
       // check if disposed.
       ThrowIfDisposed();
-
-      // check if not open
-      ThrowIfNoCommand();
     }
 
     /// <summary>
@@ -128,14 +125,18 @@ namespace SQLiteServer.Data.Workers
     public int ExecuteNonQuery()
     {
       ThrowIfAny();
-      var response = _controller.SendAndWaitAsync(SQLiteMessage.ExecuteNonQueryRequest, Encoding.ASCII.GetBytes(_serverGuid), CommandTimeout).Result;
+      var response = _controller.SendAndWaitAsync(SQLiteMessage.ExecuteNonQueryRequest, Encoding.ASCII.GetBytes(_serverGuid ?? "" ), CommandTimeout).Result;
       switch (response.Message)
       {
         case SQLiteMessage.SendAndWaitTimeOut:
           throw new TimeoutException("There was a timeout error creating the Command.");
 
-        case SQLiteMessage.ExecuteNonQueryResponse:
-          return response.Get<int>();
+        case SQLiteMessage.ExecuteNonQueryResponseSuccess:
+          _serverGuid = response.Get<string>();
+          return 1;
+
+        case SQLiteMessage.ExecuteNonQueryResponseError:
+          return 0;
 
         case SQLiteMessage.ExecuteNonQueryException:
           var error = response.Get<string>();
@@ -149,7 +150,10 @@ namespace SQLiteServer.Data.Workers
     public void Cancel()
     {
       ThrowIfAny();
-      _controller.Send(SQLiteMessage.CancelCommand, Encoding.ASCII.GetBytes(_serverGuid));
+      if (null != _serverGuid)
+      {
+        _controller.Send(SQLiteMessage.CancelCommandRequest, Encoding.ASCII.GetBytes(_serverGuid));
+      }
     }
 
     public void Dispose()

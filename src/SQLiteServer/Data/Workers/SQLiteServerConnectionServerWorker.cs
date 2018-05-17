@@ -278,7 +278,7 @@ namespace SQLiteServer.Data.Workers
     /// </summary>
     /// <param name="packet"></param>
     /// <param name="response"></param>
-    private void HandleCancelRequest(Packet packet, Action<Packet> response)
+    private void HandleCancelCommandRequest(Packet packet, Action<Packet> response)
     {
       //  get the guid
       try
@@ -294,7 +294,7 @@ namespace SQLiteServer.Data.Workers
           }
 
           command.Cancel();
-          response(new Packet(SQLiteMessage.ExecuteNonQueryResponse, 1));
+          response(new Packet(SQLiteMessage.CancelCommandResponse, 1));
         }
       }
       catch (Exception e)
@@ -315,16 +315,25 @@ namespace SQLiteServer.Data.Workers
       {
         lock (_commandsLock)
         {
+          var guid = packet.Get<string>();
+          if (null == guid)
+          {
+
+          }
           var command = GetCommandWorker(packet);
           if (command == null )
           {
-            var guid = packet.Get<string>();
             response(new Packet(SQLiteMessage.ExecuteNonQueryException, $"Invalid Command id sent to server : {guid}."));
             return;
           }
 
           var result = command.ExecuteNonQuery();
-          response(new Packet(SQLiteMessage.ExecuteNonQueryResponse, result));
+          if (result == 0)
+          {
+            response(new Packet(SQLiteMessage.ExecuteNonQueryResponseError, 0));
+          }
+
+          response(new Packet(SQLiteMessage.ExecuteNonQueryResponseSuccess, guid));
         }
       }
       catch (Exception e)
@@ -586,8 +595,8 @@ namespace SQLiteServer.Data.Workers
           HandleExecuteReaderGuiRequest(packet, response);
           break;
 
-        case SQLiteMessage.CancelCommand:
-          HandleCancelRequest(packet, response);
+        case SQLiteMessage.CancelCommandRequest:
+          HandleCancelCommandRequest(packet, response);
           break;
 
         case SQLiteMessage.ExecuteReaderRequest:
