@@ -61,7 +61,6 @@ namespace SQLiteServer.Data.Workers
 
       _commandText = commandText;
       _controller = controller;
-      _serverGuid = CreateGuid();
     }
 
     /// <summary>
@@ -125,7 +124,15 @@ namespace SQLiteServer.Data.Workers
     public int ExecuteNonQuery()
     {
       ThrowIfAny();
-      var response = _controller.SendAndWaitAsync(SQLiteMessage.ExecuteNonQueryRequest, Encoding.ASCII.GetBytes(_serverGuid ?? "" ), CommandTimeout).Result;
+      Packet response;
+      if (_serverGuid == null)
+      {
+        response = _controller.SendAndWaitAsync(SQLiteMessage.ExecuteCommandNonQueryRequest, Encoding.ASCII.GetBytes(_commandText), CommandTimeout).Result;
+      }
+      else
+      {
+        response = _controller.SendAndWaitAsync(SQLiteMessage.ExecuteNonQueryRequest, Encoding.ASCII.GetBytes(_serverGuid), CommandTimeout).Result;
+      }
       switch (response.Message)
       {
         case SQLiteMessage.SendAndWaitTimeOut:

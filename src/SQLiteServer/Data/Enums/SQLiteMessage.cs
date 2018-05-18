@@ -37,6 +37,7 @@ namespace SQLiteServer.Data.Enums
     LockConnectionException,
 
     ExecuteNonQueryRequest,
+    ExecuteCommandNonQueryRequest,
     ExecuteNonQueryResponseError,
     ExecuteNonQueryResponseSuccess,
     ExecuteNonQueryException,

@@ -123,16 +123,29 @@ namespace SQLiteServer.Data.Workers
         case SQLiteMessage.ExecuteReaderNextResultRequest:
         case SQLiteMessage.ExecuteReaderReadRequest:
         case SQLiteMessage.ExecuteNonQueryRequest:
-        case SQLiteMessage.CreateCommandRequest:
         case SQLiteMessage.DisposeCommand:
         case SQLiteMessage.ExecuteReaderGetRowRequest:
           guid = packet.Get<string>();
           break;
 
+        case SQLiteMessage.CreateCommandRequest:
+          // create commad cannot yet have a guid
+          throw new ArgumentOutOfRangeException();
+
         default:
           throw new ArgumentOutOfRangeException();
       }
 
+      return GetCommandWorker(guid);
+    }
+
+    /// <summary>
+    /// Get the command reader if we have one
+    /// </summary>
+    /// <param name="guid"></param>
+    /// <returns>return null or the command reader</returns>
+    private ISQLiteServerCommandWorker GetCommandWorker(string guid )
+    { 
       lock (_commandsLock)
       {
         return !_commands.ContainsKey(guid) ? null : _commands[guid].Worker;
@@ -315,12 +328,17 @@ namespace SQLiteServer.Data.Workers
       {
         lock (_commandsLock)
         {
-          var guid = packet.Get<string>();
-          if (null == guid)
+          string guid;
+          if (packet.Message == SQLiteMessage.ExecuteCommandNonQueryRequest)
           {
-
+            var commandText = packet.Get<string>();
+            guid = CreateCommandAndCreateGuid(commandText);
           }
-          var command = GetCommandWorker(packet);
+          else
+          {
+            guid = packet.Get<string>();
+          }
+          var command = GetCommandWorker(guid);
           if (command == null )
           {
             response(new Packet(SQLiteMessage.ExecuteNonQueryException, $"Invalid Command id sent to server : {guid}."));
@@ -476,16 +494,28 @@ namespace SQLiteServer.Data.Workers
     {
       // we need to create a mew command and return a unique Guid to the caller.
       // that way, we will habe a handshake of some sort when they ask us to execute.
-      ISQLiteServerCommandWorker command;
       try
       {
-        command = CreateCommand(packet.Get<string>());
+        // create the guid
+        var guid = CreateCommandAndCreateGuid(packet.Get<string>());
+
+        // we can now send the guid response.
+        response(new Packet(SQLiteMessage.CreateCommandResponse, guid));
       }
       catch (Exception e)
       {
         response(new Packet(SQLiteMessage.CreateCommandException, e.Message));
-        return;
       }
+    }
+
+    /// <summary>
+    /// Create a command, a guid and then add it to our list of commands.
+    /// </summary>
+    /// <param name="commandText"></param>
+    /// <returns></returns>
+    private string CreateCommandAndCreateGuid(string commandText )
+    {
+      var command = CreateCommand(commandText);
 
       // the command was created, but has not been saved yet.
       // first add it to the list, and then send the response.
@@ -499,8 +529,7 @@ namespace SQLiteServer.Data.Workers
         });
       }
 
-      // we can now send the response.
-      response(new Packet(SQLiteMessage.CreateCommandResponse, guid));
+      return guid;
     }
 
     private void OnReceived(Packet packet, Action<Packet> response)
@@ -569,6 +598,7 @@ namespace SQLiteServer.Data.Workers
       {
         case SQLiteMessage.CreateCommandException:
         case SQLiteMessage.ExecuteNonQueryRequest:
+        case SQLiteMessage.ExecuteCommandNonQueryRequest:
         case SQLiteMessage.ExecuteReaderRequest:
           return CommandTimeout == 0 ? DefaultBusyTimeout : Convert.ToInt64((CommandTimeout * 1000) * 0.10);
 
@@ -604,6 +634,7 @@ namespace SQLiteServer.Data.Workers
           break;
 
         case SQLiteMessage.ExecuteNonQueryRequest:
+        case SQLiteMessage.ExecuteCommandNonQueryRequest:
           HandleExecuteNonQueryRequest(packet, response);
           break;
 
