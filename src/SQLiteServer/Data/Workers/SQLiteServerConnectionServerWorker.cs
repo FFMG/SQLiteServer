@@ -17,6 +17,7 @@ using System;
 using System.Collections.Generic;
 using System.Data;
 using System.Data.SQLite;
+using System.Runtime.InteropServices;
 using System.Threading.Tasks;
 using SQLiteServer.Data.Data;
 using SQLiteServer.Data.Enums;
@@ -116,7 +117,7 @@ namespace SQLiteServer.Data.Workers
       {
         case SQLiteMessage.ExecuteReaderGetDataTypeNameRequest:
         case SQLiteMessage.ExecuteReaderRequest:
-          var indexRequest = Fields.Fields.Unpack(packet.Payload).DeserializeObject<IndexRequest>();
+          var indexRequest = Fields.Fields.Unpack(packet.Payload).DeserializeObject<GuidAndIndexRequest>();
           guid = indexRequest.Guid;
           break;
 
@@ -162,7 +163,7 @@ namespace SQLiteServer.Data.Workers
       try
       {
         // Get the index request.
-        var indexRequest = Fields.Fields.Unpack(packet.Payload).DeserializeObject<IndexRequest>();
+        var indexRequest = Fields.Fields.Unpack(packet.Payload).DeserializeObject<GuidAndIndexRequest>();
 
         // get the guid so we can look for that command
         var guid = indexRequest.Guid;
@@ -254,28 +255,40 @@ namespace SQLiteServer.Data.Workers
       {
         lock (_commandsLock)
         {
-          var command = GetCommandWorker(packet);
+          string guid;
+          int index;
+          if (packet.Message == SQLiteMessage.ExecuteCommandReaderRequest)
+          {
+            var commandTextAndIndexRequest = Fields.Fields.Unpack(packet.Payload).DeserializeObject<CommandTextAndIndexRequest>();
+            guid = CreateCommandAndCreateGuid(commandTextAndIndexRequest.CommandText );
+            index = commandTextAndIndexRequest.Index;
+          }
+          else
+          {
+            var guiAndIndexRequest = Fields.Fields.Unpack(packet.Payload).DeserializeObject<GuidAndIndexRequest>();
+            guid = guiAndIndexRequest.Guid;
+            index = guiAndIndexRequest.Index;
+          }
+
+          var command = GetCommandWorker(guid);
           if (command == null)
           {
             response(new Packet(SQLiteMessage.ExecuteReaderException, $"Invalid Command id sent to server for reader."));
             return;
           }
 
-          // Get the index request.
-          var indexRequest = Fields.Fields.Unpack(packet.Payload).DeserializeObject<IndexRequest>();
-
           var reader = command.CreateReaderWorker();
-          reader.ExecuteReader( (CommandBehavior)indexRequest.Index );
+          reader.ExecuteReader( (CommandBehavior)index );
 
           // we know that the command exists
           // so we can simply update the value.
-          _commands[indexRequest.Guid] = new CommandData
+          _commands[ guid ] = new CommandData
           {
             Worker = command,
             Reader = reader
           };
 
-          var header = BuildRowHeader( reader );
+          var header = BuildRowHeader( reader, guid );
           var field = Fields.Fields.SerializeObject(header);
           response(new Packet(SQLiteMessage.ExecuteReaderResponse, field.Pack() ));
         }
@@ -338,6 +351,7 @@ namespace SQLiteServer.Data.Workers
           {
             guid = packet.Get<string>();
           }
+
           var command = GetCommandWorker(guid);
           if (command == null )
           {
@@ -345,13 +359,12 @@ namespace SQLiteServer.Data.Workers
             return;
           }
 
-          var result = command.ExecuteNonQuery();
-          if (result == 0)
+          var result = Fields.Fields.SerializeObject(new GuidAndIndexRequest
           {
-            response(new Packet(SQLiteMessage.ExecuteNonQueryResponseError, 0));
-          }
-
-          response(new Packet(SQLiteMessage.ExecuteNonQueryResponseSuccess, guid));
+            Guid = guid,
+            Index = command.ExecuteNonQuery()
+          });
+          response(new Packet(SQLiteMessage.ExecuteNonQueryResponse, result.Pack() ));
         }
       }
       catch (Exception e)
@@ -411,15 +424,17 @@ namespace SQLiteServer.Data.Workers
     /// Header data is data that can be used before we call Read
     /// </summary>
     /// <param name="reader"></param>
+    /// <param name="guid">The command Guid</param>
     /// <returns></returns>
-    private static RowHeader BuildRowHeader(ISQLiteServerDataReaderWorker reader )
+    private static RowHeader BuildRowHeader(ISQLiteServerDataReaderWorker reader, string guid )
     {
       var header = new RowHeader
       {
         TableNames = new List<string>(),
         Names = new List<string>(),
         Types = new List<int>(),
-        HasRows = reader.HasRows
+        HasRows = reader.HasRows,
+        Guid = guid
       };
 
       // get the headers.
@@ -599,6 +614,7 @@ namespace SQLiteServer.Data.Workers
         case SQLiteMessage.CreateCommandException:
         case SQLiteMessage.ExecuteNonQueryRequest:
         case SQLiteMessage.ExecuteCommandNonQueryRequest:
+        case SQLiteMessage.ExecuteCommandReaderRequest:
         case SQLiteMessage.ExecuteReaderRequest:
           return CommandTimeout == 0 ? DefaultBusyTimeout : Convert.ToInt64((CommandTimeout * 1000) * 0.10);
 
@@ -630,6 +646,7 @@ namespace SQLiteServer.Data.Workers
           break;
 
         case SQLiteMessage.ExecuteReaderRequest:
+        case SQLiteMessage.ExecuteCommandReaderRequest:
           HandleExecuteReaderRequest(packet, response);
           break;
 

@@ -73,7 +73,8 @@
     <Compile Include="Data\Connections\ResponsePacketHandler.cs" />
     <Compile Include="Data\Connections\SocketConnectionBuilder.cs" />
     <Compile Include="Data\Data\ColumnInformation.cs" />
-    <Compile Include="Data\Data\IndexRequest.cs" />
+    <Compile Include="Data\Data\CommandTextAndIndexRequest.cs" />
+    <Compile Include="Data\Data\GuidAndIndexRequest.cs" />
     <Compile Include="Data\Data\NameRequest.cs" />
     <Compile Include="Data\Data\RowData.cs" />
     <Compile Include="Data\Data\RowHeader.cs" />

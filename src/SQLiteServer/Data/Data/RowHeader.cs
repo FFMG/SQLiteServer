@@ -42,6 +42,11 @@ namespace SQLiteServer.Data.Data
     public bool HasRows;
 
     /// <summary>
+    /// The command Guid, (null if it did not work).
+    /// </summary>
+    public string Guid;
+
+    /// <summary>
     /// The number of fields
     /// </summary>
     public int FieldCount => Names.Count;

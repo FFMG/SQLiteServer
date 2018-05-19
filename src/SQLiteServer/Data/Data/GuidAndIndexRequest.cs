@@ -14,7 +14,7 @@
 //    along with SQLiteServer.  If not, see<https://www.gnu.org/licenses/gpl-3.0.en.html>.
 namespace SQLiteServer.Data.Data
 {
-  internal struct IndexRequest
+  internal struct GuidAndIndexRequest
   {
     public string Guid;
 

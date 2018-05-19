@@ -38,10 +38,10 @@ namespace SQLiteServer.Data.Enums
 
     ExecuteNonQueryRequest,
     ExecuteCommandNonQueryRequest,
-    ExecuteNonQueryResponseError,
-    ExecuteNonQueryResponseSuccess,
+    ExecuteNonQueryResponse,
     ExecuteNonQueryException,
 
+    ExecuteCommandReaderRequest,
     ExecuteReaderRequest,
     ExecuteReaderResponse,
     ExecuteReaderException,

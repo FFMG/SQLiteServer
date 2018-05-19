@@ -15,6 +15,7 @@
 using System;
 using System.Text;
 using SQLiteServer.Data.Connections;
+using SQLiteServer.Data.Data;
 using SQLiteServer.Data.Enums;
 using SQLiteServer.Data.Exceptions;
 using SQLiteServer.Data.SQLiteServer;
@@ -37,7 +38,7 @@ namespace SQLiteServer.Data.Workers
     /// <summary>
     /// The SQLite command
     /// </summary>
-    private readonly string _commandText;
+    public string CommandText { get; }
 
     /// <summary>
     /// The SQLite Connection
@@ -48,6 +49,19 @@ namespace SQLiteServer.Data.Workers
     /// This is the server Guid
     /// </summary>
     private string _serverGuid;
+
+    /// <summary>
+    /// Get the guid if we have one
+    /// </summary>
+    public string Guid
+    {
+      get { return _serverGuid; }
+      set
+      {
+        _serverGuid = value;
+      }
+    }
+
     #endregion
 
     public SQLiteServerCommandClientWorker(string commandText, ConnectionsController controller, int commandTimeout)
@@ -59,7 +73,7 @@ namespace SQLiteServer.Data.Workers
 
       CommandTimeout = commandTimeout;
 
-      _commandText = commandText;
+      CommandText = commandText;
       _controller = controller;
     }
 
@@ -69,7 +83,7 @@ namespace SQLiteServer.Data.Workers
     /// <returns></returns>
     private string CreateGuid()
     { 
-      var response = _controller.SendAndWaitAsync( SQLiteMessage.CreateCommandRequest, Encoding.ASCII.GetBytes(_commandText), CommandTimeout).Result;
+      var response = _controller.SendAndWaitAsync( SQLiteMessage.CreateCommandRequest, Encoding.ASCII.GetBytes(CommandText), CommandTimeout).Result;
       switch (response.Message)
       {
         case SQLiteMessage.SendAndWaitTimeOut:
@@ -127,7 +141,7 @@ namespace SQLiteServer.Data.Workers
       Packet response;
       if (_serverGuid == null)
       {
-        response = _controller.SendAndWaitAsync(SQLiteMessage.ExecuteCommandNonQueryRequest, Encoding.ASCII.GetBytes(_commandText), CommandTimeout).Result;
+        response = _controller.SendAndWaitAsync(SQLiteMessage.ExecuteCommandNonQueryRequest, Encoding.ASCII.GetBytes(CommandText), CommandTimeout).Result;
       }
       else
       {
@@ -138,12 +152,10 @@ namespace SQLiteServer.Data.Workers
         case SQLiteMessage.SendAndWaitTimeOut:
           throw new TimeoutException("There was a timeout error creating the Command.");
 
-        case SQLiteMessage.ExecuteNonQueryResponseSuccess:
-          _serverGuid = response.Get<string>();
-          return 1;
-
-        case SQLiteMessage.ExecuteNonQueryResponseError:
-          return 0;
+        case SQLiteMessage.ExecuteNonQueryResponse:
+          var guiAndIndexRequest = Fields.Fields.Unpack(response.Payload).DeserializeObject<GuidAndIndexRequest>();
+          Guid = guiAndIndexRequest.Guid;
+          return guiAndIndexRequest.Index;
 
         case SQLiteMessage.ExecuteNonQueryException:
           var error = response.Get<string>();
@@ -157,9 +169,11 @@ namespace SQLiteServer.Data.Workers
     public void Cancel()
     {
       ThrowIfAny();
-      if (null != _serverGuid)
+
+      // only cancel what we created
+      if (null != Guid)
       {
-        _controller.Send(SQLiteMessage.CancelCommandRequest, Encoding.ASCII.GetBytes(_serverGuid));
+        _controller.Send(SQLiteMessage.CancelCommandRequest, Encoding.ASCII.GetBytes(Guid));
       }
     }
 
@@ -174,7 +188,8 @@ namespace SQLiteServer.Data.Workers
       try
       {
         ThrowIfAny();
-        _controller.Send(SQLiteMessage.DisposeCommand, Encoding.ASCII.GetBytes(_serverGuid));
+        ThrowIfNoCommand();
+        _controller.Send(SQLiteMessage.DisposeCommand, Encoding.ASCII.GetBytes(Guid));
       }
       finally
       {
@@ -185,7 +200,8 @@ namespace SQLiteServer.Data.Workers
 
     public ISQLiteServerDataReaderWorker CreateReaderWorker()
     {
-      return new SQLiteServerDataReaderClientWorker(_controller, _serverGuid, CommandTimeout );
+      // create the worker.
+      return new SQLiteServerDataReaderClientWorker(_controller, this, CommandTimeout );
     }
   }
 }

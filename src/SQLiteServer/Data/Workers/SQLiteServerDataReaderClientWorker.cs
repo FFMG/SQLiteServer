@@ -40,7 +40,7 @@ namespace SQLiteServer.Data.Workers
     /// <summary>
     /// The command server guid.
     /// </summary>
-    private readonly string _commandGuid;
+    private SQLiteServerCommandClientWorker _parentCommand;
 
     /// <summary>
     /// The max amount of time we will wait for a response from the server.
@@ -58,6 +58,18 @@ namespace SQLiteServer.Data.Workers
     /// The current row header.
     /// </summary>
     private RowHeader _currentRowHeader;
+
+    /// <summary>
+    /// Make sure that we have a valid command guid from the server.
+    /// Without a GUID we cannot tell the serevr what to do for us.
+    /// </summary>
+    private void ThrowIfNoCommand()
+    {
+      if (_parentCommand.Guid == null)
+      {
+        throw new ArgumentNullException(nameof(_parentCommand.Guid), "The given command is invalid.");
+      }
+    }
 
     /// <summary>
     /// Get the current row or go and fetch it.
@@ -131,28 +143,42 @@ namespace SQLiteServer.Data.Workers
     }
     #endregion
 
-    public SQLiteServerDataReaderClientWorker(ConnectionsController controller, string commandGuid, int queryTimeouts)
+    public SQLiteServerDataReaderClientWorker(ConnectionsController controller, SQLiteServerCommandClientWorker parentCommand, int queryTimeouts)
     {
       if (null == controller)
       {
         throw new ArgumentNullException( nameof(controller), "The controller cannot be null.");
       }
       _controller = controller;
-      _commandGuid = commandGuid;
+      _parentCommand = parentCommand;
       _queryTimeouts = queryTimeouts;
     }
 
     /// <inheritdoc />
     public void ExecuteReader(CommandBehavior commandBehavior)
     {
-      var getValue = new IndexRequest()
+      Packet response;
+      if (null != _parentCommand.Guid)
       {
-        Guid = _commandGuid,
-        Index = (int)commandBehavior
-      };
-      var request = Fields.Fields.SerializeObject(getValue);
+        var request = Fields.Fields.SerializeObject(new GuidAndIndexRequest
+        {
+          Guid = _parentCommand.Guid,
+          Index = (int)commandBehavior
+        });
+        response = _controller.SendAndWaitAsync(SQLiteMessage.ExecuteReaderRequest, request.Pack(), _queryTimeouts)
+          .Result;
+      }
+      else
+      {
+        var request = Fields.Fields.SerializeObject(new CommandTextAndIndexRequest
+        {
+          CommandText = _parentCommand.CommandText,
+          Index = (int)commandBehavior
+        });
+        response = _controller.SendAndWaitAsync(SQLiteMessage.ExecuteCommandReaderRequest, request.Pack(), _queryTimeouts)
+          .Result;
+      }
 
-      var response = _controller.SendAndWaitAsync(SQLiteMessage.ExecuteReaderRequest, request.Pack(), _queryTimeouts).Result;
       switch (response.Message)
       {
         case SQLiteMessage.SendAndWaitTimeOut:
@@ -161,6 +187,7 @@ namespace SQLiteServer.Data.Workers
         case SQLiteMessage.ExecuteReaderResponse:
           var fields = Fields.Fields.Unpack(response.Payload);
           _currentRowHeader = Fields.Fields.DeserializeObject<RowHeader>(fields);
+          _parentCommand.Guid = _currentRowHeader.Guid;
           return;
 
         case SQLiteMessage.ExecuteReaderException:
@@ -221,7 +248,8 @@ namespace SQLiteServer.Data.Workers
     /// <returns></returns>
     private T GetGuiOnlyValue<T>(SQLiteMessage requestType)
     {
-      var response = _controller.SendAndWaitAsync(requestType, Encoding.ASCII.GetBytes(_commandGuid), _queryTimeouts).Result;
+      ThrowIfNoCommand();
+      var response = _controller.SendAndWaitAsync(requestType, Encoding.ASCII.GetBytes(_parentCommand.Guid), _queryTimeouts).Result;
       switch (response.Message)
       {
         case SQLiteMessage.SendAndWaitTimeOut:
@@ -252,9 +280,10 @@ namespace SQLiteServer.Data.Workers
     /// <returns></returns>
     private T GetIndexedValue<T>(SQLiteMessage requestType, int index)
     {
-      var getValue = new IndexRequest()
+      ThrowIfNoCommand();
+       var getValue = new GuidAndIndexRequest()
       {
-        Guid = _commandGuid,
+        Guid = _parentCommand.Guid,
         Index = index
       };
       var fields = Fields.Fields.SerializeObject(getValue);
