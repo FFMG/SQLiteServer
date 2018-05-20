@@ -109,8 +109,9 @@ namespace SQLiteServer.Data.Workers
     /// Get the command reader if we have one
     /// </summary>
     /// <param name="packet"></param>
+    /// <param name="throwOnUnknown"></param>
     /// <returns>return null or the command reader</returns>
-    private ISQLiteServerCommandWorker GetCommandWorker(Packet packet)
+    private ISQLiteServerCommandWorker GetCommandWorker(Packet packet, bool throwOnUnknown )
     {
       string guid;
       switch (packet.Message)
@@ -130,25 +131,41 @@ namespace SQLiteServer.Data.Workers
           break;
 
         case SQLiteMessage.CreateCommandRequest:
+          if (!throwOnUnknown)
+          {
+            return null;
+          }
           // create commad cannot yet have a guid
           throw new ArgumentOutOfRangeException();
 
         default:
+          if (!throwOnUnknown)
+          {
+            return null;
+          }
           throw new ArgumentOutOfRangeException();
       }
-
-      return GetCommandWorker(guid);
+      return GetCommandWorker(guid, throwOnUnknown );
     }
 
     /// <summary>
     /// Get the command reader if we have one
     /// </summary>
     /// <param name="guid"></param>
+    /// <param name="throwOnUnknown"></param>
     /// <returns>return null or the command reader</returns>
-    private ISQLiteServerCommandWorker GetCommandWorker(string guid )
+    private ISQLiteServerCommandWorker GetCommandWorker(string guid, bool throwOnUnknown)
     { 
       lock (_commandsLock)
       {
+        if (null == guid)
+        {
+          if (!throwOnUnknown)
+          {
+            return null;
+          }
+          throw new ArgumentNullException( nameof(guid));
+        }
         return !_commands.ContainsKey(guid) ? null : _commands[guid].Worker;
       }
     }
@@ -260,7 +277,7 @@ namespace SQLiteServer.Data.Workers
           if (packet.Message == SQLiteMessage.ExecuteCommandReaderRequest)
           {
             var commandTextAndIndexRequest = Fields.Fields.Unpack(packet.Payload).DeserializeObject<CommandTextAndIndexRequest>();
-            guid = CreateCommandAndCreateGuid(commandTextAndIndexRequest.CommandText );
+            guid = CreateCommandAndCreateGuidAsync(commandTextAndIndexRequest.CommandText ).Result;
             index = commandTextAndIndexRequest.Index;
           }
           else
@@ -270,10 +287,10 @@ namespace SQLiteServer.Data.Workers
             index = guiAndIndexRequest.Index;
           }
 
-          var command = GetCommandWorker(guid);
+          var command = GetCommandWorker(guid, true );
           if (command == null)
           {
-            response(new Packet(SQLiteMessage.ExecuteReaderException, $"Invalid Command id sent to server for reader."));
+            response(new Packet(SQLiteMessage.ExecuteReaderException, "Invalid Command id sent to server for reader."));
             return;
           }
 
@@ -311,7 +328,7 @@ namespace SQLiteServer.Data.Workers
       {
         lock (_commandsLock)
         {
-          var command = GetCommandWorker(packet);
+          var command = GetCommandWorker(packet, true);
           if (command == null)
           {
             var guid = packet.Get<string>();
@@ -345,14 +362,14 @@ namespace SQLiteServer.Data.Workers
           if (packet.Message == SQLiteMessage.ExecuteCommandNonQueryRequest)
           {
             var commandText = packet.Get<string>();
-            guid = CreateCommandAndCreateGuid(commandText);
+            guid = CreateCommandAndCreateGuidAsync(commandText).Result;
           }
           else
           {
             guid = packet.Get<string>();
           }
 
-          var command = GetCommandWorker(guid);
+          var command = GetCommandWorker(guid, true);
           if (command == null )
           {
             response(new Packet(SQLiteMessage.ExecuteNonQueryException, $"Invalid Command id sent to server : {guid}."));
@@ -512,7 +529,7 @@ namespace SQLiteServer.Data.Workers
       try
       {
         // create the guid
-        var guid = CreateCommandAndCreateGuid(packet.Get<string>());
+        var guid = CreateCommandAndCreateGuidAsync(packet.Get<string>()).Result;
 
         // we can now send the guid response.
         response(new Packet(SQLiteMessage.CreateCommandResponse, guid));
@@ -528,9 +545,9 @@ namespace SQLiteServer.Data.Workers
     /// </summary>
     /// <param name="commandText"></param>
     /// <returns></returns>
-    private string CreateCommandAndCreateGuid(string commandText )
+    private async Task<string> CreateCommandAndCreateGuidAsync(string commandText )
     {
-      var command = CreateCommand(commandText);
+      var command = await CreateCommandAsync(commandText).ConfigureAwait( false );
 
       // the command was created, but has not been saved yet.
       // first add it to the list, and then send the response.
@@ -589,8 +606,8 @@ namespace SQLiteServer.Data.Workers
         if (CommandTimeout > 0 && totalWatch.Elapsed.TotalSeconds > CommandTimeout)
         {
           response(new Packet(SQLiteMessage.SendAndWaitTimeOut, 1));
-          var command = GetCommandWorker(packet);
-          command.Cancel();
+          var command = GetCommandWorker(packet, false);
+          command?.Cancel();
           break;
         }
 
@@ -703,13 +720,13 @@ namespace SQLiteServer.Data.Workers
     }
 
     /// <inheritdoc />
-    public ISQLiteServerCommandWorker CreateCommand(string commandText)
+    public async Task<ISQLiteServerCommandWorker> CreateCommandAsync(string commandText)
     {
       // can we use this?
       ThrowIfAny();
 
       // wait for the connection
-      if (!WaitForLockedConnectionAsync(CommandTimeout).Result)
+      if (!await WaitForLockedConnectionAsync(CommandTimeout).ConfigureAwait(false))
       {
         throw new SQLiteServerException("Unable to obtain connection lock");
       }
@@ -748,13 +765,13 @@ namespace SQLiteServer.Data.Workers
     }
 
     /// <inheritdoc />
-    public SQLiteConnection LockConnection()
+    public async Task<SQLiteConnection> LockConnectionAsync()
     {
       // can we use this?
       ThrowIfAny();
 
       // wait for the connection
-      if (!WaitForLockedConnectionAsync( -1 ).Result)
+      if (!await WaitForLockedConnectionAsync( -1 ).ConfigureAwait(false))
       {
         throw new SQLiteServerException("Unable to obtain connection lock");
       }
@@ -767,13 +784,15 @@ namespace SQLiteServer.Data.Workers
     }
 
     /// <inheritdoc />
-    public void UnLockConnection()
+    public Task UnLockConnectionAsync()
     {
       // can we use this?
       ThrowIfAny();
 
       // we can use the connection again.
       _connectionIsLocked = false;
+
+      return Task.FromResult<object>(null);
     }
 
     /// <summary>

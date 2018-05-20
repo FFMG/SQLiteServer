@@ -95,7 +95,7 @@ namespace SQLiteServer.Data.SQLiteServer
       // or create the worker if neeeded.
       if (null == _worker)
       {
-        _worker = _connection.CreateCommand(CommandText);
+        _worker = _connection.CreateCommandAsync(CommandText).Result;
       }
     }
 

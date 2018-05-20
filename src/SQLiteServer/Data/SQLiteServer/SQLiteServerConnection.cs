@@ -291,16 +291,23 @@ namespace SQLiteServer.Data.SQLiteServer
       try
       {
         // get the sqlite connections.
-        var sourceConnection = _worker.LockConnection();
-        var destinationConnection = destination._worker.LockConnection();
+        Task.Run(async () =>
+        {
+          var sourceConnection = await _worker.LockConnectionAsync().ConfigureAwait(false);
+          var destinationConnection = await destination._worker.LockConnectionAsync().ConfigureAwait(false);
 
-        // Call the SQlite connection.
-        sourceConnection.BackupDatabase(destinationConnection, destinationName, sourceName, pages, callback2, retryMilliseconds);
+          // Call the SQlite connection.
+          sourceConnection.BackupDatabase(destinationConnection, destinationName, sourceName, pages, callback2,
+            retryMilliseconds);
+        }).Wait();
       }
-      finally 
+      finally
       {
-        _worker.UnLockConnection();
-        destination._worker.UnLockConnection();
+        Task.Run(async () =>
+        {
+          await _worker.UnLockConnectionAsync().ConfigureAwait(false);
+          await destination._worker.UnLockConnectionAsync().ConfigureAwait(false);
+        }).Wait();
       }
     }
 
@@ -447,12 +454,16 @@ namespace SQLiteServer.Data.SQLiteServer
     /// </summary>
     /// <param name="commandText"></param>
     /// <returns></returns>
-    internal ISQLiteServerCommandWorker CreateCommand(string commandText)
+    internal async Task<ISQLiteServerCommandWorker> CreateCommandAsync(string commandText)
     {
-      WaitIfConnectingAsync().Wait();
+      // wait in case we are connecting
+      await WaitIfConnectingAsync().ConfigureAwait(false);
 
+      // make sure it is all good.
       ThrowIfAny();
-      return _worker.CreateCommand(commandText);
+
+      // create the command.
+      return await _worker.CreateCommandAsync(commandText).ConfigureAwait( false );
     }
     #endregion
   }

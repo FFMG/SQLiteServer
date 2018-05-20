@@ -117,19 +117,21 @@ namespace SQLiteServer.Data.Workers
     #endregion
 
     /// <inheritdoc />
-    public ISQLiteServerCommandWorker CreateCommand(string commandText)
+    public async Task<ISQLiteServerCommandWorker> CreateCommandAsync(string commandText)
     {
-      return new SQLiteServerCommandClientWorker( commandText, _controller, CommandTimeout);
+      return await Task.Run( 
+        () => new SQLiteServerCommandClientWorker( commandText, _controller, CommandTimeout)
+      );
     }
 
     /// <inheritdoc />
-    public SQLiteConnection LockConnection()
+    public async Task<SQLiteConnection> LockConnectionAsync()
     {
       // can we use this?
       ThrowIfAny();
 
       // wait for the connection
-      if (!WaitForLockedConnectionAsync(-1).Result)
+      if (!await WaitForLockedConnectionAsync(-1).ConfigureAwait(false))
       {
         throw new SQLiteServerException("Unable to obtain connection lock");
       }
@@ -138,12 +140,12 @@ namespace SQLiteServer.Data.Workers
       ThrowIfAny();
 
       // wait for the connection
-      if (!WaitForLockedConnectionAsync(-1).Result)
+      if (!await WaitForLockedConnectionAsync(-1).ConfigureAwait(false))
       {
         throw new SQLiteServerException("Unable to obtain connection lock");
       }
       
-      var response = _controller.SendAndWaitAsync(SQLiteMessage.LockConnectionRequest, null, CommandTimeout).Result;
+      var response = await _controller.SendAndWaitAsync(SQLiteMessage.LockConnectionRequest, null, CommandTimeout).ConfigureAwait(false);
       switch (response.Message)
       {
         case SQLiteMessage.SendAndWaitTimeOut:
@@ -155,8 +157,7 @@ namespace SQLiteServer.Data.Workers
           return _connection;
 
         case SQLiteMessage.LockConnectionException:
-          var error = response.Get<string>();
-          throw new SQLiteServerException(error);
+          throw new SQLiteServerException(response.Get<string>());
 
         default:
           throw new InvalidOperationException($"Unknown response {response.Message} from the server.");
@@ -164,14 +165,14 @@ namespace SQLiteServer.Data.Workers
     }
 
     /// <inheritdoc />
-    public void UnLockConnection()
+    public async Task UnLockConnectionAsync()
     {
       if (_connection == null)
       {
         return;
       }
 
-      var response = _controller.SendAndWaitAsync(SQLiteMessage.UnLockConnectionRequest, null, CommandTimeout).Result;
+      var response = await _controller.SendAndWaitAsync(SQLiteMessage.UnLockConnectionRequest, null, CommandTimeout).ConfigureAwait(false);
       switch (response.Message)
       {
         case SQLiteMessage.SendAndWaitTimeOut:
@@ -183,8 +184,7 @@ namespace SQLiteServer.Data.Workers
           break;
 
         case SQLiteMessage.LockConnectionException:
-          var error = response.Get<string>();
-          throw new SQLiteServerException(error);
+          throw new SQLiteServerException(response.Get<string>());
 
         default:
           throw new InvalidOperationException($"Unknown response {response.Message} from the server.");

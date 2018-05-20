@@ -16,6 +16,7 @@ using System;
 using System.Collections.Generic;
 using System.Data;
 using System.Text;
+using System.Threading.Tasks;
 using SQLiteServer.Data.Connections;
 using SQLiteServer.Data.Data;
 using SQLiteServer.Data.Enums;
@@ -89,7 +90,7 @@ namespace SQLiteServer.Data.Workers
       }
       
       // get the row.
-      var row = GetGuiOnlyValue<RowData>(SQLiteMessage.ExecuteReaderGetRowRequest );
+      var row = GetGuiOnlyValueAsync<RowData>(SQLiteMessage.ExecuteReaderGetRowRequest ).Result;
       _currentRowInformation = new RowInformation(  _currentRowHeader );
       var ordinal = 0;
       for(var i =0; i < row.Columns.Count;++i )
@@ -202,7 +203,7 @@ namespace SQLiteServer.Data.Workers
     /// <inheritdoc />
     public bool Read()
     {
-      if (GetGuiOnlyValue<int>(SQLiteMessage.ExecuteReaderReadRequest) == 0)
+      if (GetGuiOnlyValueAsync<int>(SQLiteMessage.ExecuteReaderReadRequest).Result == 0)
       {
         return false;
       }
@@ -216,7 +217,7 @@ namespace SQLiteServer.Data.Workers
     /// <inheritdoc />
     public bool NextResult()
     {
-      return GetGuiOnlyValue<int>(SQLiteMessage.ExecuteReaderNextResultRequest) != 0;
+      return GetGuiOnlyValueAsync<int>(SQLiteMessage.ExecuteReaderNextResultRequest).Result != 0;
     }
     
     /// <inheritdoc />
@@ -246,10 +247,10 @@ namespace SQLiteServer.Data.Workers
     /// </summary>
     /// <param name="requestType"></param>
     /// <returns></returns>
-    private T GetGuiOnlyValue<T>(SQLiteMessage requestType)
+    private async Task<T> GetGuiOnlyValueAsync<T>(SQLiteMessage requestType)
     {
       ThrowIfNoCommand();
-      var response = _controller.SendAndWaitAsync(requestType, Encoding.ASCII.GetBytes(_parentCommand.Guid), _queryTimeouts).Result;
+      var response = await _controller.SendAndWaitAsync(requestType, Encoding.ASCII.GetBytes(_parentCommand.Guid), _queryTimeouts).ConfigureAwait(false);
       switch (response.Message)
       {
         case SQLiteMessage.SendAndWaitTimeOut:
@@ -278,7 +279,7 @@ namespace SQLiteServer.Data.Workers
     /// <param name="requestType"></param>
     /// <param name="index"></param>
     /// <returns></returns>
-    private T GetIndexedValue<T>(SQLiteMessage requestType, int index)
+    private async Task<T> GetIndexedValueAsync<T>(SQLiteMessage requestType, int index)
     {
       ThrowIfNoCommand();
        var getValue = new GuidAndIndexRequest()
@@ -288,7 +289,7 @@ namespace SQLiteServer.Data.Workers
       };
       var fields = Fields.Fields.SerializeObject(getValue);
 
-      var response = _controller.SendAndWaitAsync(requestType, fields.Pack(), _queryTimeouts).Result;
+      var response = await _controller.SendAndWaitAsync(requestType, fields.Pack(), _queryTimeouts).ConfigureAwait(false);
       switch (response.Message)
       {
         case SQLiteMessage.SendAndWaitTimeOut:
@@ -370,7 +371,7 @@ namespace SQLiteServer.Data.Workers
       }
 
       // get the value
-      var dataTypeName = GetIndexedValue<string>(SQLiteMessage.ExecuteReaderGetDataTypeNameRequest, i);
+      var dataTypeName = GetIndexedValueAsync<string>(SQLiteMessage.ExecuteReaderGetDataTypeNameRequest, i).Result;
 
       // the name cannot be null, it just means
       // that it was created with no type

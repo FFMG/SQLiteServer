@@ -14,6 +14,7 @@
 //    along with SQLiteServer.  If not, see<https://www.gnu.org/licenses/gpl-3.0.en.html>.
 using System;
 using System.Text;
+using System.Threading.Tasks;
 using SQLiteServer.Data.Connections;
 using SQLiteServer.Data.Data;
 using SQLiteServer.Data.Enums;
@@ -81,9 +82,9 @@ namespace SQLiteServer.Data.Workers
     /// Get the server guid
     /// </summary>
     /// <returns></returns>
-    private string CreateGuid()
+    private async Task<string> CreateGuidAsync()
     { 
-      var response = _controller.SendAndWaitAsync( SQLiteMessage.CreateCommandRequest, Encoding.ASCII.GetBytes(CommandText), CommandTimeout).Result;
+      var response = await _controller.SendAndWaitAsync( SQLiteMessage.CreateCommandRequest, Encoding.ASCII.GetBytes(CommandText), CommandTimeout).ConfigureAwait(false);
       switch (response.Message)
       {
         case SQLiteMessage.SendAndWaitTimeOut:
@@ -93,8 +94,7 @@ namespace SQLiteServer.Data.Workers
           return response.Get<string>();
 
         case SQLiteMessage.CreateCommandException:
-          var error = response.Get<string>();
-          throw new SQLiteServerException(error);
+          throw new SQLiteServerException(response.Get<string>());
 
         default:
           throw new InvalidOperationException( $"Unknown response {response.Message} from the server.");
@@ -188,8 +188,12 @@ namespace SQLiteServer.Data.Workers
       try
       {
         ThrowIfAny();
-        ThrowIfNoCommand();
-        _controller.Send(SQLiteMessage.DisposeCommand, Encoding.ASCII.GetBytes(Guid));
+
+        // The GUID could be null if there was an error creating the command.
+        if (null != Guid)
+        {
+          _controller.Send(SQLiteMessage.DisposeCommand, Encoding.ASCII.GetBytes(Guid));
+        }
       }
       finally
       {
