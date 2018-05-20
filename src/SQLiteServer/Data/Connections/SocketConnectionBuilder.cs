@@ -89,10 +89,24 @@ namespace SQLiteServer.Data.Connections
         throw new SQLiteServerException("Unable to connected.");
       }
 
-      while (!_connectionController.Connected)
+      // wait untl we are connected
+      await Task.Run(async () =>
       {
-        await Task.Delay(_heartBeatTimeOutInMs); // arbitrary delay
-      }
+        var watch = System.Diagnostics.Stopwatch.StartNew();
+        while (!_connectionController.Connected)
+        {
+          // yield all the work.
+          await Task.Yield();
+
+          // check for delay
+          if (_heartBeatTimeOutInMs > 0 && watch.ElapsedMilliseconds >= _heartBeatTimeOutInMs)
+          {
+            // we timed out.
+            break;
+          }
+        }
+        watch.Stop();
+      }).ConfigureAwait(false);
 
       if (!_connectionController.Connected)
       {
