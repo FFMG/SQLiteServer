@@ -197,11 +197,10 @@ namespace SQLiteServer.Data.SQLiteServer
     }
 
     #region Database Operations
-    /// <inheritdoc />
     /// <summary>
     /// Open the database and connect as Server/Client
     /// </summary>
-    public override void Open()
+    public async Task OpenAsync()
     {
       if (State != ConnectionState.Closed)
       {
@@ -227,7 +226,7 @@ namespace SQLiteServer.Data.SQLiteServer
           }
           throw;
         }
-        
+
         // we are now open
         _connectionState = ConnectionState.Open;
       }
@@ -237,6 +236,15 @@ namespace SQLiteServer.Data.SQLiteServer
         OpenError();
         throw;
       }
+    }
+
+    /// <inheritdoc />
+    /// <summary>
+    /// Open the database and connect as Server/Client
+    /// </summary>
+    public override void Open()
+    {
+      Task.Run(async () => await OpenAsync().ConfigureAwait(false));
     }
 
     /// <summary>
@@ -408,13 +416,9 @@ namespace SQLiteServer.Data.SQLiteServer
     private async Task OpenWithNoValidationAsync()
     {
       // try and re-connect.
-      await Task.Run(async () =>
-        await _connectionBuilder.ConnectAsync(this)
-      ).ConfigureAwait(false);
+      await _connectionBuilder.ConnectAsync(this).ConfigureAwait(false);
 
-      await Task.Run(async () =>
-        _worker = await _connectionBuilder.OpenAsync(ConnectionString)
-      ).ConfigureAwait(false);
+      _worker = await _connectionBuilder.OpenAsync(ConnectionString).ConfigureAwait(false);
 
       _worker.Open();
     }

@@ -173,18 +173,18 @@ namespace SQLiteServer.Data.SQLiteServer
     /// <returns>The number of rows added/deleted/whatever depending on the query.</returns>
     public int ExecuteNonQuery()
     {
-      WaitIfConnectingAsync().Wait();
-      ThrowIfAnyAndCreateWorker();
-      return _worker.ExecuteNonQuery();
+      return Task.Run(async () => await ExecuteNonQueryAsync().ConfigureAwait(false)).Result;
     }
 
     /// <summary>
     /// Execute the given query 
     /// </summary>
     /// <returns>The number of rows added/deleted/whatever depending on the query.</returns>
-    public Task<int> ExecuteNonQueryAsync()
+    public async Task<int> ExecuteNonQueryAsync()
     {
-      return Task.FromResult(ExecuteNonQuery());
+      await WaitIfConnectingAsync().ConfigureAwait( false );
+      ThrowIfAnyAndCreateWorker();
+      return _worker.ExecuteNonQuery();
     }
 
 
