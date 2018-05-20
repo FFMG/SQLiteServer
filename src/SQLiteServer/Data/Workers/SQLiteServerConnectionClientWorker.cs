@@ -82,15 +82,18 @@ namespace SQLiteServer.Data.Workers
       }
     }
 
-    public void Open()
+    public Task OpenAsync()
     {
       // nothing to do.
+      return Task.FromResult<object>(null);
     }
 
-    public void Close()
+    public Task CloseAsync()
     {
       //  close the connections
       _controller.DisConnect();
+
+      return Task.FromResult<object>(null);
     }
 
     #region Validations

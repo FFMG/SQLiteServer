@@ -17,7 +17,6 @@ using System;
 using System.Collections.Generic;
 using System.Data;
 using System.Data.SQLite;
-using System.Runtime.InteropServices;
 using System.Threading.Tasks;
 using SQLiteServer.Data.Data;
 using SQLiteServer.Data.Enums;
@@ -707,16 +706,18 @@ namespace SQLiteServer.Data.Workers
     #endregion
 
     /// <inheritdoc />
-    public void Open()
+    public async Task OpenAsync()
     {
       // open the connection
-      _connection.Open();
+      await _connection.OpenAsync().ConfigureAwait( false );
     }
 
     /// <inheritdoc />
-    public void Close()
+    public Task CloseAsync()
     {
       _connection.Close();
+
+      return Task.FromResult<object>(null);
     }
 
     /// <inheritdoc />

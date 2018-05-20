@@ -18,6 +18,7 @@ using System.Data.Common;
 using System.Data.SQLite;
 using System.IO;
 using System.Net;
+using System.Threading;
 using System.Threading.Tasks;
 using SQLiteServer.Data.Connections;
 using SQLiteServer.Data.Workers;
@@ -197,10 +198,8 @@ namespace SQLiteServer.Data.SQLiteServer
     }
 
     #region Database Operations
-    /// <summary>
-    /// Open the database and connect as Server/Client
-    /// </summary>
-    public async Task OpenAsync()
+    /// <inheritdoc />
+    public override async Task OpenAsync(CancellationToken cancellationToken)
     {
       if (State != ConnectionState.Closed)
       {
@@ -214,37 +213,37 @@ namespace SQLiteServer.Data.SQLiteServer
 
         // re-open, we will change no state
         // and we will not check anything,
-        try
-        {
-          OpenWithNoValidationAsync().Wait();
-        }
-        catch (AggregateException e)
-        {
-          if (e.InnerException != null)
-          {
-            throw e.InnerException;
-          }
-          throw;
-        }
+        await OpenWithNoValidationAsync( cancellationToken ).ConfigureAwait(false);
 
         // we are now open
         _connectionState = ConnectionState.Open;
       }
       catch
       {
-        // close whatever might have  been open
-        OpenError();
+        if (!cancellationToken.IsCancellationRequested)
+        {
+          // close whatever might have  been open
+          await OpenErrorAsync().ConfigureAwait( false );
+        }
         throw;
       }
     }
 
     /// <inheritdoc />
-    /// <summary>
-    /// Open the database and connect as Server/Client
-    /// </summary>
     public override void Open()
     {
-      Task.Run(async () => await OpenAsync().ConfigureAwait(false));
+      try
+      {
+        Task.Run(async () => await OpenAsync(default(CancellationToken)).ConfigureAwait(false)).Wait();
+      }
+      catch (AggregateException e)
+      {
+        if (e.InnerException != null)
+        {
+          throw e.InnerException;
+        }
+        throw;
+      }
     }
 
     /// <summary>
@@ -322,10 +321,30 @@ namespace SQLiteServer.Data.SQLiteServer
     /// <inheritdoc />
     public override void Close()
     {
+      try
+      {
+        Task.Run(async () => await CloseAsync().ConfigureAwait(false)).Wait();
+      }
+      catch (AggregateException e)
+      {
+        if (e.InnerException != null)
+        {
+          throw e.InnerException;
+        }
+        throw;
+      }
+    }
+
+    /// <summary>
+    /// Close the database connection
+    /// </summary>
+    /// <returns></returns>
+    public async Task CloseAsync()
+    {
       // it might sound silly
       // but if we are connecting, we need to wait a little.
       // so we don't disconnect ... while connecting.
-      WaitIfConnectingAsync().Wait();
+      await WaitIfConnectingAsync().ConfigureAwait(  false );
 
       // are we open?
       ThrowIfNotOpen();
@@ -336,7 +355,10 @@ namespace SQLiteServer.Data.SQLiteServer
         RollbackOpenTransactions();
 
         // close the worker.
-        _worker?.Close();
+        if (_worker != null)
+        {
+          await _worker.CloseAsync().ConfigureAwait(false);
+        }
 
         // disconnect everything
         _connectionBuilder.Disconnect();
@@ -379,7 +401,7 @@ namespace SQLiteServer.Data.SQLiteServer
     /// <summary>
     /// Reopen the connection.
     /// </summary>
-    internal void ReOpen()
+    internal async Task ReOpenAsync()
     {
       try
       {
@@ -388,11 +410,11 @@ namespace SQLiteServer.Data.SQLiteServer
 
         // close everything
         _connectionBuilder.Disconnect();
-        _worker.Close();
+        await _worker.CloseAsync().ConfigureAwait( false );
 
         // re-open, we will change no state
         // and we will not check anything,
-        OpenWithNoValidationAsync().Wait();
+        await OpenWithNoValidationAsync( default(CancellationToken) ).ConfigureAwait( false );
 
         // we re-opened.
         _connectionState = ConnectionState.Open;
@@ -400,27 +422,35 @@ namespace SQLiteServer.Data.SQLiteServer
       catch
       {
         // close whatever might have  been open
-        OpenError();
+        await OpenErrorAsync().ConfigureAwait( false );
         throw;
       }
     }
 
-    private void OpenError()
+    private async Task OpenErrorAsync()
     {
       _connectionBuilder?.Disconnect();
-      _worker?.Close();
-      _worker = null;
+      if (_worker != null)
+      {
+        await _worker.CloseAsync().ConfigureAwait( false );
+        _worker = null;
+      }
+
       _connectionState = ConnectionState.Broken;
     }
 
-    private async Task OpenWithNoValidationAsync()
+    private async Task OpenWithNoValidationAsync(CancellationToken cancellationToken)
     {
       // try and re-connect.
       await _connectionBuilder.ConnectAsync(this).ConfigureAwait(false);
 
-      _worker = await _connectionBuilder.OpenAsync(ConnectionString).ConfigureAwait(false);
+      _worker = await _connectionBuilder.OpenAsync(ConnectionString, cancellationToken ).ConfigureAwait(false);
 
-      _worker.Open();
+      if (_worker != null)
+      {
+        // and open the database
+        await _worker.OpenAsync().ConfigureAwait(false);
+      }
     }
 
     /// <summary>

@@ -40,12 +40,12 @@ namespace SQLiteServer.Data.Workers
     /// <summary>
     /// Open the database using the connection string.
     /// </summary>
-    void Open();
+    Task OpenAsync();
 
     /// <summary>
     /// Close the database and the related commands.
     /// </summary>
-    void Close();
+    Task CloseAsync();
 
     /// <summary>
     /// Create a command worker.

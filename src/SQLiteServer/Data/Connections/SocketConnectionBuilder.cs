@@ -14,6 +14,7 @@
 //    along with SQLiteServer.  If not, see<https://www.gnu.org/licenses/gpl-3.0.en.html>.
 using System;
 using System.Net;
+using System.Threading;
 using System.Threading.Tasks;
 using SQLiteServer.Data.Exceptions;
 using SQLiteServer.Data.SQLiteServer;
@@ -132,11 +133,28 @@ namespace SQLiteServer.Data.Connections
 
     private void OnServerDisconnect()
     {
-      _connection?.ReOpen();
+      try
+      {
+        Task.Run(async () =>
+        {
+          if (_connection != null)
+          {
+            await _connection.ReOpenAsync().ConfigureAwait(false);
+          }
+        }).Wait();
+      }
+      catch (AggregateException e)
+      {
+        if (e.InnerException != null)
+        {
+          throw e.InnerException;
+        }
+        throw;
+      }
     }
 
     /// <inheritdoc />
-    public Task<ISQLiteServerConnectionWorker> OpenAsync(string connectionString )
+    public Task<ISQLiteServerConnectionWorker> OpenAsync(string connectionString, CancellationToken cancellationToken )
     {
       // sanity check
       ThrowIfDisposed();

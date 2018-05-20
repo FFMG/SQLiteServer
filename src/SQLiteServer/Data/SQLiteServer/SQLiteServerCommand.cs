@@ -68,6 +68,22 @@ namespace SQLiteServer.Data.SQLiteServer
       CommandTimeout = builder.DefaultTimeout;
     }
 
+    #region Throw if ...
+    /// <summary>
+    /// Throws an exception if anything is wrong.
+    /// </summary>
+    private void ThrowIfAny()
+    {
+      // disposed?
+      ThrowIfDisposed();
+
+      // valid transaction?
+      ThrowIfBadConnection();
+
+      // valid transaction?
+      ThrowIfBadCommand();
+    }
+
     /// <summary>
     /// Throws an exception if we are trying to execute something 
     /// After this has been disposed.
@@ -87,7 +103,7 @@ namespace SQLiteServer.Data.SQLiteServer
     /// Or if the connection/commandtext is not ready.
     /// If the worker as not been created ... we will do so now.
     /// </summary>
-    private void ThrowIfAnyAndCreateWorker()
+    private async Task ThrowIfAnyAndCreateWorkerAsync()
     {
       // Throw if any ...
       ThrowIfAny();
@@ -95,35 +111,8 @@ namespace SQLiteServer.Data.SQLiteServer
       // or create the worker if neeeded.
       if (null == _worker)
       {
-        _worker = _connection.CreateCommandAsync(CommandText).Result;
+        _worker = await _connection.CreateCommandAsync(CommandText).ConfigureAwait( false );
       }
-    }
-
-    /// <summary>
-    /// Do no do anything if we are waiting to reconnect.
-    /// </summary>
-    private async Task WaitIfConnectingAsync()
-    {
-      if (null == _connection)
-      {
-        return;
-      }
-      await _connection.WaitIfConnectingAsync().ConfigureAwait( false );
-    }
-
-    /// <summary>
-    /// Throws an exception if anything is wrong.
-    /// </summary>
-    private void ThrowIfAny()
-    {
-      // disposed?
-      ThrowIfDisposed();
-
-      // valid transaction?
-      ThrowIfBadConnection();
-
-      // valid transaction?
-      ThrowIfBadCommand();
     }
 
     /// <summary>
@@ -136,7 +125,7 @@ namespace SQLiteServer.Data.SQLiteServer
         throw new InvalidOperationException("CommandText must be specified");
       }
     }
-    
+
     /// <summary>
     /// Throw if the database is not ready.
     /// </summary>
@@ -146,6 +135,19 @@ namespace SQLiteServer.Data.SQLiteServer
       {
         throw new InvalidOperationException("The DBConnection must be non null.");
       }
+    }
+    #endregion
+
+    /// <summary>
+    /// Do no do anything if we are waiting to reconnect.
+    /// </summary>
+    private async Task WaitIfConnectingAsync()
+    {
+      if (null == _connection)
+      {
+        return;
+      }
+      await _connection.WaitIfConnectingAsync().ConfigureAwait( false );
     }
 
     public void Dispose()
@@ -173,7 +175,18 @@ namespace SQLiteServer.Data.SQLiteServer
     /// <returns>The number of rows added/deleted/whatever depending on the query.</returns>
     public int ExecuteNonQuery()
     {
-      return Task.Run(async () => await ExecuteNonQueryAsync().ConfigureAwait(false)).Result;
+      try
+      {
+        return Task.Run(async () => await ExecuteNonQueryAsync().ConfigureAwait(false)).Result;
+      }
+      catch (AggregateException e)
+      {
+        if (e.InnerException != null)
+        {
+          throw e.InnerException;
+        }
+        throw;
+      }
     }
 
     /// <summary>
@@ -183,10 +196,9 @@ namespace SQLiteServer.Data.SQLiteServer
     public async Task<int> ExecuteNonQueryAsync()
     {
       await WaitIfConnectingAsync().ConfigureAwait( false );
-      ThrowIfAnyAndCreateWorker();
+      await ThrowIfAnyAndCreateWorkerAsync().ConfigureAwait( false );
       return _worker.ExecuteNonQuery();
     }
-
 
     /// <summary>
     /// Execute a read operation and return a reader that will alow us to access the data.
@@ -201,10 +213,30 @@ namespace SQLiteServer.Data.SQLiteServer
     /// Execute a read operation and return a reader that will alow us to access the data.
     /// </summary>
     /// <returns></returns>
-    public SQLiteServerDataReader ExecuteReader( CommandBehavior commandBehavior)
+    public SQLiteServerDataReader ExecuteReader(CommandBehavior commandBehavior)
     {
-      WaitIfConnectingAsync().Wait();
-      ThrowIfAnyAndCreateWorker();
+      try
+      {
+        return Task.Run(async () => await ExecuteReaderAsync( commandBehavior ).ConfigureAwait(false)).Result;
+      }
+      catch (AggregateException e)
+      {
+        if (e.InnerException != null)
+        {
+          throw e.InnerException;
+        }
+        throw;
+      }
+    }
+
+    /// <summary>
+    /// Execute a read operation and return a reader that will alow us to access the data.
+    /// </summary>
+    /// <returns></returns>
+    public async Task<SQLiteServerDataReader> ExecuteReaderAsync(CommandBehavior commandBehavior)
+    {
+      await WaitIfConnectingAsync().ConfigureAwait( false );
+      await ThrowIfAnyAndCreateWorkerAsync().ConfigureAwait(false);
 
       try
       {
@@ -227,18 +259,9 @@ namespace SQLiteServer.Data.SQLiteServer
     /// Execute a read operation and return a reader that will alow us to access the data.
     /// </summary>
     /// <returns></returns>
-    public Task<SQLiteServerDataReader> ExecuteReaderAsync()
+    public async Task<SQLiteServerDataReader> ExecuteReaderAsync()
     {
-      return Task.FromResult(ExecuteReader(CommandBehavior.Default));
-    }
-
-    /// <summary>
-    /// Execute a read operation and return a reader that will alow us to access the data.
-    /// </summary>
-    /// <returns></returns>
-    public Task<SQLiteServerDataReader> ExecuteReaderAsync(CommandBehavior commandBehavior)
-    {
-      return Task.FromResult(ExecuteReader(commandBehavior));
+      return await ExecuteReaderAsync(CommandBehavior.Default).ConfigureAwait( false );
     }
   }
 }
