@@ -135,17 +135,17 @@ namespace SQLiteServer.Data.Workers
     }
     
     /// <inheritdoc />
-    public int ExecuteNonQuery()
+    public async Task<int> ExecuteNonQueryAsync()
     {
       ThrowIfAny();
       Packet response;
       if (_serverGuid == null)
       {
-        response = _controller.SendAndWaitAsync(SQLiteMessage.ExecuteCommandNonQueryRequest, Encoding.ASCII.GetBytes(CommandText), CommandTimeout).Result;
+        response = await _controller.SendAndWaitAsync(SQLiteMessage.ExecuteCommandNonQueryRequest, Encoding.ASCII.GetBytes(CommandText), CommandTimeout).ConfigureAwait( false );
       }
       else
       {
-        response = _controller.SendAndWaitAsync(SQLiteMessage.ExecuteNonQueryRequest, Encoding.ASCII.GetBytes(_serverGuid), CommandTimeout).Result;
+        response = await _controller.SendAndWaitAsync(SQLiteMessage.ExecuteNonQueryRequest, Encoding.ASCII.GetBytes(_serverGuid), CommandTimeout).ConfigureAwait( false );
       }
       switch (response.Message)
       {

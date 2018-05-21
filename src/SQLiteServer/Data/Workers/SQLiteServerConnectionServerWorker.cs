@@ -17,6 +17,7 @@ using System;
 using System.Collections.Generic;
 using System.Data;
 using System.Data.SQLite;
+using System.Threading;
 using System.Threading.Tasks;
 using SQLiteServer.Data.Data;
 using SQLiteServer.Data.Enums;
@@ -244,7 +245,10 @@ namespace SQLiteServer.Data.Workers
               break;
 
             case SQLiteMessage.ExecuteReaderReadRequest:
-              response(new Packet(SQLiteMessage.ExecuteRequestResponse, reader.Read() ? 1 : 0));
+              reader.ReadAsync(default(CancellationToken)).Wait();
+              var header = BuildRowHeader(reader, guid);
+              var field = Fields.Fields.SerializeObject(header);
+              response(new Packet(SQLiteMessage.ExecuteReaderReadResponse, field.Pack()));
               break;
 
             case SQLiteMessage.ExecuteReaderNextResultRequest:
@@ -378,7 +382,7 @@ namespace SQLiteServer.Data.Workers
           var result = Fields.Fields.SerializeObject(new GuidAndIndexRequest
           {
             Guid = guid,
-            Index = command.ExecuteNonQuery()
+            Index = command.ExecuteNonQueryAsync().Result
           });
           response(new Packet(SQLiteMessage.ExecuteNonQueryResponse, result.Pack() ));
         }

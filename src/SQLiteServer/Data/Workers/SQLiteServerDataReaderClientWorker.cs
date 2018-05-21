@@ -16,6 +16,7 @@ using System;
 using System.Collections.Generic;
 using System.Data;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 using SQLiteServer.Data.Connections;
 using SQLiteServer.Data.Data;
@@ -201,17 +202,19 @@ namespace SQLiteServer.Data.Workers
     }
 
     /// <inheritdoc />
-    public bool Read()
+    public async Task<bool> ReadAsync( CancellationToken cancellationToken )
     {
-      if (GetGuiOnlyValueAsync<int>(SQLiteMessage.ExecuteReaderReadRequest).Result == 0)
-      {
-        return false;
-      }
+      var rowHeader = await GetGuiOnlyValueAsync<RowHeader>(SQLiteMessage.ExecuteReaderReadRequest).ConfigureAwait(false);
+
+      _currentRowHeader = rowHeader;
+      _parentCommand.Guid = _currentRowHeader.Guid;
 
       // we need to reset some field now.
       _dataTypeName.Clear();
       _currentRowInformation = null;
-      return true;
+
+      // if we have no rows, then we have nothing else to read.
+      return rowHeader.HasRows;
     }
 
     /// <inheritdoc />
@@ -256,6 +259,7 @@ namespace SQLiteServer.Data.Workers
         case SQLiteMessage.SendAndWaitTimeOut:
           throw new TimeoutException("There was a timeout error executing the read request from the reader.");
 
+        case SQLiteMessage.ExecuteReaderReadResponse:
         case SQLiteMessage.ExecuteReaderGetRowResponse:
           var fields = Fields.Fields.Unpack(response.Payload);
           return Fields.Fields.DeserializeObject<T>(fields);

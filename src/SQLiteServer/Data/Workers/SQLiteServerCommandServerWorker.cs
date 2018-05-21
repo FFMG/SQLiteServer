@@ -127,31 +127,16 @@ namespace SQLiteServer.Data.Workers
     }
 
     /// <inheritdoc />
-    public int ExecuteNonQuery()
+    public async Task<int> ExecuteNonQueryAsync()
     {
       ThrowIfAny();
       try
       {
-        var queryResult = 0;
-        var t1 = new Task(() => queryResult = _command.ExecuteNonQuery());
-        var t2 = new Task(() => KeepBusyUntilTimeout(t1));
+        var t1 = _command.ExecuteNonQueryAsync();
+        var t2 = Task.Run( () => KeepBusyUntilTimeout(t1));
 
-        t1.Start();
-        t2.Start();
-        var tasks = Task.WhenAll(t1, t2);
-        try
-        {
-          tasks.Wait();
-        }
-        catch (AggregateException e)
-        {
-          if (e.InnerException != null)
-          {
-            throw e.InnerException;
-          }
-          throw;
-        }
-        return queryResult;
+        await Task.WhenAll(t1, t2).ConfigureAwait(false);
+        return t1.Result;
       }
       catch (SQLiteException e)
       {

@@ -13,6 +13,7 @@
 //    You should have received a copy of the GNU General Public License
 //    along with SQLiteServer.  If not, see<https://www.gnu.org/licenses/gpl-3.0.en.html>.
 using System;
+using System.Threading.Tasks;
 
 namespace SQLiteServer.Data.Workers
 {
@@ -28,7 +29,7 @@ namespace SQLiteServer.Data.Workers
     /// Execute the given query 
     /// </summary>
     /// <returns>The number of rows added/deleted/whatever depending on the query.</returns>
-    int ExecuteNonQuery();
+    Task<int> ExecuteNonQueryAsync();
 
     /// <summary>
     /// Try and cancel the command. 
