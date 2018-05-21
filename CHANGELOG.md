@@ -9,6 +9,7 @@ Version 0.1.2.1 2018-05-31
 	1.  `GetGuid`
 	2.  `GetByte`
 	3.  `GetChar`
+3. Various changes to speed up client getting data.
 
 Version 0.1.1.3 2018-04-20
 --------------------------
