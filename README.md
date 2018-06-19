@@ -1,6 +1,18 @@
 # MyOddWeb.com SQLiteServer [![Release](https://img.shields.io/badge/release-v0.1.2.1-brightgreen.png?style=flat)](https://github.com/FFMG/SQLiteServer/) [![Build Status](https://travis-ci.org/FFMG/SQLiteServer.svg?branch=master)](https://travis-ci.org/FFMG/SQLiteServer)
 A library to allow multiple applications/processes to share a single SQLite database
 
+## Nuget
+
+### Package manager
+`Install-Package MyOddWeb.Data.SQLiteServer -Version 0.1.2.1`
+
+### CLI
+#### .NET
+`dotnet add package MyOddWeb.Data.SQLiteServer --version 0.1.2.1`
+
+#### Packet
+`paket add MyOddWeb.Data.SQLiteServer --version 0.1.2.1`
+
 ## Why?
 A common issue with SQLite is that, by design, only one process can connect to the database, while this is a perfectly normal use case, (and by design), there are some cases where more than one applications might want to share some data, (one does all the insert while another does the queries.)
 
