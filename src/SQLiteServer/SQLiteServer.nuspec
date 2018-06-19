@@ -1,9 +1,9 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <package xmlns="http://schemas.microsoft.com/packaging/2010/07/nuspec.xsd">
   <metadata>
-    <id>System.Data.SQLiteServer</id>
+    <id>MyOddWeb.Data.SQLiteServer</id>
     <version>0.1.2.1</version>
-    <title>System.Data.SQLiteServer (x86/x64)</title>
+    <title>MyOddWeb.Data.SQLiteServer (x86/x64)</title>
     <licenseUrl>https://github.com/FFMG/SQLiteServer/blob/master/LICENSE</licenseUrl>
     <projectUrl>https://github.com/FFMG/SQLiteServer</projectUrl>
     <description>SQLiteServer enables multiple processes to connect to a single instance of a SQLite database</description>
