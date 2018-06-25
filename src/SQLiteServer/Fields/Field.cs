@@ -29,9 +29,20 @@ namespace SQLiteServer.Fields
     private const string ListTypeCount = "c";
 
     /// <summary>
+    ///  the placeholder for the base data type.
+    /// </summary>
+    private const string ListTypeType = "t";
+
+    /// <summary>
     /// The simple list type.
     /// </summary>
     private const string ListTypeSimple = "s";
+
+    /// <summary>
+    /// Some items are 'parent' items and are not part of the 
+    /// List itself and can be ignored. 
+    /// </summary>
+    private const int ListNumberOfItemsToSkip = 2;
 
     /// <summary>
     /// Check if the given object is of type IList
@@ -53,6 +64,11 @@ namespace SQLiteServer.Fields
     /// The variable data type.
     /// </summary>
     public FieldType Type { get; }
+
+    /// <summary>
+    /// Get the List element type if we have one.
+    /// </summary>
+    private FieldType ListElementType { get; }
 
     /// <summary>
     /// The actual value.
@@ -86,6 +102,15 @@ namespace SQLiteServer.Fields
         }
         switch (Type)
         {
+          case FieldType.Field:
+            _valueLength = ((Field)Value)?.TotalLength ?? 0;
+            break;
+          case FieldType.Null:
+            _valueLength = 0;
+            break;
+          case FieldType.Bool:
+            _valueLength = sizeof(bool);
+            break;
           case FieldType.Int16:
             _valueLength = sizeof(short);
             break;
@@ -98,7 +123,6 @@ namespace SQLiteServer.Fields
           case FieldType.Double:
             _valueLength = sizeof(double);
             break;
-          case FieldType.StringNull:
           case FieldType.String:
             _valueLength = ((string)Value)?.Length ?? 0;
             break;
@@ -124,8 +148,13 @@ namespace SQLiteServer.Fields
     /// <param name="type"></param>
     /// <param name="value"></param>
     public Field(string name, Type type, object value) :
-      this(name, TypeToFieldType(type), value)
+      this(name, TypeToFieldType(type), ValueIfIEnumerable(value, type))
     {
+      ListElementType = FieldType.Null;
+      if (TypeToFieldType(type) == FieldType.List)
+      {
+        ListElementType = TypeToFieldType(GetActualElementType(value.GetType().GetGenericArguments().Single()));
+      }
     }
 
     /// <summary>
@@ -134,40 +163,24 @@ namespace SQLiteServer.Fields
     /// <param name="name"></param>
     /// <param name="type"></param>
     /// <param name="value"></param>
-    private Field(string name, FieldType type, object value)
+    /// <param name="elementType"></param>
+    private Field(string name, FieldType type, object value, FieldType elementType = FieldType.Null)
     {
       Name = name;
       Type = type;
       Value = value;
+      ListElementType = elementType;
     }
-
     /// <inheritdoc />
     public Field(string name, IEnumerable value)
     {
       Name = name;
       if (IsIListType(value))
       {
+        Value = ValueFromIEnumerable(value);
         Type = FieldType.List;
-        var enumerable = value as object[] ?? value.Cast<object>().ToArray();
 
-        // the list
-        Value = new List<Field>();
-
-        // the number of items in the list
-        ((List<Field>)Value).Add(new Field(ListTypeCount, FieldType.Int32, enumerable.Length));
-
-        // populate the list.
-        foreach (var v in enumerable)
-        {
-          if (null == v)
-          {
-            ((List<Field>)Value).Add(new Field(ListTypeSimple, FieldType.StringNull, null ));
-          }
-          else
-          {
-            ((List<Field>) Value).Add(new Field(ListTypeSimple, v.GetType(), v));
-          }
-        }
+        ListElementType = TypeToFieldType(GetActualElementType(value.GetType().GetGenericArguments().Single()));
       }
       else
       {
@@ -175,8 +188,73 @@ namespace SQLiteServer.Fields
       }
     }
 
+    private static Type GetActualElementType(Type givenType)
+    {
+      var elementType = givenType;
+      if (elementType.IsGenericType && elementType.GetGenericTypeDefinition() == typeof(Nullable<>))
+      {
+        elementType = elementType.GenericTypeArguments.FirstOrDefault();
+      }
+      return elementType;
+    }
+
+    /// <summary>
+    /// This function convert the object to a List&lt;Field&gt; if the type is of kind IEnumrable.
+    /// If the value is not of kind IEnumrable we simply return the value as given to us.
+    /// </summary>
+    /// <param name="value"></param>
+    /// <param name="type"></param>
+    /// <returns></returns>
+    private static object ValueIfIEnumerable(object value, Type type)
+    {
+      if (TypeToFieldType(type) != FieldType.List)
+      {
+        return value;
+      }
+      return ValueFromIEnumerable((IEnumerable) value);
+    }
+
+    /// <summary>
+    /// Given an IEnumerable we will try and convert it to a list of Field
+    /// This makes it easier to package it.
+    /// </summary>
+    /// <param name="ienumerable"></param>
+    /// <returns></returns>
+    private static object ValueFromIEnumerable(IEnumerable ienumerable)
+    {
+      var enumerable = ienumerable as object[] ?? ienumerable.Cast<object>().ToArray();
+
+      // create the list and add the number of items in the list
+      var value = new List<Field>
+      {
+        new Field(ListTypeCount, FieldType.Int32, enumerable.Length),
+        new Field(ListTypeType, FieldType.Int32, TypeToFieldType( GetActualElementType(ienumerable.GetType().GetGenericArguments().Single())))
+      };
+
+      // populate the list.
+      foreach (var v in enumerable)
+      {
+        if (null == v)
+        {
+          value.Add(new Field(ListTypeSimple, FieldType.Null, null));
+          continue;
+        }
+        value.Add(new Field(ListTypeSimple, v.GetType(), v));
+      }
+      return value;
+    }
+
+    public Field(string name, Field value) : this(name, FieldType.Field, value)
+    {
+    }
+
     /// <inheritdoc />
     public Field(string name, short value) : this( name, FieldType.Int16, value )
+    {
+    }
+
+    /// <inheritdoc />
+    public Field(string name, bool value) : this(name, FieldType.Bool, value)
     {
     }
 
@@ -191,7 +269,7 @@ namespace SQLiteServer.Fields
     }
 
     /// <inheritdoc />
-    public Field(string name, string value) : this(name, value == null ? FieldType.StringNull : FieldType.String, value)
+    public Field(string name, string value) : this(name, value == null ? FieldType.Null : FieldType.String, value)
     {
     }
 
@@ -284,7 +362,38 @@ namespace SQLiteServer.Fields
 
       if (type == typeof(object))
       {
-        return Value;
+        return Object();
+      }
+
+      if (type == typeof(Field))
+      {
+        if (Type == FieldType.List)
+        {
+          var list = (List<Field>)TryGetList<List<Field>>();
+          if( list?.Count > 0 )
+          {
+            // get the first item in our list.
+            return list[0];
+          }
+
+          // we have noting
+          return null;
+        }
+
+        if (Type == FieldType.Field)
+        {
+          // this could be null...
+          return (Field)Value;
+        }
+
+        if (Type == FieldType.Null)
+        {
+          // this could be null...
+          return null;
+        }
+
+        // return whatever value we are.
+        return this;
       }
       throw new InvalidCastException("Unable to cast to this data type.");
     }
@@ -318,12 +427,13 @@ namespace SQLiteServer.Fields
       for( var i = 0; i < parent.GetLong(); ++i )
       {
         //  we skip the first item as it is the parent.
-        if ((i + 1) >= fields.Count)
+        if ((i + ListNumberOfItemsToSkip) >= fields.Count)
         {
           throw new InvalidCastException("Unable to cast to this data type, not enough items in the list.");
         }
+
         // get that child.
-        var child = fields[i + 1];
+        var child = fields[i + ListNumberOfItemsToSkip];
 
         // get the value
         object value;
@@ -342,7 +452,7 @@ namespace SQLiteServer.Fields
         }
         else
         {
-          value = Convert.ChangeType(childValue, elementType);
+          value = childValue == null ? null : Convert.ChangeType(childValue, elementType);
         }
 
         // and add it to our list.
@@ -359,13 +469,17 @@ namespace SQLiteServer.Fields
     {
       switch (Type)
       {
+        case FieldType.Field:
+          return ((Field)Value).GetString();
+        case FieldType.Bool:
+          return Convert.ToString((bool)Value);
         case FieldType.Int16:
           return Convert.ToString((short)Value);
         case FieldType.Int32:
           return Convert.ToString((int)Value);
         case FieldType.Int64:
           return Convert.ToString((long)Value);
-        case FieldType.StringNull:
+        case FieldType.Null:
           return null;
         case FieldType.String:
           return (string)Value;
@@ -386,13 +500,17 @@ namespace SQLiteServer.Fields
     {
       switch (Type)
       {
+        case FieldType.Field:
+          return ((Field)Value).GetLong();
+        case FieldType.Bool:
+          return (bool)Value ? 1: 0;
         case FieldType.Int16:
           return (short) Value;
         case FieldType.Int32:
           return (int) Value;
         case FieldType.Int64:
           return (long) Value;
-        case FieldType.StringNull:
+        case FieldType.Null:
           return 0;
         case FieldType.String:
           return Convert.ToInt64((string) Value);
@@ -413,13 +531,17 @@ namespace SQLiteServer.Fields
     {
       switch (Type)
       {
+        case FieldType.Field:
+          return ((Field)Value).GetDouble();
+        case FieldType.Bool:
+          return (bool)Value ? 1.0 : 0.0;
         case FieldType.Int16:
           return (short)Value;
         case FieldType.Int32:
           return (int)Value;
         case FieldType.Int64:
           return (long)Value;
-        case FieldType.StringNull:
+        case FieldType.Null:
           return 0;
         case FieldType.String:
           return Convert.ToDouble((string)Value);
@@ -435,13 +557,17 @@ namespace SQLiteServer.Fields
     {
       switch (Type)
       {
+        case FieldType.Field:
+          return ((Field) Value).GetNullableLong();
+        case FieldType.Bool:
+          return (bool)Value ? 1 : 0;
         case FieldType.Int16:
           return (short?)Value;
         case FieldType.Int32:
           return (int?)Value;
         case FieldType.Int64:
           return (long?)Value;
-        case FieldType.StringNull:
+        case FieldType.Null:
           return null;
         case FieldType.String:
           return Convert.ToInt64((string)Value);
@@ -459,13 +585,17 @@ namespace SQLiteServer.Fields
     {
       switch (Type)
       {
+        case FieldType.Field:
+          return ((Field) Value).GetNullableDouble();
+        case FieldType.Bool:
+          return (bool)Value ? 1.0 : 0.0;
         case FieldType.Int16:
           return (short?)Value;
         case FieldType.Int32:
           return (int?)Value;
         case FieldType.Int64:
           return (long?)Value;
-        case FieldType.StringNull:
+        case FieldType.Null:
           return null;
         case FieldType.String:
           return Convert.ToDouble((string)Value);
@@ -510,8 +640,11 @@ namespace SQLiteServer.Fields
       Buffer.BlockCopy(bValueLength, 0, bytes, offset, sizeof(int));
       offset += sizeof(int);
 
-      Buffer.BlockCopy(ObjectToBytes(), 0, bytes, offset, ValueLength);
-      //offset += ValueLength;
+      if (ValueLength != 0)
+      {
+        Buffer.BlockCopy(ObjectToBytes(), 0, bytes, offset, ValueLength);
+        //offset += ValueLength;
+      }
 
       return bytes;
     }
@@ -532,7 +665,18 @@ namespace SQLiteServer.Fields
       var value = GetValueAsObjectFromBytes(bytes);
 
       // putting it all together.
-      return new Field(name, type, value );
+      return new Field(name, type, value, GetFieldListElementType(value, type));
+    }
+
+    private static FieldType GetFieldListElementType( object value, FieldType type )
+    {
+      if (type != FieldType.List)
+      {
+        return FieldType.Null;
+      }
+
+      // the second value in the list is the data type.
+      return (FieldType)((IList<Field>)value)[1].Get<int>();
     }
 
     private static object GetValueAsObjectFromBytes(byte[] bytes)
@@ -542,6 +686,15 @@ namespace SQLiteServer.Fields
 
       switch (type)
       {
+        case FieldType.Field:
+          return Unpack(value);
+        case FieldType.Bool:
+          if (value.Length != sizeof(bool))
+          {
+            throw new FieldException("The array of data is not the correct size.");
+          }
+          return BitConverter.ToBoolean(value, 0);
+
         case FieldType.Int16:
           if (value.Length != sizeof(short))
           {
@@ -570,7 +723,7 @@ namespace SQLiteServer.Fields
           }
           return BitConverter.ToDouble(value, 0);
 
-        case FieldType.StringNull:
+        case FieldType.Null:
           return null;
 
         case FieldType.String:
@@ -582,20 +735,23 @@ namespace SQLiteServer.Fields
         case FieldType.List:
           // unpack the first field item.
           var parent = Unpack(value);
-           
-          // create the list with the parent first.
-          var list = new List<Field> {parent};
-          
+
           // we can the walk the list and look for the other items.
           // the must all have the correct name
           // and there must be the correct number of them
-          if ((int) parent.Value < 0)
+          if ((int)parent.Value < 0)
           {
             throw new FieldException("The array of data is not the correct size.");
           }
 
+          // then the data type
+          var basetype = Unpack(value.Skip(parent.TotalLength).ToArray());
+
+          // create the list with the parent first.
+          var list = new List<Field> {parent, basetype };
+          
           // set the current offset, the total parent length
-          var offset = parent.TotalLength;
+          var offset = parent.TotalLength + basetype.TotalLength;
           for (var i = 0; i < (int) parent.Value; ++i)
           {
             // the next block of data if the total size
@@ -734,18 +890,96 @@ namespace SQLiteServer.Fields
     }
 
     /// <summary>
-    /// Convert the current obekect to bytes.
+    /// Convert the current object or recreate it.
+    /// </summary>
+    /// <returns></returns>
+    private object Object()
+    {
+      switch (Type)
+      {
+        case FieldType.Field: return (Field) Value;
+        case FieldType.Int16: return (short) Value;
+        case FieldType.Bool: return (bool) Value;
+        case FieldType.Int32: return (int) Value;
+        case FieldType.Int64: return (long) Value;
+        case FieldType.String: return (string) Value;
+        case FieldType.Null: return null;
+        case FieldType.Double: return (double) Value;
+        case FieldType.Bytes: return (byte[]) Value;
+        case FieldType.List: return ListOfObjects();
+
+        default:
+          throw new NotSupportedException("The given data type is not supported.");
+      }
+    }
+
+    /// <summary>
+    /// Similar to Object() but return as a list.
+    /// </summary>
+    /// <returns>List&lt;object&gt;</returns>
+    private object ListOfObjects()
+    {
+      object value;
+      switch (ListElementType)
+      {
+        case FieldType.Field:
+          value = new List<Field>();
+          break;
+        case FieldType.Bool:
+          value = new List<bool>();
+          break;
+        case FieldType.Int16:
+          value = new List<short>();
+          break;
+        case FieldType.Int32:
+          value = new List<int>();
+          break;
+        case FieldType.Int64:
+          value = new List<long>();
+          break;
+        case FieldType.String:
+          value = new List<string>();
+          break;
+        case FieldType.Null:
+          value = new List<object>();
+          break;
+        case FieldType.Double:
+          value = new List<double>();
+          break;
+        case FieldType.Bytes:
+          value = new List<byte[]>();
+          break;
+        case FieldType.List:
+          value = new List<List<Field>>();
+          break;
+        default:
+          throw new NotSupportedException("The given data type is not supported.");
+      }
+
+      // only get the items
+      foreach (var v in ((IList<Field>)Value).Skip(ListNumberOfItemsToSkip) )
+      {
+        ((IList)value).Add( v.Object() );
+      }
+      // return the object.
+      return value;
+    }
+
+    /// <summary>
+    /// Convert the current object to bytes.
     /// </summary>
     /// <returns></returns>
     private byte[] ObjectToBytes()
     {
       switch (Type)
       {
+        case FieldType.Field: return ((Field)Value).Pack();
+        case FieldType.Bool: return BitConverter.GetBytes((bool)Value);
         case FieldType.Int16: return BitConverter.GetBytes((short)Value);
         case FieldType.Int32: return BitConverter.GetBytes((int)Value);
         case FieldType.Int64: return BitConverter.GetBytes((long)Value);
         case FieldType.String: return Encoding.ASCII.GetBytes((string)Value);
-        case FieldType.StringNull: return new byte[] { };
+        case FieldType.Null: return new byte[] { };
         case FieldType.Double: return BitConverter.GetBytes((double)Value);
         case FieldType.Bytes: return (byte[])Value;
         case FieldType.List:
@@ -775,6 +1009,11 @@ namespace SQLiteServer.Fields
     /// <returns></returns>
     public static FieldType TypeToFieldType(Type type)
     {
+      if (type == typeof(bool))
+      {
+        return FieldType.Bool;
+      }
+
       if (type == typeof(short))
       {
         return FieldType.Int16;
@@ -810,8 +1049,18 @@ namespace SQLiteServer.Fields
         return FieldType.Object;
       }
 
+      if (type == typeof(Field))
+      {
+        return FieldType.Field;
+      }
+
+      if (typeof(IList).IsAssignableFrom(type))
+      {
+        return FieldType.List;
+      }
+
       // no idea what this is...
-      throw new NotSupportedException( $"The given data type is not supported.");
+      throw new NotSupportedException( "The given data type is not supported.");
     }
     
     /// <summary>
@@ -823,6 +1072,12 @@ namespace SQLiteServer.Fields
     {
       switch (type)
       {
+        case FieldType.Field:
+          return typeof(Field);
+
+        case FieldType.Bool:
+          return typeof(bool);
+
         case FieldType.Int16:
           return typeof(short);
 
@@ -836,12 +1091,12 @@ namespace SQLiteServer.Fields
           return typeof(double);
 
         case FieldType.String:
-        case FieldType.StringNull:
           return typeof(string);
 
         case FieldType.Bytes:
           return typeof(byte[]);
 
+        case FieldType.Null:
         case FieldType.Object:
           return typeof(object);
 

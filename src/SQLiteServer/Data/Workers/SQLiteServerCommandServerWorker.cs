@@ -15,6 +15,7 @@
 using System;
 using System.Data;
 using System.Data.SQLite;
+using System.Threading;
 using System.Threading.Tasks;
 using SQLiteServer.Data.Exceptions;
 using SQLiteServer.Data.SQLiteServer;
@@ -127,31 +128,16 @@ namespace SQLiteServer.Data.Workers
     }
 
     /// <inheritdoc />
-    public int ExecuteNonQuery()
+    public async Task<int> ExecuteNonQueryAsync(CancellationToken cancellationToken)
     {
       ThrowIfAny();
       try
       {
-        var queryResult = 0;
-        var t1 = new Task(() => queryResult = _command.ExecuteNonQuery());
-        var t2 = new Task(() => KeepBusyUntilTimeout(t1));
+        var t1 = _command.ExecuteNonQueryAsync( cancellationToken);
+        var t2 = Task.Run( () => KeepBusyUntilTimeout(t1), cancellationToken);
 
-        t1.Start();
-        t2.Start();
-        var tasks = Task.WhenAll(t1, t2);
-        try
-        {
-          tasks.Wait();
-        }
-        catch (AggregateException e)
-        {
-          if (e.InnerException != null)
-          {
-            throw e.InnerException;
-          }
-          throw;
-        }
-        return queryResult;
+        await Task.WhenAll(t1, t2).ConfigureAwait(false);
+        return t1.Result;
       }
       catch (SQLiteException e)
       {

@@ -356,7 +356,7 @@ namespace SQLiteServer.Test.SQLiteServer
     }
 
     [Test]
-    public void ServerHasRows()
+    public void ServerHasRowsButReadHasNotBeenCalled()
     {
       var server = CreateConnection();
       server.Open();
@@ -1478,7 +1478,7 @@ namespace SQLiteServer.Test.SQLiteServer
       const string sqlSelect = "SELECT * FROM tb_config";
       using (var command = new SQLiteServerCommand(sqlSelect, client))
       {
-        using (var reader = command.ExecuteReader())
+        using (var reader = command.ExecuteReader() as SQLiteServerDataReader)
         {
           Assert.IsTrue(reader.Read());
           Assert.AreEqual("name", reader.GetName(0));
@@ -1517,7 +1517,7 @@ namespace SQLiteServer.Test.SQLiteServer
       const string sqlSelect = "SELECT * FROM tb_config";
       using (var command = new SQLiteServerCommand(sqlSelect, client))
       {
-        using (var reader = command.ExecuteReader())
+        using (var reader = command.ExecuteReader() as SQLiteServerDataReader)
         {
           Assert.AreEqual("name", reader.GetName(0));
           Assert.AreEqual("tb_config", reader.GetTableName(0));
@@ -1544,7 +1544,7 @@ namespace SQLiteServer.Test.SQLiteServer
       const string sqlSelect = "SELECT * FROM tb_A, tb_B where tb_A.name = tb_B.name;";
       using (var command = new SQLiteServerCommand(sqlSelect, server))
       {
-        using (var reader = command.ExecuteReader())
+        using (var reader = command.ExecuteReader() as SQLiteServerDataReader)
         {
           Assert.AreEqual("tb_A", reader.GetTableName(0));  // A.Name
           Assert.AreEqual("tb_A", reader.GetTableName(1));  // A.Value
@@ -1571,7 +1571,7 @@ namespace SQLiteServer.Test.SQLiteServer
       const string sqlSelect = "SELECT * FROM tb_A A, tb_B B where A.name = B.name;";
       using (var command = new SQLiteServerCommand(sqlSelect, server))
       {
-        using (var reader = command.ExecuteReader())
+        using (var reader = command.ExecuteReader() as SQLiteServerDataReader)
         {
           Assert.AreEqual("tb_A", reader.GetTableName(0));  // A.Name
           Assert.AreEqual("tb_A", reader.GetTableName(1));  // A.Value
@@ -1601,7 +1601,7 @@ namespace SQLiteServer.Test.SQLiteServer
       const string sqlSelect = "SELECT * FROM tb_A, tb_B where tb_A.name = tb_B.name;";
       using (var command = new SQLiteServerCommand(sqlSelect, client))
       {
-        using (var reader = command.ExecuteReader())
+        using (var reader = command.ExecuteReader() as SQLiteServerDataReader)
         {
           Assert.AreEqual("tb_A", reader.GetTableName(0));  // A.Name
           Assert.AreEqual("tb_A", reader.GetTableName(1));  // A.Value
@@ -1632,7 +1632,7 @@ namespace SQLiteServer.Test.SQLiteServer
       const string sqlSelect = "SELECT A.Name, B.Name FROM tb_A A, tb_B B where A.name = B.name;";
       using (var command = new SQLiteServerCommand(sqlSelect, client))
       {
-        using (var reader = command.ExecuteReader())
+        using (var reader = command.ExecuteReader() as SQLiteServerDataReader)
         {
           Assert.AreEqual("tb_A", reader.GetTableName(0));  // A.Name
           Assert.AreEqual("tb_B", reader.GetTableName(1));  // B.Name
@@ -1668,7 +1668,7 @@ namespace SQLiteServer.Test.SQLiteServer
       const string sqlSelect = "SELECT * FROM tb_config";
       using (var command = new SQLiteServerCommand(sqlSelect, server))
       {
-        using (var reader = command.ExecuteReader())
+        using (var reader = command.ExecuteReader() as SQLiteServerDataReader)
         {
           Assert.IsTrue(reader.Read());
           Assert.AreEqual("name", reader.GetName(0));
@@ -1713,7 +1713,7 @@ namespace SQLiteServer.Test.SQLiteServer
       const string sqlSelect = "SELECT * FROM tb_config";
       using (var command = new SQLiteServerCommand(sqlSelect, server))
       {
-        using (var reader = command.ExecuteReader())
+        using (var reader = command.ExecuteReader() as SQLiteServerDataReader)
         {
           Assert.AreEqual("name", reader.GetName(0));
           Assert.AreEqual("tb_config", reader.GetTableName(0));
@@ -1749,7 +1749,7 @@ namespace SQLiteServer.Test.SQLiteServer
       const string sqlSelect = "SELECT * FROM tb_config";
       using (var command = new SQLiteServerCommand(sqlSelect, server))
       {
-        using (var reader = command.ExecuteReader())
+        using (var reader = command.ExecuteReader() as SQLiteServerDataReader)
         {
           Assert.AreEqual("name", reader.GetName(0));
           Assert.AreEqual("tb_config", reader.GetTableName(0));
@@ -1788,7 +1788,7 @@ namespace SQLiteServer.Test.SQLiteServer
       const string sqlSelect = "SELECT * FROM tb_config";
       using (var command = new SQLiteServerCommand(sqlSelect, client))
       {
-        using (var reader = command.ExecuteReader())
+        using (var reader = command.ExecuteReader() as SQLiteServerDataReader)
         {
           Assert.AreEqual("name", reader.GetName(0));
           Assert.AreEqual("tb_config", reader.GetTableName(0));
@@ -1801,7 +1801,7 @@ namespace SQLiteServer.Test.SQLiteServer
     }
 
     [Test]
-    public void ClientHasRows()
+    public void ClientHasRowsButReadHasNotBeenCalled()
     {
       var server = CreateConnection();
       server.Open();
@@ -2416,7 +2416,7 @@ namespace SQLiteServer.Test.SQLiteServer
           {
             Assert.IsTrue(reader.Read());
             // ReSharper disable once ReturnValueOfPureMethodIsNotUsed
-            Assert.Throws< SQLiteServerException>( () => reader.GetChar(0));
+            Assert.Throws<InvalidCastException>( () => reader.GetChar(0));
           }
           Assert.IsFalse(reader.Read());
         }
@@ -2532,7 +2532,7 @@ namespace SQLiteServer.Test.SQLiteServer
           //
           Assert.IsTrue(reader.Read());
           // ReSharper disable once ReturnValueOfPureMethodIsNotUsed
-          Assert.Throws<SQLiteServerException>(() => reader.GetChar(0));
+          Assert.Throws<InvalidCastException>(() => reader.GetChar(0));
           Assert.IsFalse(reader.Read());
         }
       }
@@ -2566,7 +2566,7 @@ namespace SQLiteServer.Test.SQLiteServer
           //
           Assert.IsTrue(reader.Read());
           // ReSharper disable once ReturnValueOfPureMethodIsNotUsed
-          Assert.Throws<SQLiteServerException>(() => reader.GetChar(0));
+          Assert.Throws<InvalidCastException>(() => reader.GetChar(0));
           Assert.IsFalse(reader.Read());
         }
       }
@@ -2714,7 +2714,7 @@ namespace SQLiteServer.Test.SQLiteServer
           //
           Assert.IsTrue(reader.Read());
           // ReSharper disable once ReturnValueOfPureMethodIsNotUsed
-          Assert.Throws<SQLiteServerException>(() => reader.GetByte(0));
+          Assert.Throws<InvalidCastException>(() => reader.GetByte(0));
           Assert.IsFalse(reader.Read());
         }
       }
@@ -2782,6 +2782,277 @@ namespace SQLiteServer.Test.SQLiteServer
 
     [TestCase(false)]
     [TestCase(true)]
+    public void GetMultipleRowsAndColumnsUsingGetValue(bool useClient)
+    {
+      var server = CreateConnection();
+      server.Open();
+      const string sqlMaster = "create table t1 (a REAL, b INTEGER, c VARCHAR(255))";
+      using (var command = new SQLiteServerCommand(sqlMaster, server))
+      {
+        command.ExecuteNonQuery();
+      }
+
+      var current = server;
+
+      SQLiteServerConnection client = null;
+      if (useClient)
+      {
+        client = CreateConnection();
+        client.Open();
+        current = client;
+      }
+
+      const int numberOfRows = 20;
+      var a = new List<double>();
+      for (var i = 0; i < numberOfRows; ++i)
+      {
+        a.Add(RandomNumber<double>());
+      }
+      var b = new List<int>();
+      for (var i = 0; i < numberOfRows; ++i)
+      {
+        b.Add(RandomNumber<int>());
+      }
+      var c = new List<string>();
+      for (var i = 0; i < numberOfRows; ++i)
+      {
+        c.Add(RandomString(10));
+      }
+
+      for (var i = 0; i < numberOfRows; ++i)
+      {
+        var sql = $"insert into t1(a,b,c) VALUES ({a[i].ToString("0." + new string('#', 339))}, {b[i].ToString()}, '{c[i]}')";
+        using (var command = new SQLiteServerCommand(sql, current))
+        {
+          command.ExecuteNonQuery();
+        }
+      }
+
+      const string sqlSelect = "SELECT * FROM t1";
+      using (var command = new SQLiteServerCommand(sqlSelect, current))
+      {
+        using (var reader = command.ExecuteReader())
+        {
+          for (var i = 0; i < numberOfRows; ++i)
+          {
+            // Log10(100) = 2, so to get the manitude we add 1.
+            const int precision = 10;
+            var tolerance = 1.0 / Math.Pow(10, precision);
+
+            Assert.IsTrue(reader.Read());
+            Assert.That( (double)reader.GetValue(0), Is.EqualTo(a[i]).Within(tolerance));
+            Assert.AreEqual((long)reader.GetValue(1), b[i]);
+            Assert.AreEqual((string)reader.GetValue(2), c[i]);
+          }
+          Assert.IsFalse(reader.Read());
+        }
+      }
+      client?.Close();
+      server.Close();
+    }
+
+    [TestCase(false)]
+    [TestCase(true)]
+    public void GetMultipleRowsAndColumnsUsingTypeSpecificGetsWithColumnName(bool useClient)
+    {
+      var server = CreateConnection();
+      server.Open();
+      const string sqlMaster = "create table t1 (a REAL, b INTEGER, c VARCHAR(255))";
+      using (var command = new SQLiteServerCommand(sqlMaster, server))
+      {
+        command.ExecuteNonQuery();
+      }
+
+      var current = server;
+
+      SQLiteServerConnection client = null;
+      if (useClient)
+      {
+        client = CreateConnection();
+        client.Open();
+        current = client;
+      }
+
+      const int numberOfRows = 20;
+      var a = new List<double>();
+      for (var i = 0; i < numberOfRows; ++i)
+      {
+        a.Add(RandomNumber<double>());
+      }
+      var b = new List<int>();
+      for (var i = 0; i < numberOfRows; ++i)
+      {
+        b.Add(RandomNumber<int>());
+      }
+      var c = new List<string>();
+      for (var i = 0; i < numberOfRows; ++i)
+      {
+        c.Add(RandomString(10));
+      }
+
+      for (var i = 0; i < numberOfRows; ++i)
+      {
+        var sql = $"insert into t1(a,b,c) VALUES ({a[i].ToString("0." + new string('#', 339))}, {b[i].ToString()}, '{c[i]}')";
+        using (var command = new SQLiteServerCommand(sql, current))
+        {
+          command.ExecuteNonQuery();
+        }
+      }
+
+      const string sqlSelect = "SELECT * FROM t1";
+      using (var command = new SQLiteServerCommand(sqlSelect, current))
+      {
+        using (var reader = command.ExecuteReader())
+        {
+          for (var i = 0; i < numberOfRows; ++i)
+          {
+            // Log10(100) = 2, so to get the manitude we add 1.
+            const int precision = 10;
+            var tolerance = 1.0 / Math.Pow(10, precision);
+
+            Assert.IsTrue(reader.Read());
+            Assert.That((double)reader["a"], Is.EqualTo(a[i]).Within(tolerance));
+            Assert.AreEqual((long)reader["b"], b[i]);
+            Assert.AreEqual((string)reader["c"], c[i]);
+          }
+          Assert.IsFalse(reader.Read());
+        }
+      }
+      client?.Close();
+      server.Close();
+    }
+
+    [TestCase(false)]
+    [TestCase(true)]
+    public void GetMultipleRowsAndColumnsUsingTypeSpecificGetsWithIndexes(bool useClient)
+    {
+      var server = CreateConnection();
+      server.Open();
+      const string sqlMaster = "create table t1 (a REAL, b INTEGER, c VARCHAR(255))";
+      using (var command = new SQLiteServerCommand(sqlMaster, server))
+      {
+        command.ExecuteNonQuery();
+      }
+
+      var current = server;
+
+      SQLiteServerConnection client = null;
+      if (useClient)
+      {
+        client = CreateConnection();
+        client.Open();
+        current = client;
+      }
+
+      const int numberOfRows = 20;
+      var a = new List<double>();
+      for (var i = 0; i < numberOfRows; ++i)
+      {
+        a.Add(RandomNumber<double>());
+      }
+      var b = new List<int>();
+      for (var i = 0; i < numberOfRows; ++i)
+      {
+        b.Add(RandomNumber<int>());
+      }
+      var c = new List<string>();
+      for (var i = 0; i < numberOfRows; ++i)
+      {
+        c.Add(RandomString(10));
+      }
+
+      for (var i = 0; i < numberOfRows; ++i)
+      {
+        var sql = $"insert into t1(a,b,c) VALUES ({a[i].ToString("0." + new string('#', 339))}, {b[i].ToString()}, '{c[i]}')";
+        using (var command = new SQLiteServerCommand(sql, current))
+        {
+          command.ExecuteNonQuery();
+        }
+      }
+
+      const string sqlSelect = "SELECT * FROM t1";
+      using (var command = new SQLiteServerCommand(sqlSelect, current))
+      {
+        using (var reader = command.ExecuteReader())
+        {
+          for (var i = 0; i < numberOfRows; ++i)
+          {
+            // Log10(100) = 2, so to get the manitude we add 1.
+            const int precision = 10;
+            var tolerance = 1.0 / Math.Pow(10, precision);
+
+            Assert.IsTrue(reader.Read());
+            Assert.That(reader.GetDouble(0), Is.EqualTo(a[i]).Within(tolerance));
+            Assert.AreEqual(reader.GetInt32(1), b[i]);
+            Assert.AreEqual(reader.GetString(2), c[i]);
+          }
+          Assert.IsFalse(reader.Read());
+        }
+      }
+      client?.Close();
+      server.Close();
+    }
+
+    [TestCase(false)]
+    [TestCase(true)]
+    public void GetValuesMultipleStringRows(bool useClient)
+    {
+      var server = CreateConnection();
+      server.Open();
+      const string sqlMaster = "create table t1 (a INTEGER, b VARCHAR(255))";
+      using (var command = new SQLiteServerCommand(sqlMaster, server))
+      {
+        command.ExecuteNonQuery();
+      }
+
+      var current = server;
+
+      SQLiteServerConnection client = null;
+      if (useClient)
+      {
+        client = CreateConnection();
+        client.Open();
+        current = client;
+      }
+
+      const int numberOfRows = 5;
+      var b = new List<string>();
+      for (var i = 0; i < numberOfRows; ++i)
+      {
+        b.Add(RandomString(10));
+      }
+
+      for (var i = 0; i < numberOfRows; ++i)
+      {
+        var sql = $"insert into t1(a, b) VALUES ({i}, '{b[i]}')";
+        using (var command = new SQLiteServerCommand(sql, current))
+        {
+          command.ExecuteNonQuery();
+        }
+      }
+
+      const string sqlSelect = "SELECT * FROM t1 ORDER BY a ASC";
+      using (var command = new SQLiteServerCommand(sqlSelect, current))
+      {
+        using (var reader = command.ExecuteReader())
+        {
+          for (var i = 0; i < numberOfRows; ++i)
+          {
+            Assert.IsTrue(reader.Read());
+            var aa = reader.GetValue(0);
+            var bb = reader.GetValue(1);
+            Assert.AreEqual((long)aa, (long)i);
+            Assert.AreEqual((string)bb, b[i]);
+          }
+          Assert.IsFalse(reader.Read());
+        }
+      }
+      client?.Close();
+      server.Close();
+    }
+
+    [TestCase(false)]
+    [TestCase(true)]
     [Ignore("Ignore parametters tests")]
     public void GetDoubleValueEdgeCases(bool useClient)
     {
@@ -2833,6 +3104,218 @@ namespace SQLiteServer.Test.SQLiteServer
           Assert.IsFalse(reader.Read());
         }
       }
+      client?.Close();
+      server.Close();
+    }
+
+    [TestCase(true)]
+    [TestCase(false)]
+    public void IfTheIntValueIsNullWeShouldGetAnError(bool useClient)
+    {
+      var server = CreateConnection();
+      server.Open();
+      const string sqlMaster = "create table t1 (a INTEGER)";
+      using (var command = new SQLiteServerCommand(sqlMaster, server))
+      {
+        command.ExecuteNonQuery();
+      }
+
+      var current = server;
+
+      SQLiteServerConnection client = null;
+      if (useClient)
+      {
+        client = CreateConnection();
+        client.Open();
+        current = client;
+      }
+
+      var sql = $"insert into t1(a) VALUES (NULL)";
+      using (var command = new SQLiteServerCommand(sql, current))
+      {
+        command.ExecuteNonQuery();
+      }
+
+      const string sqlSelect = "SELECT a FROM t1 ORDER BY a ASC";
+      using (var command = new SQLiteServerCommand(sqlSelect, current))
+      {
+        using (var reader = command.ExecuteReader())
+        {
+          Assert.IsTrue(reader.Read());
+          // ReSharper disable once ReturnValueOfPureMethodIsNotUsed
+          Assert.Throws< InvalidCastException>(() => reader.GetInt32(0) );
+          Assert.IsFalse(reader.Read());
+        }
+      }
+      client?.Close();
+      server.Close();
+    }
+
+    [TestCase(true)]
+    [TestCase(false)]
+    public void IfTheLongValueIsNullWeShouldGetAnError(bool useClient)
+    {
+      var server = CreateConnection();
+      server.Open();
+      const string sqlMaster = "create table t1 (a INTEGER)";
+      using (var command = new SQLiteServerCommand(sqlMaster, server))
+      {
+        command.ExecuteNonQuery();
+      }
+
+      var current = server;
+
+      SQLiteServerConnection client = null;
+      if (useClient)
+      {
+        client = CreateConnection();
+        client.Open();
+        current = client;
+      }
+
+      var sql = $"insert into t1(a) VALUES (NULL)";
+      using (var command = new SQLiteServerCommand(sql, current))
+      {
+        command.ExecuteNonQuery();
+      }
+
+      const string sqlSelect = "SELECT a FROM t1 ORDER BY a ASC";
+      using (var command = new SQLiteServerCommand(sqlSelect, current))
+      {
+        using (var reader = command.ExecuteReader())
+        {
+          Assert.IsTrue(reader.Read());
+          // ReSharper disable once ReturnValueOfPureMethodIsNotUsed
+          Assert.Throws<InvalidCastException>(() => reader.GetInt64(0));
+          Assert.IsFalse(reader.Read());
+        }
+      }
+      client?.Close();
+      server.Close();
+    }
+
+    [TestCase(false)]
+    [TestCase(true)]
+    public void IfTheDoubleValueIsNullWeShouldGetAnError(bool useClient)
+    {
+      var server = CreateConnection();
+      server.Open();
+      const string sqlMaster = "create table t1 (a REAL)";
+      using (var command = new SQLiteServerCommand(sqlMaster, server))
+      {
+        command.ExecuteNonQuery();
+      }
+
+      var current = server;
+
+      SQLiteServerConnection client = null;
+      if (useClient)
+      {
+        client = CreateConnection();
+        client.Open();
+        current = client;
+      }
+
+      var sql = "insert into t1(a) VALUES (NULL)";
+      using (var command = new SQLiteServerCommand(sql, current))
+      {
+        command.ExecuteNonQuery();
+      }
+
+      const string sqlSelect = "SELECT a FROM t1 ORDER BY a ASC";
+      using (var command = new SQLiteServerCommand(sqlSelect, current))
+      {
+        using (var reader = command.ExecuteReader())
+        {
+          Assert.IsTrue(reader.Read());
+          // ReSharper disable once ReturnValueOfPureMethodIsNotUsed
+          Assert.Throws<InvalidCastException>(() => reader.GetDouble(0));
+          Assert.IsFalse(reader.Read());
+        }
+      }
+      client?.Close();
+      server.Close();
+    }
+
+    [TestCase(false)]
+    [TestCase(true)]
+    public void IfTheStringValueIsNullWeShouldGetAnError(bool useClient)
+    {
+      var server = CreateConnection();
+      server.Open();
+      const string sqlMaster = "create table t1 (a VARCHAR(255))";
+      using (var command = new SQLiteServerCommand(sqlMaster, server))
+      {
+        command.ExecuteNonQuery();
+      }
+
+      var current = server;
+
+      SQLiteServerConnection client = null;
+      if (useClient)
+      {
+        client = CreateConnection();
+        client.Open();
+        current = client;
+      }
+
+      var sql = "insert into t1(a) VALUES (NULL)";
+      using (var command = new SQLiteServerCommand(sql, current))
+      {
+        command.ExecuteNonQuery();
+      }
+
+      const string sqlSelect = "SELECT a FROM t1 ORDER BY a ASC";
+      using (var command = new SQLiteServerCommand(sqlSelect, current))
+      {
+        using (var reader = command.ExecuteReader())
+        {
+          Assert.IsTrue(reader.Read());
+          // ReSharper disable once ReturnValueOfPureMethodIsNotUsed
+          Assert.Throws<InvalidCastException>(() => reader.GetString(0));
+          Assert.IsFalse(reader.Read());
+        }
+      }
+      client?.Close();
+      server.Close();
+    }
+
+    [TestCase(false)]
+    [TestCase(true)]
+    public void GetTableNameMultipleTablesUsingAlias(bool useClient)
+    {
+      var server = CreateConnection();
+      server.Open();
+
+      var current = server;
+
+      SQLiteServerConnection client = null;
+      if (useClient)
+      {
+        client = CreateConnection();
+        client.Open();
+        current = client;
+      }
+
+      var sql = "create table tb_A (name varchar(20), value INTEGER)";
+      using (var command = new SQLiteServerCommand(sql, current)) { command.ExecuteNonQuery(); }
+
+      sql = "create table tb_B (name varchar(20), value INTEGER)";
+      using (var command = new SQLiteServerCommand(sql, current)) { command.ExecuteNonQuery(); }
+
+      const string sqlSelect = "SELECT * FROM tb_A as y, tb_B as z where y.name = z.name;";
+      using (var command = new SQLiteServerCommand(sqlSelect, current))
+      {
+        using (var reader = command.ExecuteReader() as SQLiteServerDataReader)
+        {
+          Assert.AreEqual("tb_A", reader.GetTableName(0));  // A.Name
+          Assert.AreEqual("tb_A", reader.GetTableName(1));  // A.Value
+
+          Assert.AreEqual("tb_B", reader.GetTableName(2));  // B.Name
+          Assert.AreEqual("tb_B", reader.GetTableName(3));  // B.Value
+        }
+      }
+
       client?.Close();
       server.Close();
     }

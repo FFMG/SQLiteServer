@@ -15,6 +15,8 @@
 using System;
 using System.Data;
 using System.Data.SQLite;
+using System.Threading;
+using System.Threading.Tasks;
 
 namespace SQLiteServer.Data.Workers
 {
@@ -71,10 +73,10 @@ namespace SQLiteServer.Data.Workers
     }
     
     /// <inheritdoc />
-    public bool Read()
+    public async Task<bool> ReadAsync(CancellationToken cancellationToken)
     {
       ThrowIfNoReader();
-      return _reader.Read();
+      return await _reader.ReadAsync( cancellationToken ).ConfigureAwait( false );
     }
 
     /// <inheritdoc />

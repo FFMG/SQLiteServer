@@ -1,5 +1,5 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
-<Project ToolsVersion="14.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+<Project ToolsVersion="15.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <Import Project="$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props" Condition="Exists('$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props')" />
   <PropertyGroup>
     <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
@@ -13,7 +13,6 @@
     <FileAlignment>512</FileAlignment>
     <NuGetPackageImportStamp>
     </NuGetPackageImportStamp>
-    <TargetFrameworkProfile />
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
     <DebugSymbols>true</DebugSymbols>
@@ -50,12 +49,15 @@
     <Reference Include="System.Core" />
     <Reference Include="System.Data.SQLite, Version=1.0.108.0, Culture=neutral, PublicKeyToken=db937bc2d44ff139, processorArchitecture=MSIL">
       <HintPath>..\packages\System.Data.SQLite.Core.1.0.108.0\lib\net46\System.Data.SQLite.dll</HintPath>
+      <Private>True</Private>
     </Reference>
     <Reference Include="System.Data.SQLite.EF6, Version=1.0.108.0, Culture=neutral, PublicKeyToken=db937bc2d44ff139, processorArchitecture=MSIL">
       <HintPath>..\packages\System.Data.SQLite.EF6.1.0.108.0\lib\net46\System.Data.SQLite.EF6.dll</HintPath>
+      <Private>True</Private>
     </Reference>
     <Reference Include="System.Data.SQLite.Linq, Version=1.0.108.0, Culture=neutral, PublicKeyToken=db937bc2d44ff139, processorArchitecture=MSIL">
       <HintPath>..\packages\System.Data.SQLite.Linq.1.0.108.0\lib\net46\System.Data.SQLite.Linq.dll</HintPath>
+      <Private>True</Private>
     </Reference>
     <Reference Include="System.Xml.Linq" />
     <Reference Include="System.Data.DataSetExtensions" />
@@ -72,8 +74,13 @@
     <Compile Include="Data\Connections\Packets.cs" />
     <Compile Include="Data\Connections\ResponsePacketHandler.cs" />
     <Compile Include="Data\Connections\SocketConnectionBuilder.cs" />
-    <Compile Include="Data\Data\IndexRequest.cs" />
+    <Compile Include="Data\Data\ColumnInformation.cs" />
+    <Compile Include="Data\Data\CommandTextAndIndexRequest.cs" />
+    <Compile Include="Data\Data\GuidAndIndexRequest.cs" />
     <Compile Include="Data\Data\NameRequest.cs" />
+    <Compile Include="Data\Data\RowData.cs" />
+    <Compile Include="Data\Data\RowHeader.cs" />
+    <Compile Include="Data\Data\RowInformation.cs" />
     <Compile Include="Data\Exceptions\SQLiteServerException.cs" />
     <Compile Include="Data\SQLiteServer\SQLiteServerBackupCallback.cs" />
     <Compile Include="Data\SQLiteServer\SQLiteServerConnectionStringBuilder.cs" />
@@ -84,11 +91,15 @@
     <Compile Include="Data\SQLiteServer\SQLiteServerTransaction.cs" />
     <Compile Include="Data\Workers\ISQLiteServerCommandWorker.cs" />
     <Compile Include="Data\Workers\ISQLiteServerConnectionWorker.cs" />
-    <Compile Include="Data\SQLiteServer\SQLiteServerCommand.cs" />
+    <Compile Include="Data\SQLiteServer\SQLiteServerCommand.cs">
+      <SubType>Component</SubType>
+    </Compile>
     <Compile Include="Data\Workers\ISQLiteServerDataReaderWorker.cs" />
     <Compile Include="Data\Workers\SQLiteServerCommandClientWorker.cs" />
     <Compile Include="Data\Workers\SQLiteServerCommandServerWorker.cs" />
-    <Compile Include="Data\SQLiteServer\SQLiteServerConnection.cs" />
+    <Compile Include="Data\SQLiteServer\SQLiteServerConnection.cs">
+      <SubType>Component</SubType>
+    </Compile>
     <Compile Include="Data\Workers\SQLiteServerConnectionClientWorker.cs" />
     <Compile Include="Data\Workers\SQLiteServerConnectionServerWorker.cs" />
     <Compile Include="Data\Workers\SQLiteServerDataReaderClientWorker.cs" />
@@ -101,10 +112,10 @@
     <Compile Include="Fields\FieldsException.cs" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="App.config" />
-    <None Include="packages.config">
+    <None Include="App.config">
       <SubType>Designer</SubType>
     </None>
+    <None Include="packages.config" />
   </ItemGroup>
   <ItemGroup />
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
@@ -115,6 +126,10 @@
     </PropertyGroup>
     <Error Condition="!Exists('..\packages\System.Data.SQLite.Core.1.0.108.0\build\net46\System.Data.SQLite.Core.targets')" Text="$([System.String]::Format('$(ErrorText)', '..\packages\System.Data.SQLite.Core.1.0.108.0\build\net46\System.Data.SQLite.Core.targets'))" />
   </Target>
+  <PropertyGroup>
+    <PostBuildEvent>
+    </PostBuildEvent>
+  </PropertyGroup>
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
        Other similar extension points exist, see Microsoft.Common.targets.
   <Target Name="BeforeBuild">

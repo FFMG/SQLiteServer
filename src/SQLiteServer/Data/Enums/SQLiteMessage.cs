@@ -14,8 +14,8 @@
 //    along with SQLiteServer.  If not, see<https://www.gnu.org/licenses/gpl-3.0.en.html>.
 namespace SQLiteServer.Data.Enums
 {
+  // ReSharper disable InconsistentNaming
   /// <inheritdoc />
-  // ReSharper disable once InconsistentNaming
   internal enum SQLiteMessage : uint
   {
     Unknown,
@@ -27,7 +27,8 @@ namespace SQLiteServer.Data.Enums
     CreateCommandRequest,
     CreateCommandResponse,
     DisposeCommand,
-    CancelCommand,
+    CancelCommandRequest,
+    CancelCommandResponse,
     CreateCommandException,
 
     LockConnectionRequest,
@@ -36,26 +37,21 @@ namespace SQLiteServer.Data.Enums
     LockConnectionException,
 
     ExecuteNonQueryRequest,
+    ExecuteCommandNonQueryRequest,
     ExecuteNonQueryResponse,
     ExecuteNonQueryException,
 
+    ExecuteCommandReaderRequest,
     ExecuteReaderRequest,
-    ExecuteReaderReadRequest,
-    ExecuteReaderNextResultRequest,
-    ExecuteReaderFieldCountRequest,
-    ExecuteReaderHasRowsRequest, 
-    ExecuteReaderGetOrdinalRequest,
-    ExecuteReaderGetStringRequest,
-    ExecuteReaderGetInt16Request,
-    ExecuteReaderGetInt32Request,
-    ExecuteReaderGetInt64Request,
-    ExecuteReaderGetDoubleRequest,
-    ExecuteReaderGetFieldTypeRequest,
-    ExecuteReaderGetDataTypeNameRequest,
-    ExecuteReaderGetIsDBNullRequest,
-    ExecuteReaderGetNameRequest,
-    ExecuteReaderGetTableNameRequest,
     ExecuteReaderResponse,
     ExecuteReaderException,
+
+    ExecuteReaderReadRequest,
+    ExecuteReaderReadResponse,
+    ExecuteReaderNextResultRequest,
+    ExecuteReaderGetRowRequest,
+    ExecuteReaderGetRowResponse,
+    ExecuteReaderGetDataTypeNameRequest,
+    ExecuteRequestResponse
   }
 }

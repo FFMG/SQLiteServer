@@ -14,6 +14,8 @@
 //    along with SQLiteServer.  If not, see<https://www.gnu.org/licenses/gpl-3.0.en.html>.
 using System;
 using System.Data;
+using System.Threading;
+using System.Threading.Tasks;
 
 namespace SQLiteServer.Data.Workers
 {
@@ -54,8 +56,9 @@ namespace SQLiteServer.Data.Workers
     /// <summary>
     /// Prepare to read the next value.
     /// </summary>
+    /// <param name="cancellationToken"></param>
     /// <returns></returns>
-    bool Read();
+    Task<bool> ReadAsync(CancellationToken cancellationToken ); 
 
     /// <summary>
     /// Prepare to read the next result set.

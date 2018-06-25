@@ -36,6 +36,7 @@ namespace SQLiteServer.Test.SQLiteServer
 
     private readonly List<string> _sources = new List<string>();
     private readonly List<SQLiteServerConnection> _connections = new List<SQLiteServerConnection>();
+    private readonly Random _random = new Random();
 
     [SetUp]
     public void SetUp()
@@ -132,54 +133,55 @@ namespace SQLiteServer.Test.SQLiteServer
 
     protected string RandomString(int len)
     {
+      const string chars = "$%#@!*abcdefghijklmnopqrstuvwxyz1234567890?;:ABCDEFGHIJKLMNOPQRSTUVWXYZ^&";
       var value = "";
       for (var i = 0; i < len; i++)
       {
-        value += RandomNumber<char>();
+        var num = _random.Next(0, chars.Length - 1);
+        value += chars[num];
       }
       return value;
     }
 
     protected T RandomNumber<T>()
     {
-      var random = new Random();
       if (typeof(T) == typeof(double))
       {
-        return (T) Convert.ChangeType(random.NextDouble(), typeof(T));
+        return (T) Convert.ChangeType(_random.NextDouble(), typeof(T));
       }
 
       if (typeof(T) == typeof(char))
       {
         var buffer = new byte[2]; //  2 bytes per char.
-        random.NextBytes(buffer);
+        _random.NextBytes(buffer);
         return (T)Convert.ChangeType(BitConverter.ToChar(buffer, 0), typeof(T));
       }
 
       if (typeof(T) == typeof(byte))
       {
         var buffer = new byte[1]; //  2 bytes per char.
-        random.NextBytes(buffer);
+        _random.NextBytes(buffer);
         return (T)Convert.ChangeType(buffer[0], typeof(T));
       }
 
       if (typeof(T) == typeof(float))
       {
         var buffer = new byte[4];
-        random.NextBytes(buffer);
+        _random.NextBytes(buffer);
         return (T)Convert.ChangeType(BitConverter.ToSingle(buffer, 0), typeof(T));
       }
 
       if (typeof(T) == typeof(long))
       {
         var buffer = new byte[8];
-        random.NextBytes(buffer);
+        _random.NextBytes(buffer);
         return (T)Convert.ChangeType(BitConverter.ToInt64(buffer, 0), typeof(T));
       }
 
       if (typeof(T) == typeof(int) ||
           typeof(T) == typeof(uint))
       {
-        return (T)Convert.ChangeType(random.Next(), typeof(T));
+        return (T)Convert.ChangeType(_random.Next(), typeof(T));
       }
 
       throw new NotSupportedException();

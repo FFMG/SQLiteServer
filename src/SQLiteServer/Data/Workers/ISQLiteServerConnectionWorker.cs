@@ -14,6 +14,7 @@
 //    along with SQLiteServer.  If not, see<https://www.gnu.org/licenses/gpl-3.0.en.html>.
 
 using System.Data.SQLite;
+using System.Threading.Tasks;
 
 namespace SQLiteServer.Data.Workers
 {
@@ -29,28 +30,28 @@ namespace SQLiteServer.Data.Workers
     /// Get the direct SQLite connection, that could me blocking all other
     /// clients from accessing the data.
     /// </summary>
-    SQLiteConnection LockConnection();
+    Task<SQLiteConnection> LockConnectionAsync();
 
     /// <summary>
     /// Release the SQLiteConnection lock.
     /// </summary>
-    void UnLockConnection();
+    Task UnLockConnectionAsync();
 
     /// <summary>
     /// Open the database using the connection string.
     /// </summary>
-    void Open();
+    Task OpenAsync();
 
     /// <summary>
     /// Close the database and the related commands.
     /// </summary>
-    void Close();
+    Task CloseAsync();
 
     /// <summary>
     /// Create a command worker.
     /// </summary>
     /// <param name="commandText"></param>
     /// <returns></returns>
-    ISQLiteServerCommandWorker CreateCommand(string commandText);
+    Task<ISQLiteServerCommandWorker> CreateCommandAsync(string commandText);
   }
 }

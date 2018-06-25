@@ -1,0 +1,22 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<package xmlns="http://schemas.microsoft.com/packaging/2010/07/nuspec.xsd">
+  <metadata>
+    <id>MyOddWeb.Data.SQLiteServer</id>
+    <version>0.1.2.1</version>
+    <title>MyOddWeb.Data.SQLiteServer (x86/x64)</title>
+    <licenseUrl>https://github.com/FFMG/SQLiteServer/blob/master/LICENSE</licenseUrl>
+    <projectUrl>https://github.com/FFMG/SQLiteServer</projectUrl>
+    <description>SQLiteServer enables multiple processes to connect to a single instance of a SQLite database</description>
+    <authors>Florent Guelfucci, myoddweb.com</authors>
+    <tags>sqliteserver sqlite server database ado.net</tags>
+    <copyright>@copyright 2017-2018 Florent Guelfucci</copyright>
+    <requireLicenseAcceptance>false</requireLicenseAcceptance>
+    <language>en-UK</language>
+    <dependencies>
+      <dependency id="System.Data.SQLite" version="1.0.108.0" />
+    </dependencies>    
+  </metadata>
+  <files>
+    <file src="..\bin\release\SQLiteServer.dll" target="lib\net461\" />
+  </files>
+</package>

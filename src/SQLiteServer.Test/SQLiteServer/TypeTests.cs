@@ -346,6 +346,8 @@ namespace SQLiteServer.Test.SQLiteServer
           Assert.AreEqual(typeof(byte[]), reader.GetFieldType(0)); // SOMETYPE = object
           Assert.AreEqual(typeof(long), reader.GetFieldType(1));   // integer
           Assert.AreEqual(typeof(long), reader.GetFieldType(2));   // int
+
+          Assert.IsFalse(reader.Read());
         }
       }
       server.Close();

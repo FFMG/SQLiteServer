@@ -14,6 +14,7 @@
 //    along with SQLiteServer.  If not, see<https://www.gnu.org/licenses/gpl-3.0.en.html>.
 using System;
 using System.Net;
+using System.Threading;
 using System.Threading.Tasks;
 using SQLiteServer.Data.Exceptions;
 using SQLiteServer.Data.SQLiteServer;
@@ -89,10 +90,24 @@ namespace SQLiteServer.Data.Connections
         throw new SQLiteServerException("Unable to connected.");
       }
 
-      while (!_connectionController.Connected)
+      // wait untl we are connected
+      await Task.Run(async () =>
       {
-        await Task.Delay(_heartBeatTimeOutInMs); // arbitrary delay
-      }
+        var watch = System.Diagnostics.Stopwatch.StartNew();
+        while (!_connectionController.Connected)
+        {
+          // yield all the work.
+          await Task.Yield();
+
+          // check for delay
+          if (_heartBeatTimeOutInMs > 0 && watch.ElapsedMilliseconds >= _heartBeatTimeOutInMs)
+          {
+            // we timed out.
+            break;
+          }
+        }
+        watch.Stop();
+      }).ConfigureAwait(false);
 
       if (!_connectionController.Connected)
       {
@@ -118,11 +133,28 @@ namespace SQLiteServer.Data.Connections
 
     private void OnServerDisconnect()
     {
-      _connection?.ReOpen();
+      try
+      {
+        Task.Run(async () =>
+        {
+          if (_connection != null)
+          {
+            await _connection.ReOpenAsync().ConfigureAwait(false);
+          }
+        }).Wait();
+      }
+      catch (AggregateException e)
+      {
+        if (e.InnerException != null)
+        {
+          throw e.InnerException;
+        }
+        throw;
+      }
     }
 
     /// <inheritdoc />
-    public Task<ISQLiteServerConnectionWorker> OpenAsync(string connectionString )
+    public Task<ISQLiteServerConnectionWorker> OpenAsync(string connectionString, CancellationToken cancellationToken )
     {
       // sanity check
       ThrowIfDisposed();

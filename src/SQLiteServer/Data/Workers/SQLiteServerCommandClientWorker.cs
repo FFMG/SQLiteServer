@@ -14,7 +14,10 @@
 //    along with SQLiteServer.  If not, see<https://www.gnu.org/licenses/gpl-3.0.en.html>.
 using System;
 using System.Text;
+using System.Threading;
+using System.Threading.Tasks;
 using SQLiteServer.Data.Connections;
+using SQLiteServer.Data.Data;
 using SQLiteServer.Data.Enums;
 using SQLiteServer.Data.Exceptions;
 using SQLiteServer.Data.SQLiteServer;
@@ -37,7 +40,7 @@ namespace SQLiteServer.Data.Workers
     /// <summary>
     /// The SQLite command
     /// </summary>
-    private readonly string _commandText;
+    public string CommandText { get; }
 
     /// <summary>
     /// The SQLite Connection
@@ -47,35 +50,52 @@ namespace SQLiteServer.Data.Workers
     /// <summary>
     /// This is the server Guid
     /// </summary>
-    private readonly string _serverGuid;
+    private string _serverGuid;
+
+    /// <summary>
+    /// Get the guid if we have one
+    /// </summary>
+    public string Guid
+    {
+      get { return _serverGuid; }
+      set
+      {
+        _serverGuid = value;
+      }
+    }
+
     #endregion
 
     public SQLiteServerCommandClientWorker(string commandText, ConnectionsController controller, int commandTimeout)
     {
       if (null == controller)
       {
-        throw new ArgumentNullException( nameof(controller));
+        throw new ArgumentNullException(nameof(controller));
       }
 
       CommandTimeout = commandTimeout;
 
-      _commandText = commandText;
+      CommandText = commandText;
       _controller = controller;
-      _serverGuid = null;
+    }
 
-      var response = _controller.SendAndWaitAsync( SQLiteMessage.CreateCommandRequest, Encoding.ASCII.GetBytes(commandText), CommandTimeout).Result;
+    /// <summary>
+    /// Get the server guid
+    /// </summary>
+    /// <returns></returns>
+    private async Task<string> CreateGuidAsync()
+    { 
+      var response = await _controller.SendAndWaitAsync( SQLiteMessage.CreateCommandRequest, Encoding.ASCII.GetBytes(CommandText), CommandTimeout).ConfigureAwait(false);
       switch (response.Message)
       {
         case SQLiteMessage.SendAndWaitTimeOut:
           throw new TimeoutException("There was a timeout error creating the Command.");
 
         case SQLiteMessage.CreateCommandResponse:
-          _serverGuid = response.Get<string>();
-          break;
+          return response.Get<string>();
 
         case SQLiteMessage.CreateCommandException:
-          var error = response.Get<string>();
-          throw new SQLiteServerException(error);
+          throw new SQLiteServerException(response.Get<string>());
 
         default:
           throw new InvalidOperationException( $"Unknown response {response.Message} from the server.");
@@ -89,9 +109,6 @@ namespace SQLiteServer.Data.Workers
     {
       // check if disposed.
       ThrowIfDisposed();
-
-      // check if not open
-      ThrowIfNoCommand();
     }
 
     /// <summary>
@@ -118,17 +135,29 @@ namespace SQLiteServer.Data.Workers
       }
     }
     
-    public int ExecuteNonQuery()
+    /// <inheritdoc />
+    public async Task<int> ExecuteNonQueryAsync(CancellationToken cancellationToken)
     {
       ThrowIfAny();
-      var response = _controller.SendAndWaitAsync(SQLiteMessage.ExecuteNonQueryRequest, Encoding.ASCII.GetBytes(_serverGuid), CommandTimeout).Result;
+      Packet response;
+      if (_serverGuid == null)
+      {
+        response = await _controller.SendAndWaitAsync(SQLiteMessage.ExecuteCommandNonQueryRequest, Encoding.ASCII.GetBytes(CommandText), CommandTimeout).ConfigureAwait( false );
+      }
+      else
+      {
+        response = await _controller.SendAndWaitAsync(SQLiteMessage.ExecuteNonQueryRequest, Encoding.ASCII.GetBytes(_serverGuid), CommandTimeout).ConfigureAwait( false );
+      }
+
       switch (response.Message)
       {
         case SQLiteMessage.SendAndWaitTimeOut:
           throw new TimeoutException("There was a timeout error creating the Command.");
 
         case SQLiteMessage.ExecuteNonQueryResponse:
-          return response.Get<int>();
+          var guiAndIndexRequest = Fields.Fields.Unpack(response.Payload).DeserializeObject<GuidAndIndexRequest>();
+          Guid = guiAndIndexRequest.Guid;
+          return guiAndIndexRequest.Index;
 
         case SQLiteMessage.ExecuteNonQueryException:
           var error = response.Get<string>();
@@ -142,8 +171,12 @@ namespace SQLiteServer.Data.Workers
     public void Cancel()
     {
       ThrowIfAny();
-      ThrowIfAny();
-      _controller.Send(SQLiteMessage.CancelCommand, Encoding.ASCII.GetBytes(_serverGuid));
+
+      // only cancel what we created
+      if (null != Guid)
+      {
+        _controller.Send(SQLiteMessage.CancelCommandRequest, Encoding.ASCII.GetBytes(Guid));
+      }
     }
 
     public void Dispose()
@@ -157,7 +190,12 @@ namespace SQLiteServer.Data.Workers
       try
       {
         ThrowIfAny();
-        _controller.Send(SQLiteMessage.DisposeCommand, Encoding.ASCII.GetBytes(_serverGuid));
+
+        // The GUID could be null if there was an error creating the command.
+        if (null != Guid)
+        {
+          _controller.Send(SQLiteMessage.DisposeCommand, Encoding.ASCII.GetBytes(Guid));
+        }
       }
       finally
       {
@@ -168,7 +206,8 @@ namespace SQLiteServer.Data.Workers
 
     public ISQLiteServerDataReaderWorker CreateReaderWorker()
     {
-      return new SQLiteServerDataReaderClientWorker(_controller, _serverGuid, CommandTimeout );
+      // create the worker.
+      return new SQLiteServerDataReaderClientWorker(_controller, this, CommandTimeout );
     }
   }
 }

@@ -16,6 +16,7 @@ using System;
 using System.Collections;
 using System.Data;
 using System.Data.Common;
+using System.Threading;
 using System.Threading.Tasks;
 using SQLiteServer.Data.Exceptions;
 using SQLiteServer.Data.Workers;
@@ -186,7 +187,23 @@ namespace SQLiteServer.Data.SQLiteServer
     /// <inheritdoc />
     public override bool Read()
     {
-      WaitIfConnectingAsync().Wait();
+      try
+      {
+        return Task.Run(async () => await ReadAsync(default(CancellationToken)).ConfigureAwait(false)).GetAwaiter().GetResult();
+      }
+      catch (AggregateException e)
+      {
+        if (e.InnerException != null)
+        {
+          throw e.InnerException;
+        }
+        throw;
+      }
+    }
+
+    public override async Task<bool> ReadAsync( CancellationToken cancellationToken )
+    { 
+      await WaitIfConnectingAsync().ConfigureAwait( false );
       ThrowIfAny();
 
       // if we only want the schema ... then there is nothing to read
@@ -205,7 +222,7 @@ namespace SQLiteServer.Data.SQLiteServer
         }
       }
 
-      if (!_worker.Read())
+      if (!await _worker.ReadAsync( cancellationToken).ConfigureAwait( false ))
       {
         return false;
       }
@@ -349,6 +366,10 @@ namespace SQLiteServer.Data.SQLiteServer
       {
         return _worker.GetString(i);
       }
+      catch (InvalidCastException)
+      {
+        throw;
+      }
       catch (Exception e)
       {
         throw new SQLiteServerException( e.Message );
@@ -370,6 +391,10 @@ namespace SQLiteServer.Data.SQLiteServer
       {
         return _worker.GetInt16(i);
       }
+      catch (InvalidCastException )
+      {
+        throw;
+      }
       catch (Exception e)
       {
         throw new SQLiteServerException(e.Message);
@@ -385,6 +410,10 @@ namespace SQLiteServer.Data.SQLiteServer
       {
         return _worker.GetInt32(i);
       }
+      catch (InvalidCastException )
+      {
+        throw;
+      }
       catch (Exception e)
       {
         throw new SQLiteServerException(e.Message);
@@ -399,6 +428,10 @@ namespace SQLiteServer.Data.SQLiteServer
       try
       {
         return _worker.GetInt64(i);
+      }
+      catch (InvalidCastException)
+      {
+        throw;
       }
       catch (Exception e)
       {
@@ -426,6 +459,10 @@ namespace SQLiteServer.Data.SQLiteServer
       try
       {
         return _worker.GetDouble(i);
+      }
+      catch (InvalidCastException)
+      {
+        throw;
       }
       catch (Exception e)
       {

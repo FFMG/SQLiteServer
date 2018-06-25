@@ -13,6 +13,7 @@
 //    You should have received a copy of the GNU General Public License
 //    along with SQLiteServer.  If not, see<https://www.gnu.org/licenses/gpl-3.0.en.html>.
 using System;
+using System.Threading;
 using System.Threading.Tasks;
 using SQLiteServer.Data.SQLiteServer;
 using SQLiteServer.Data.Workers;
@@ -33,8 +34,9 @@ namespace SQLiteServer.Data.Connections
     /// Create a valid worker once we are connected.
     /// </summary>
     /// <param name="connectionString"></param>
+    /// <param name="cancellationToken"></param>
     /// <returns></returns>
-    Task<ISQLiteServerConnectionWorker> OpenAsync( string connectionString );
+    Task<ISQLiteServerConnectionWorker> OpenAsync( string connectionString, CancellationToken cancellationToken);
 
     /// <summary>
     /// Close the connections.
